@@ -39,21 +39,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Pull code
-        uses: v009/ssh-action@main
+        uses: vr009/ssh-action@main
         with:
           host: ${{ secrets.HOST }} 
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
           script: cd ${{ secrets.APP_PATH }} && git pull 
       - name: Build containers 
-        uses: v009/ssh-action@master
+        uses: vr009/ssh-action@master
         with:
           timeout: 10m
           host: ${{ secrets.HOST }}
           key: ${{ secrets.PRIVATE_KEY }}
           script: cd /home/ubuntu/<нужная папка> && sudo docker-compose build
       - name: Restart service 
-        uses: v009/ssh-action@master
+        uses: vr009/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           key: ${{ secrets.PRIVATE_KEY }}
@@ -68,6 +68,6 @@ jobs:
           uses: actions/checkout@v3
 
         - name: Run Migrations
-          uses: v009/ssh-action@master
+          uses: vr009/ssh-action@master
           with:
             script: migrate -path ./migrations -database ${{ secrets.DATABASE_URL }} up
