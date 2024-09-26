@@ -5,6 +5,12 @@ on:
     branches:
       - main  
       - dev
+  pull_request:
+    types:
+      - opened
+    branches:
+      - 'main'
+      - 'dev'
 jobs:
   linters-act:
     name: linters
