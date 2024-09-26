@@ -5,6 +5,7 @@ on:
     branches:
       - main  
       - dev
+      - task/TRI-3
   pull_request:
     types:
       - opened
