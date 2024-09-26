@@ -9,8 +9,8 @@ on:
     types:
       - opened
     branches:
-      - 'main'
-      - 'dev'
+      - main
+      - dev
 jobs:
   linters-act:
     name: linters
