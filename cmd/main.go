@@ -1,6 +1,8 @@
 package main
 
 import (
+	"TripAdvisor/pkg/auth"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -19,6 +21,8 @@ type application struct {
 }
 
 func main() {
+	repos := auth.NewRepository()
+	repoUsecase := auth.NewRepoUsecase(repos)
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 8080, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment")
@@ -30,6 +34,7 @@ func main() {
 	}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthcheck", app.healthcheckHandler)
+	mux.HandleFunc("/place", app.getPlaceHandler)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
 		Handler:      mux,
@@ -48,5 +53,18 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		fmt.Printf("ERROR: healthcheckHandler: %s\n", err)
+	}
+}
+
+func (app *application) getPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	places, err := repoUsecase.getPlaces()
+	if err != nil {
+		http.Error(w, "Не удалось получить список достопримечательностей", http.StatusInternalServerError)
+		return
+	}
+	err = json.NewEncoder(w).Encode(places)
+	if err != nil {
+		return
 	}
 }
