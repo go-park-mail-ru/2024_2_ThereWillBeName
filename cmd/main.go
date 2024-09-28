@@ -2,16 +2,23 @@ package main
 
 import (
 	"TripAdvisor/internal/models"
+	"TripAdvisor/internal/pkg/middleware"
 	"TripAdvisor/internal/pkg/places/delivery"
 	"TripAdvisor/internal/pkg/places/repo"
 	"TripAdvisor/internal/pkg/places/usecase"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"time"
 )
+
+type application struct {
+	config models.Config
+	logger *log.Logger
+}
 
 func main() {
 	//connStr := "user=postgres password=mypassword host=localhost port=5432 dbname=landmarks sslmode=disable"
@@ -31,16 +38,27 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthcheck", HealthcheckHandler)
-	mux.HandleFunc("/api/v1/places", handler.GetPlaceHandler)
+	app := &application{
+		logger: logger,
+		config: cfg,
+	}
+	r := mux.NewRouter().PathPrefix("/api").Subrouter()
+	r.Use(middleware.CORSMiddleware)
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	})
+	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
+	healthcheck.HandleFunc("", app.HealthcheckHandler).Methods(http.MethodGet)
+	placecheck := r.PathPrefix("/v1/places").Subrouter()
+	placecheck.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
-		Handler:      mux,
+		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+
 	logger.Printf("starting %s server on %s", cfg.Env, srv.Addr)
 	err := srv.ListenAndServe()
 	if err != nil {
@@ -49,7 +67,7 @@ func main() {
 	}
 }
 
-func HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
