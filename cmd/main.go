@@ -36,8 +36,6 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
-	// для каждой логической сущности из pkg свой саброутер
-	// healthcheck := r.PathPrefix("").Subrouter()
 	r.HandleFunc("/healthcheck", app.healthcheckHandler).Methods(http.MethodGet)
 
 	srv := &http.Server{
