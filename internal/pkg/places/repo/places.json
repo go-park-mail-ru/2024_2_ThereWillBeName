@@ -1,0 +1,28 @@
+{
+  "images": [
+    {
+      "path": "/images/image1.png",
+      "title": "Московский Кремль"
+    },
+    {
+      "path": "/images/image2.png",
+      "title": "Красная Площадь"
+    },
+    {
+      "path": "/images/image3.png",
+      "title": "Храм Василия Блаженного"
+    },
+    {
+      "path": "/images/image4.png",
+      "title": "Большой театр"
+    },
+    {
+      "path": "/images/image5.png",
+      "title": "Государственная Третьяковская галерея"
+    },
+    {
+      "path": "/images/image6.png",
+      "title": "Государственный музей Петергоф"
+    }
+  ]
+}
