@@ -37,8 +37,8 @@ func main() {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 	// для каждой логической сущности из pkg свой саброутер
-	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
-	healthcheck.HandleFunc("", app.healthcheckHandler).Methods(http.MethodGet)
+	// healthcheck := r.PathPrefix("").Subrouter()
+	r.HandleFunc("/healthcheck", app.healthcheckHandler).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
@@ -52,7 +52,6 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-
 }
 
 func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
