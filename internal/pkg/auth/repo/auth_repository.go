@@ -1,70 +1,71 @@
 package repo
 
 import (
-    "context"
-    "database/sql"
-    "2024_2_ThereWillBeName/internal/models"
-    _ "github.com/lib/pq"
-    "time"
+	"2024_2_ThereWillBeName/internal/models"
+	"context"
+	"database/sql"
+	"fmt"
+	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type RepositoryImpl struct {
-    db *sql.DB 
+	db *sql.DB
 }
 
 func NewRepository(db *sql.DB) *RepositoryImpl {
-    return &RepositoryImpl{db: db}
+	return &RepositoryImpl{db: db}
 }
 
 func (r *RepositoryImpl) CreateUser(ctx context.Context, user models.User) error {
-    user.CreatedAt = time.Now()
-    query := "INSERT INTO users (email, password, created_at) VALUES ($1, $2, NOW())"
-    _, err := r.db.ExecContext(ctx, query, user.Email, user.Password, user.CreatedAt)
-    return err
+	user.CreatedAt = time.Now()
+	query := "INSERT INTO users (email, password, created_at) VALUES ($1, $2, NOW())"
+	_, err := r.db.ExecContext(ctx, query, user.Email, user.Password)
+	return err
 }
 
 func (r *RepositoryImpl) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
-    var user models.User
-    query := "SELECT id, email, password, created_at FROM users WHERE email = $1"
-    row := r.db.QueryRowContext(ctx, query, email)
-    fmt.Println("1")
-    err := row.Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt)
-    if err != nil {
-        if err == sql.ErrNoRows {
-            return models.User{}, fmt.Errorf("user not found with email: %s", email)
-        }
-        return models.User{}, err
-    }
-    return user, nil
+	var user models.User
+	query := "SELECT id, email, password, created_at FROM users WHERE email = $1"
+	row := r.db.QueryRowContext(ctx, query, email)
+	err := row.Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.User{}, fmt.Errorf("user not found with email: %s", email)
+		}
+		return models.User{}, err
+	}
+	return user, nil
 }
 
 func (r *RepositoryImpl) UpdateUser(ctx context.Context, user models.User) error {
-    query := "UPDATE users SET email = $1, password = $2 WHERE id = $3"
-    _, err := r.db.ExecContext(ctx, query, user.Email, user.Password, user.ID)
-    return err
+	query := "UPDATE users SET email = $1, password = $2 WHERE id = $3"
+	_, err := r.db.ExecContext(ctx, query, user.Email, user.Password, user.ID)
+	return err
 }
 
 func (r *RepositoryImpl) DeleteUser(ctx context.Context, id string) error {
-    query := "DELETE FROM users WHERE id = $1"
-    _, err := r.db.ExecContext(ctx, query, id)
-    return err
+	query := "DELETE FROM users WHERE id = $1"
+	_, err := r.db.ExecContext(ctx, query, id)
+	return err
 }
 
 func (r *RepositoryImpl) GetUsers(ctx context.Context, count, offset int64) ([]models.User, error) {
-    query := "SELECT id, email, password, created_at FROM users LIMIT $1 OFFSET $2"
-    rows, err := r.db.QueryContext(ctx, query, count, offset)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	query := "SELECT id, email, password, created_at FROM users LIMIT $1 OFFSET $2"
+	rows, err := r.db.QueryContext(ctx, query, count, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    var users []models.User
-    for rows.Next() {
-        var user models.User
-        if err := rows.Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt); err != nil {
-            return nil, err
-        }
-        users = append(users, user)
-    }
-    return users, nil
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+		if err := rows.Scan(&user.ID, &user.Email, &user.Password, &user.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
 }
