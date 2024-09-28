@@ -21,12 +21,6 @@ type application struct {
 }
 
 func main() {
-	//connStr := "user=postgres password=mypassword host=localhost port=5432 dbname=landmarks sslmode=disable"
-	//db, err := sql.Open("postgres", connStr)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//defer db.Close()
 
 	newPlaceRepo := repo.NewRepository()
 	placeUsecase := usecase.NewPlaceUsecase(newPlaceRepo)
