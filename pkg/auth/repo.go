@@ -6,15 +6,17 @@ type Repo interface {
 	getPlaces() ([]Place, error)
 }
 
-type Repository struct{}
+type Repository struct {
+	connectStr string
+}
 
-func NewRepository() *Repository {
-	return &Repository{}
+func NewRepository(c string) *Repository {
+	return &Repository{connectStr: c}
 }
 
 func (r *Repository) getPlaces() ([]Place, error) {
-	connStr := "user=postgres password=mypassword host=localhost port=5432 dbname=landmarks sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
+
+	db, err := sql.Open("postgres", r.connectStr)
 	if err != nil {
 		return nil, err
 	}

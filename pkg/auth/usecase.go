@@ -7,7 +7,7 @@ type Place struct {
 }
 
 type PlaceUsecase interface {
-	getPlace() ([]Place, error)
+	GetPlace() ([]Place, error)
 }
 
 type RepoUsecase struct {
@@ -18,7 +18,7 @@ func NewRepoUsecase(repos *Repository) *RepoUsecase {
 	return &RepoUsecase{repos: *repos}
 }
 
-func (i *RepoUsecase) getPlace() ([]Place, error) {
+func (i *RepoUsecase) GetPlace() ([]Place, error) {
 	places, err := i.repos.getPlaces()
 	if err != nil {
 		return nil, err
