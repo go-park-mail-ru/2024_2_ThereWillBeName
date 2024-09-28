@@ -1,12 +1,15 @@
 package main
 
 import (
+	"TripAdvisor/pkg/middleware"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 type config struct {
@@ -28,16 +31,21 @@ func main() {
 		config: cfg,
 		logger: logger,
 	}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthcheck", app.healthcheckHandler)
+	r := mux.NewRouter().PathPrefix("/api").Subrouter()
+	r.Use(middleware.CORSMiddleware)
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	})
+	r.HandleFunc("/healthcheck", app.healthcheckHandler).Methods(http.MethodGet)
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
+		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-	logger.Printf("starting %s server on %s", cfg.env, srv.Addr)
+	logger.Printf("Starting server on port %d in %s mode", cfg.port, srv.Addr)
 	err := srv.ListenAndServe()
 	if err != nil {
 		logger.Fatal(err)
