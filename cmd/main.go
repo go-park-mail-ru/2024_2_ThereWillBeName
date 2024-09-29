@@ -23,11 +23,14 @@ func main() {
 	var cfg models.Config
 	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
 	flag.StringVar(&cfg.Env, "env", "development", "Environment")
+	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
 	flag.Parse()
+
+	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
-	r.Use(middleware.CORSMiddleware)
+	r.Use(corsMiddleware.CorsMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
