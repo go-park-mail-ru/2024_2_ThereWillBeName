@@ -1,33 +1,35 @@
 package main
 
 import (
+	"2024_2_ThereWillBeName/internal/pkg/auth"
+	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
+	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
+	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
+	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"database/sql"
-	_ "github.com/lib/pq"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
-	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
-	"2024_2_ThereWillBeName/internal/pkg/jwt"
-	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
-	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
-	"2024_2_ThereWillBeName/internal/pkg/auth"
 
-	"math/rand"
+	_ "github.com/lib/pq"
+
 	"encoding/hex"
+	"math/rand"
 )
 
 type config struct {
-	port int
-	env  string
+	port    int
+	env     string
+	connStr string
 }
 type application struct {
-	config config
-	logger *log.Logger
-	db *sql.DB
-	jwtSecret []byte
+	config      config
+	logger      *log.Logger
+	db          *sql.DB
+	jwtSecret   []byte
 	authUseCase auth.AuthUsecase
 }
 
@@ -35,11 +37,12 @@ func main() {
 	var cfg config
 	flag.IntVar(&cfg.port, "port", 8080, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment")
+	flag.StringVar(&cfg.connStr, "connStr", "host=localhost port=5433 user=test_user password=1234567890 dbname=testdb_tripadvisor sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
-	db, err := openDB()
+	db, err := openDB(cfg.connStr)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -50,25 +53,29 @@ func main() {
 		logger.Fatal("Error generating secret key:", err)
 	}
 
-	authRepo := repo.NewRepository(db) 
+	authRepo := repo.NewRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
-    h := httpHandler.NewHandler(authUseCase, jwtHandler)
+	h := httpHandler.NewHandler(authUseCase, jwtHandler)
 
 	app := &application{
-		config: cfg,
-		logger: logger,
-		db: db,
-		jwtSecret: []byte(jwtSecret),
+		config:      cfg,
+		logger:      logger,
+		db:          db,
+		jwtSecret:   []byte(jwtSecret),
 		authUseCase: authUseCase,
 	}
 
 	logger.Println("Successfully connected to the database!")
 
 	mux := http.NewServeMux()
+	apiV1 := http.NewServeMux()
 	mux.HandleFunc("/healthcheck", app.healthcheckHandler)
-	mux.HandleFunc("/signup", h.SignUp)
-    mux.HandleFunc("/login", h.Login) 
+	apiV1.HandleFunc("/signup", h.SignUp)
+	apiV1.HandleFunc("/login", h.Login)
+	apiV1.HandleFunc("/logout", h.Logout)
+
+	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", apiV1))
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
@@ -91,13 +98,12 @@ func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func openDB() (*sql.DB, error) {
-	connStr := "host=localhost port=5433 user=test_user password=1234567890 dbname=testdb_tripadvisor sslmode=disable"
+func openDB(connStr string) (*sql.DB, error) {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	err = db.Ping()
 	if err != nil {
 		return nil, err
@@ -114,4 +120,3 @@ func generateSecretKey(length int) (string, error) {
 	}
 	return hex.EncodeToString(key), nil
 }
-

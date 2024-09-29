@@ -24,7 +24,7 @@ func NewHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	// var user models.User
 	var credentials struct {
-		Email    string `json:"email"`
+		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
 
@@ -38,7 +38,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	// 	return
 	// }
 	user := models.User{
-		Email:    credentials.Email,
+		Login:    credentials.Login,
 		Password: credentials.Password,
 	}
 
@@ -52,7 +52,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
-		Email    string `json:"email"`
+		Login    string `json:"login"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -60,7 +60,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
+	token, err := h.usecase.Login(context.Background(), credentials.Login, credentials.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
@@ -77,22 +77,15 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) Middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("token")
-		if err != nil {
-			http.Error(w, "Cookie not found", http.StatusUnauthorized)
-			return
-		}
+func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
-		_, err = h.jwt.ParseToken(cookie.Value)
-		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
-			return
-		}
-
-		//логика для работы с claims
-
-		next.ServeHTTP(w, r)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
 	})
+
+	w.WriteHeader(http.StatusOK)
 }
