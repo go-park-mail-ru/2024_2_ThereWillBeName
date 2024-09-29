@@ -17,7 +17,7 @@ func NewAuthRepository(db *sql.DB) *RepositoryImpl {
 	return &RepositoryImpl{db: db}
 }
 
-func (r *RepositoryImpl) CreateUser(ctx context.Context, user models.User) error {
+func (r *Repos4itoryImpl) CreateUser(ctx context.Context, user models.User) error {
 	query := "INSERT INTO users (login, password, created_at) VALUES ($1, $2, NOW())"
 	_, err := r.db.ExecContext(ctx, query, user.Login, user.Password)
 	return err
