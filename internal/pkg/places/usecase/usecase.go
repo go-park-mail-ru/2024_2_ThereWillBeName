@@ -3,6 +3,7 @@ package usecase
 import (
 	"TripAdvisor/internal/models"
 	"TripAdvisor/internal/pkg/places"
+	"context"
 )
 
 type PlaceUsecaseImpl struct {
@@ -13,8 +14,8 @@ func NewPlaceUsecase(repo places.PlaceRepo) *PlaceUsecaseImpl {
 	return &PlaceUsecaseImpl{repo: repo}
 }
 
-func (i *PlaceUsecaseImpl) GetPlaces() ([]models.Place, error) {
-	places, err := i.repo.GetPlaces()
+func (i *PlaceUsecaseImpl) GetPlaces(ctx context.Context) ([]models.Place, error) {
+	places, err := i.repo.GetPlaces(ctx)
 	if err != nil {
 		return nil, err
 	}

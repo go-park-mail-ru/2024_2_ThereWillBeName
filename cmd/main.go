@@ -15,13 +15,7 @@ import (
 	"time"
 )
 
-type application struct {
-	config models.Config
-	logger *log.Logger
-}
-
 func main() {
-
 	newPlaceRepo := repo.NewRepository()
 	placeUsecase := usecase.NewPlaceUsecase(newPlaceRepo)
 	handler := delivery.NewPlacesHandler(placeUsecase)
@@ -32,17 +26,13 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	app := &application{
-		logger: logger,
-		config: cfg,
-	}
 	r := mux.NewRouter().PathPrefix("/api").Subrouter()
 	r.Use(middleware.CORSMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
-	healthcheck.HandleFunc("", app.HealthcheckHandler).Methods(http.MethodGet)
+	healthcheck.HandleFunc("", HealthcheckHandler).Methods(http.MethodGet)
 	placecheck := r.PathPrefix("/v1/places").Subrouter()
 	placecheck.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
@@ -61,7 +51,7 @@ func main() {
 	}
 }
 
-func (app *application) HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)

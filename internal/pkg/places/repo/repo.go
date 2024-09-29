@@ -2,6 +2,7 @@ package repo
 
 import (
 	"TripAdvisor/internal/models"
+	"context"
 	_ "embed"
 	"encoding/json"
 	"log"
@@ -17,7 +18,7 @@ func NewRepository() *PlaceRepository {
 //go:embed places.json
 var jsonFileData []byte
 
-func (r *PlaceRepository) GetPlaces() ([]models.Place, error) {
+func (r *PlaceRepository) GetPlaces(ctx context.Context) ([]models.Place, error) {
 	images := make([]models.Place, 0)
 	log.Println("1")
 	err := json.Unmarshal(jsonFileData, &images)
