@@ -28,7 +28,7 @@ func main() {
 	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
 	flag.StringVar(&cfg.Env, "env", "development", "Environment")
 	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
-	flag.StringVar(&cfg.ConnStr, "connStr", "host=localhost port=5433 user=test_user password=1234567890 dbname=testdb_tripadvisor sslmode=disable", "PostgreSQL connection string")
+	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
 
 	newPlaceRepo := placerepo.NewPLaceRepository()
