@@ -9,5 +9,3 @@ WORKDIR /build
 COPY --from=builder /github.com/go-park-mail-ru/2024_2_ThereWillBeName/.bin .
 EXPOSE 8080
 ENTRYPOINT ["./.bin"]
-
-
