@@ -11,7 +11,7 @@ import (
 type PlaceRepository struct {
 }
 
-func NewRepository() *PlaceRepository {
+func NewPLaceRepository() *PlaceRepository {
 	return &PlaceRepository{}
 }
 

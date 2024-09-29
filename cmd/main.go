@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	newPlaceRepo := repo.NewRepository()
+	newPlaceRepo := repo.NewPLaceRepository()
 	placeUsecase := usecase.NewPlaceUsecase(newPlaceRepo)
 	handler := delivery.NewPlacesHandler(placeUsecase)
 
@@ -26,14 +26,14 @@ func main() {
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	r := mux.NewRouter().PathPrefix("/api").Subrouter()
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(middleware.CORSMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
 	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
-	healthcheck.HandleFunc("", HealthcheckHandler).Methods(http.MethodGet)
-	placecheck := r.PathPrefix("/v1/places").Subrouter()
+	healthcheck.HandleFunc("", healthcheckHandler).Methods(http.MethodGet)
+	placecheck := r.PathPrefix("/places").Subrouter()
 	placecheck.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
@@ -51,7 +51,7 @@ func main() {
 	}
 }
 
-func HealthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
