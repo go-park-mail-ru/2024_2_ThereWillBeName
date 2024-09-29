@@ -1,7 +1,7 @@
 package delivery
 
 import (
-	"TripAdvisor/internal/pkg/places"
+	"2024_2_ThereWillBeName/internal/pkg/places"
 	"encoding/json"
 	"net/http"
 )

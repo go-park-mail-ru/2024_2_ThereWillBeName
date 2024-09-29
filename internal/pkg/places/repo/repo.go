@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"TripAdvisor/internal/models"
+	"2024_2_ThereWillBeName/internal/models"
 	"context"
 	_ "embed"
 	"encoding/json"
