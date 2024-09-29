@@ -1,4 +1,4 @@
-FROM golang:1.22.7-alpine AS builder
+FROM golang:1.23.1-alpine AS builder
 COPY . /github.com/go-park-mail-ru/2024_2_ThereWillBeName
 WORKDIR /github.com/go-park-mail-ru/2024_2_ThereWillBeName
 RUN go mod download

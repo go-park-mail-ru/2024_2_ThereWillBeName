@@ -6,4 +6,16 @@ services:
       context: .
       dockerfile: ./build/main.Dockerfile
     ports:
-      - 80:80
+      - 8080:8080
+  tripdb:
+    container_name: postgres
+    image: postgres:15
+    environment:
+        POSTGRES_DB: "trip"
+        POSTGRES_USER: "service"
+        POSTGRES_PASSWORD: "test"
+    volumes:
+      - ./internal/db/migrations:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    ports:
+      - 5432:5432
