@@ -15,7 +15,7 @@ services:
         POSTGRES_USER: "service"
         POSTGRES_PASSWORD: "test"
     volumes:
-      - ./internal/db/migrations:/docker-entrypoint-initdb.d
+      - ./migrations:/docker-entrypoint-initdb.d
     restart: unless-stopped
     ports:
       - 5432:5432
