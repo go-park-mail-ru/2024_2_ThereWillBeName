@@ -33,10 +33,6 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-	// 	http.Error(w, err.Error(), http.StatusBadRequest)
-	// 	return
-	// }
 	user := models.User{
 		Login:    credentials.Login,
 		Password: credentials.Password,

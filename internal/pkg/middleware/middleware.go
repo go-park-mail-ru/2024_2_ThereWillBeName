@@ -1,4 +1,4 @@
-package middlewares
+package middleware
 
 import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
