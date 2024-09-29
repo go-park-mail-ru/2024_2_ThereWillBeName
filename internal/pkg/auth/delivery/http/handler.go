@@ -14,7 +14,7 @@ type Handler struct {
 	jwt     *jwt.JWT
 }
 
-func NewHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
+func NewAuthHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
 	return &Handler{
 		usecase: usecase,
 		jwt:     jwt,

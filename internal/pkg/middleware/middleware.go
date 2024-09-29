@@ -25,9 +25,6 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), "userID", userID)
 		ctx = context.WithValue(ctx, "login", login)
 		r = r.WithContext(ctx)
-		// exp := claims["exp"].(uint) //todo: проверить, когда exp истекает
-
-		//логика для работы с claims
 
 		next.ServeHTTP(w, r)
 	})

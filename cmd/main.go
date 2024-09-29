@@ -1,7 +1,6 @@
 package main
 
 import (
-	"2024_2_ThereWillBeName/internal/pkg/auth"
 	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
 	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
 	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
@@ -27,13 +26,6 @@ type config struct {
 	env     string
 	connStr string
 }
-type application struct {
-	config      config
-	logger      *log.Logger
-	db          *sql.DB
-	jwtSecret   []byte
-	authUseCase auth.AuthUsecase
-}
 
 func main() {
 	var cfg config
@@ -55,10 +47,10 @@ func main() {
 		logger.Fatal("Error generating secret key:", err)
 	}
 
-	authRepo := repo.NewRepository(db)
+	authRepo := repo.NewAuthRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
-	h := httpHandler.NewHandler(authUseCase, jwtHandler)
+	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
 
 	logger.Println("Successfully connected to the database!")
 
@@ -66,14 +58,11 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
-	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
-	healthcheck.HandleFunc("", healthcheckHandler).Methods(http.MethodGet)
-	signupcheck := r.PathPrefix("/signup").Subrouter()
-	signupcheck.HandleFunc("", h.SignUp).Methods(http.MethodPost)
-	logincheck := r.PathPrefix("/login").Subrouter()
-	logincheck.HandleFunc("", h.Login).Methods(http.MethodPost)
-	logoutcheck := r.PathPrefix("/logot").Subrouter()
-	logoutcheck.HandleFunc("", h.Logout).Methods(http.MethodPost)
+	r.HandleFunc("/healthcheck", healthcheckHandler).Methods(http.MethodGet)
+	auth := r.PathPrefix("/auth").Subrouter()
+	auth.HandleFunc("/signup", h.SignUp).Methods(http.MethodPost)
+	auth.HandleFunc("/login", h.Login).Methods(http.MethodPost)
+	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),

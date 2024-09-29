@@ -13,7 +13,7 @@ type RepositoryImpl struct {
 	db *sql.DB
 }
 
-func NewRepository(db *sql.DB) *RepositoryImpl {
+func NewAuthRepository(db *sql.DB) *RepositoryImpl {
 	return &RepositoryImpl{db: db}
 }
 
