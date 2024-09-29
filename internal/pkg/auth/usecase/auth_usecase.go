@@ -45,8 +45,3 @@ func (a *AuthUsecaseImpl) Login(ctx context.Context, login, password string) (st
 
 	return a.jwt.GenerateToken(uint(user.ID), user.Login)
 }
-
-func (a *AuthUsecaseImpl) Logout(ctx context.Context, token string) error {
-
-	return nil
-}

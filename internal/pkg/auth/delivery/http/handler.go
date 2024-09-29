@@ -22,7 +22,6 @@ func NewHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
 }
 
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
-	// var user models.User
 	var credentials struct {
 		Login    string `json:"login"`
 		Password string `json:"password"`
@@ -74,7 +73,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
-
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",

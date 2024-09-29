@@ -18,6 +18,8 @@ import (
 
 	"encoding/hex"
 	"math/rand"
+
+	"github.com/gorilla/mux"
 )
 
 type config struct {
@@ -58,28 +60,24 @@ func main() {
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewHandler(authUseCase, jwtHandler)
 
-	app := &application{
-		config:      cfg,
-		logger:      logger,
-		db:          db,
-		jwtSecret:   []byte(jwtSecret),
-		authUseCase: authUseCase,
-	}
-
 	logger.Println("Successfully connected to the database!")
 
-	mux := http.NewServeMux()
-	apiV1 := http.NewServeMux()
-	mux.HandleFunc("/healthcheck", app.healthcheckHandler)
-	apiV1.HandleFunc("/signup", h.SignUp)
-	apiV1.HandleFunc("/login", h.Login)
-	apiV1.HandleFunc("/logout", h.Logout)
-
-	mux.Handle("/api/v1/", http.StripPrefix("/api/v1", apiV1))
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Not Found", http.StatusNotFound)
+	})
+	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
+	healthcheck.HandleFunc("", healthcheckHandler).Methods(http.MethodGet)
+	signupcheck := r.PathPrefix("/signup").Subrouter()
+	signupcheck.HandleFunc("", h.SignUp).Methods(http.MethodPost)
+	logincheck := r.PathPrefix("/login").Subrouter()
+	logincheck.HandleFunc("", h.Login).Methods(http.MethodPost)
+	logoutcheck := r.PathPrefix("/logot").Subrouter()
+	logoutcheck.HandleFunc("", h.Logout).Methods(http.MethodPost)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.port),
-		Handler:      mux,
+		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
@@ -91,7 +89,7 @@ func main() {
 	}
 }
 
-func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		fmt.Printf("ERROR: healthcheckHandler: %s\n", err)
