@@ -16,7 +16,9 @@ func (c *CORSMiddleware) CorsMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Methods", "POST,PUT,DELETE,GET")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		if len(c.AllowedOrigins) > 0 {
+			w.Header().Set("Access-Control-Allow-Origin", c.AllowedOrigins[0])
+		}
 	},
 	)
 }
