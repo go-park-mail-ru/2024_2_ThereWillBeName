@@ -19,6 +19,11 @@ func (c *CORSMiddleware) CorsMiddleware(next http.Handler) http.Handler {
 		if len(c.AllowedOrigins) > 0 {
 			w.Header().Set("Access-Control-Allow-Origin", c.AllowedOrigins[0])
 		}
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		next.ServeHTTP(w, r)
 	},
 	)
 }
