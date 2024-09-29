@@ -1,60 +1,64 @@
 package main
 
 import (
-	"TripAdvisor/pkg/middleware"
+	"TripAdvisor/internal/models"
+	"TripAdvisor/internal/pkg/middleware"
+	"TripAdvisor/internal/pkg/places/delivery"
+	"TripAdvisor/internal/pkg/places/repo"
+	"TripAdvisor/internal/pkg/places/usecase"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
 	"time"
-
 	"github.com/gorilla/mux"
 )
 
-type config struct {
-	port int
-	env  string
-}
-type application struct {
-	config config
-	logger *log.Logger
-}
-
 func main() {
-	var cfg config
-	flag.IntVar(&cfg.port, "port", 8080, "API server port")
-	flag.StringVar(&cfg.env, "env", "development", "Environment")
+	newPlaceRepo := repo.NewPLaceRepository()
+	placeUsecase := usecase.NewPlaceUsecase(newPlaceRepo)
+	handler := delivery.NewPlacesHandler(placeUsecase)
+
+	var cfg models.Config
+	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
+	flag.StringVar(&cfg.Env, "env", "development", "Environment")
+	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
 	flag.Parse()
+
+	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
+
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
-	app := &application{
-		config: cfg,
-		logger: logger,
-	}
-	r := mux.NewRouter().PathPrefix("/api").Subrouter()
-	r.Use(middleware.CORSMiddleware)
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	r.Use(corsMiddleware.CorsMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
-	r.HandleFunc("/healthcheck", app.healthcheckHandler).Methods(http.MethodGet)
-
+	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
+	healthcheck.HandleFunc("", healthcheckHandler).Methods(http.MethodGet)
+	placecheck := r.PathPrefix("/places").Subrouter()
+	placecheck.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.port),
+		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
-	logger.Printf("Starting server on port %d in %s mode", cfg.port, srv.Addr)
+
+	logger.Printf("starting %s server on %s", cfg.Env, srv.Addr)
 	err := srv.ListenAndServe()
 	if err != nil {
-		logger.Fatal(err)
+		fmt.Errorf("Failed to start server: %v", err)
+		os.Exit(1)
 	}
 }
 
-func (app *application) healthcheckHandler(w http.ResponseWriter, r *http.Request) {
+func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
-		fmt.Printf("ERROR: healthcheckHandler: %s\n", err)
+		http.Error(w, "", http.StatusBadRequest)
+		fmt.Errorf("ERROR: healthcheckHandler: %s\n", err)
 	}
 }
