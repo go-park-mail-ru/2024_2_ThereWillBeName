@@ -34,10 +34,9 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
-	healthcheck := r.PathPrefix("/healthcheck").Subrouter()
-	healthcheck.HandleFunc("", healthcheckHandler).Methods(http.MethodGet)
-	placecheck := r.PathPrefix("/places").Subrouter()
-	placecheck.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
+	r.HandleFunc("/healthcheck", healthcheckHandler).Methods(http.MethodGet)
+	places := r.PathPrefix("/places").Subrouter()
+	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
@@ -49,7 +48,7 @@ func main() {
 	logger.Printf("starting %s server on %s", cfg.Env, srv.Addr)
 	err := srv.ListenAndServe()
 	if err != nil {
-		fmt.Errorf("Failed to start server: %v", err)
+		logger.Println(fmt.Errorf("Failed to start server: %v", err))
 		os.Exit(1)
 	}
 }
@@ -58,6 +57,5 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		http.Error(w, "", http.StatusBadRequest)
-		fmt.Errorf("ERROR: healthcheckHandler: %s\n", err)
 	}
 }
