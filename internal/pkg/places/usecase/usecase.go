@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"TripAdvisor/internal/models"
-	"TripAdvisor/internal/pkg/places"
+	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/places"
 	"context"
 )
 

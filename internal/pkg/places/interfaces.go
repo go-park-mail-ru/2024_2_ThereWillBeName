@@ -1,7 +1,7 @@
 package places
 
 import (
-	"TripAdvisor/internal/models"
+	"2024_2_ThereWillBeName/internal/models"
 	"context"
 )
 
