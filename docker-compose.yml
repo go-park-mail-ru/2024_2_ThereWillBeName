@@ -2,6 +2,7 @@ version: "3.3"
 
 services:
   main:
+    container_name: main-service
     build:
       context: .
       dockerfile: ./build/main.Dockerfile
