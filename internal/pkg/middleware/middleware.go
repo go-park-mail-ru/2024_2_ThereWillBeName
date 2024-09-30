@@ -6,6 +6,13 @@ import (
 	"net/http"
 )
 
+type contextKey string
+
+const (
+	idKey    contextKey = "userID"
+	loginKey contextKey = "login"
+)
+
 func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
@@ -22,8 +29,8 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 
 		userID := claims["id"].(uint)
 		login := claims["login"].(string)
-		ctx := context.WithValue(r.Context(), "userID", userID)
-		ctx = context.WithValue(ctx, "login", login)
+		ctx := context.WithValue(r.Context(), idKey, userID)
+		ctx = context.WithValue(ctx, loginKey, login)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

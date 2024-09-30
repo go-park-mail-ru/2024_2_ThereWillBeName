@@ -20,10 +20,14 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Не удалось получить список достопримечательностей", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(places)
+
+	jsonData, err := json.Marshal(places)
 	if err != nil {
-		http.Error(w, "Не удалось преобразовать в json", http.StatusInternalServerError)
+		http.Error(w, "Ошибка сериализации данных", http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
 }
