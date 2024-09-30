@@ -83,3 +83,30 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value("userID").(int64)
+	if !ok {
+		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
+		return
+	}
+
+	login, ok := r.Context().Value("login").(string)
+	if !ok {
+		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
+		return
+	}
+
+	response := models.User{
+		ID:    userID,
+		Login: login,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Не удалось преобразовать в json", http.StatusInternalServerError)
+		return
+	}
+}
