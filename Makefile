@@ -18,7 +18,8 @@ cover: test
 	go tool cover -html=$(COVERAGE_FILE)
 
 clean:
-	rm -f $(MOCK_DST)
+	rm -f $(MOCK_DST_PLACES)
+	rm -f $(MOCK_DST_AUTH)
 	rm -f $(COVERAGE_FILE)
 
 .PHONY: all mocks test cover clean
