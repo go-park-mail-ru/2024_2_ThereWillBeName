@@ -68,10 +68,7 @@ func main() {
 	auth.HandleFunc("/login", h.Login).Methods(http.MethodPost)
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 	users := auth.PathPrefix("/users").Subrouter()
-	users.Use(func(next http.Handler) http.Handler {
-		return middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))
-	})
-	users.Handle("/me", http.HandlerFunc(h.CurrentUser)).Methods(http.MethodGet)
+	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	srv := &http.Server{
