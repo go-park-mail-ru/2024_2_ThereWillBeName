@@ -43,5 +43,5 @@ func (a *AuthUsecaseImpl) Login(ctx context.Context, login, password string) (st
 		log.Println("Password match!")
 	}
 
-	return a.jwt.GenerateToken(uint(user.ID), user.Login)
+	return a.jwt.GenerateToken(user.ID, user.Login)
 }

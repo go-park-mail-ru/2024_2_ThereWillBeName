@@ -19,7 +19,7 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
-		userID := int64(claims["id"].(float64))
+		userID := uint(claims["id"].(float64))
 		login := claims["login"].(string)
 		ctx := context.WithValue(r.Context(), "userID", userID)
 		ctx = context.WithValue(ctx, "login", login)

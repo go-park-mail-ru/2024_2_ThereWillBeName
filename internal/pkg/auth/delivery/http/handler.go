@@ -85,7 +85,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(int64)
+	userID, ok := r.Context().Value("userID").(uint)
 	if !ok {
 		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
 		return
@@ -98,7 +98,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := models.User{
-		ID:    int64(userID),
+		ID:    userID,
 		Login: login,
 	}
 
