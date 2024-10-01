@@ -3,14 +3,12 @@ package middleware
 import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
-	"log"
 	"net/http"
 )
 
 func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
-		log.Println()
 		if err != nil {
 			http.Error(w, "Cookie not found", http.StatusUnauthorized)
 			return
@@ -21,8 +19,7 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
 		}
-		log.Println("claims", claims["id"].(float64))
-		userID := uint(claims["id"].(float64))
+		userID := int64(claims["id"].(float64))
 		login := claims["login"].(string)
 		ctx := context.WithValue(r.Context(), "userID", userID)
 		ctx = context.WithValue(ctx, "login", login)

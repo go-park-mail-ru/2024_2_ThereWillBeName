@@ -6,7 +6,6 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 )
 
@@ -86,17 +85,13 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	check := r.Body
-	log.Println(check)
 	userID, ok := r.Context().Value("userID").(int64)
-	log.Println("handler id", userID)
 	if !ok {
 		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
 		return
 	}
 
 	login, ok := r.Context().Value("login").(string)
-	log.Println("handler login", login)
 	if !ok {
 		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
 		return
