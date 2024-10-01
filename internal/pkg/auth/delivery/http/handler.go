@@ -98,7 +98,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := models.User{
-		ID:    userID,
+		ID:    int64(userID),
 		Login: login,
 	}
 
