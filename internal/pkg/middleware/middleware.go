@@ -3,14 +3,15 @@ package middleware
 import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
+	"log"
 	"net/http"
 )
 
 type contextKey string
 
 const (
-	idKey    contextKey = "userID"
-	loginKey contextKey = "login"
+	IdKey    contextKey = "userID"
+	LoginKey contextKey = "login"
 )
 
 func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
@@ -28,8 +29,9 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 		}
 		userID := uint(claims["id"].(float64))
 		login := claims["login"].(string)
-		ctx := context.WithValue(r.Context(), idKey, userID)
-		ctx = context.WithValue(ctx, loginKey, login)
+		log.Println("middleware: ", userID, IdKey)
+		ctx := context.WithValue(r.Context(), IdKey, userID)
+		ctx = context.WithValue(ctx, LoginKey, login)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

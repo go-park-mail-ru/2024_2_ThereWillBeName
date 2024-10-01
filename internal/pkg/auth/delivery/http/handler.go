@@ -4,6 +4,7 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/auth"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
+	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -85,13 +86,13 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value("userID").(uint)
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
 		return
 	}
 
-	login, ok := r.Context().Value("login").(string)
+	login, ok := r.Context().Value(middleware.LoginKey).(string)
 	if !ok {
 		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
 		return
