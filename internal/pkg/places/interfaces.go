@@ -5,6 +5,8 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
+
 type PlaceRepo interface {
 	GetPlaces(ctx context.Context) ([]models.Place, error)
 }
