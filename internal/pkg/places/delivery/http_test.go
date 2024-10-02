@@ -3,6 +3,7 @@ package delivery
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	"context"
 	"encoding/json"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
@@ -52,7 +53,7 @@ func TestGetPlaceHandler(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			mockUsecase.EXPECT().GetPlaces(gomock.Any()).Return(testcase.mockReturn, testcase.mockError)
 
-			req, err := http.NewRequest(http.MethodGet, "/places", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places", nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
