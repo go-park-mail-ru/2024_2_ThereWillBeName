@@ -103,6 +103,10 @@ func TestLogin_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
+	if resp := rr.Result(); resp.Body != nil {
+		defer resp.Body.Close()
+	}
+
 	cookie := rr.Result().Cookies()[0]
 	assert.Equal(t, "token", cookie.Name)
 	assert.Equal(t, "jwt_token", cookie.Value)
