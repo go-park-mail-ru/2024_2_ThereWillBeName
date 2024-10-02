@@ -52,7 +52,7 @@ func TestSignUp_InvalidJSON(t *testing.T) {
 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
 	handler := NewAuthHandler(mockUsecase, nil)
 
-	req, _ := http.NewRequest(http.MethodPost, "/signup", bytes.NewBuffer([]byte(`invalid json`)))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/signup", bytes.NewBuffer([]byte(`invalid json`)))
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -74,7 +74,7 @@ func TestSignUp_CreateUserError(t *testing.T) {
 		"login":    "testuser",
 		"password": "testpass",
 	})
-	req, _ := http.NewRequest(http.MethodPost, "/signup", bytes.NewBuffer(body))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/signup", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 
 	handler.SignUp(rr, req)
@@ -96,7 +96,7 @@ func TestLogin_Success(t *testing.T) {
 		"login":    "testuser",
 		"password": "testpass",
 	})
-	req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(body))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 
 	handler.Login(rr, req)
