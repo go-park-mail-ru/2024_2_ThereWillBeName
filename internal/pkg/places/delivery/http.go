@@ -1,8 +1,8 @@
 package delivery
 
 import (
+	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/places"
-	"encoding/json"
 	"net/http"
 )
 
@@ -27,18 +27,5 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Не удалось получить список достопримечательностей", http.StatusInternalServerError)
 		return
 	}
-
-	jsonData, err := json.Marshal(places)
-	if err != nil {
-		http.Error(w, "Ошибка сериализации данных", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonData)
-	if err != nil {
-		http.Error(w, "Ошибка записи данных", http.StatusInternalServerError)
-		return
-	}
+	httpresponse.SendJSONResponse(w, places, http.StatusOK)
 }
