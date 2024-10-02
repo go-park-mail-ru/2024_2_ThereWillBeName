@@ -15,12 +15,16 @@ import (
 	"encoding/hex"
 	"flag"
 	"fmt"
-	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
 	"log"
 	"net/http"
 	"os"
 	"time"
+
+	_ "2024_2_ThereWillBeName/docs"
+
+	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func main() {
@@ -66,8 +70,11 @@ func main() {
 	auth.HandleFunc("/signup", h.SignUp).Methods(http.MethodPost)
 	auth.HandleFunc("/login", h.Login).Methods(http.MethodPost)
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
+	users := r.PathPrefix("/users").Subrouter()
+	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
+	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
@@ -84,6 +91,13 @@ func main() {
 	}
 }
 
+// healthcheckHandler godoc
+// @Summary Health check
+// @Description Check the health status of the service
+// @Produce text/plain
+// @Success 200 {string} string "STATUS: OK"
+// @Failure 400 {string} string "Bad Request"
+// @Router /healthcheck [get]
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
