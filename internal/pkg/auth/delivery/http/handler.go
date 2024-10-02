@@ -3,8 +3,10 @@ package http
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/auth"
+	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+
 	"context"
 	"encoding/json"
 	"net/http"
@@ -103,11 +105,5 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		Login: login,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, "Не удалось преобразовать в json", http.StatusInternalServerError)
-		return
-	}
+	httpresponse.SendJSONResponse(w, response, http.StatusOK)
 }
