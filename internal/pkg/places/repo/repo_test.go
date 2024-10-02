@@ -4,8 +4,9 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
 	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPlaceRepository_GetPlaces(t *testing.T) {
@@ -36,4 +37,32 @@ func TestPlaceRepository_GetPlaces(t *testing.T) {
 			assert.Equal(t, testCase.expectedCode, got)
 		})
 	}
+}
+
+func TestPlaceRepository_GetPlaces_ErrorUnmarshal(t *testing.T) {
+	badJsonFileData := []byte(`{"invalid": "data"}`)
+
+	originalJsonFileData := jsonFileData
+	defer func() { jsonFileData = originalJsonFileData }()
+	jsonFileData = badJsonFileData
+
+	r := NewPLaceRepository()
+	got, err := r.GetPlaces(context.Background())
+
+	assert.Error(t, err)
+	assert.Nil(t, got)
+}
+
+func TestPlaceRepository_GetPlaces_EmptyFile(t *testing.T) {
+	emptyJsonFileData := []byte(`[]`)
+
+	originalJsonFileData := jsonFileData
+	defer func() { jsonFileData = originalJsonFileData }()
+	jsonFileData = emptyJsonFileData
+
+	r := NewPLaceRepository()
+	got, err := r.GetPlaces(context.Background())
+
+	assert.NoError(t, err)
+	assert.Empty(t, got)
 }

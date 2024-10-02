@@ -163,3 +163,99 @@ func TestGetUsers_Success(t *testing.T) {
 		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 }
+
+func TestGetUserByLogin_NotFound(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+
+	repository := NewAuthRepository(db)
+
+	mock.ExpectQuery("SELECT id, login, password, created_at").
+		WithArgs("nonexistentuser").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "password", "created_at"}))
+
+	user, err := repository.GetUserByLogin(context.Background(), "nonexistentuser")
+
+	assert.Error(t, err)
+	assert.Equal(t, models.User{}, user)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestCreateUser_AlreadyExists(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+
+	repository := NewAuthRepository(db)
+
+	mock.ExpectExec("INSERT INTO users").
+		WithArgs("existinguser", "testpass").
+		WillReturnError(fmt.Errorf("duplicate entry error"))
+
+	user := models.User{
+		Login:    "existinguser",
+		Password: "testpass",
+	}
+
+	err = repository.CreateUser(context.Background(), user)
+
+	assert.Error(t, err)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetUsers_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+
+	repository := NewAuthRepository(db)
+
+	mock.ExpectQuery("SELECT id, login, created_at").
+		WithArgs(int64(10), int64(0)).
+		WillReturnError(fmt.Errorf("database error"))
+
+	users, err := repository.GetUsers(context.Background(), 10, 0)
+
+	assert.Error(t, err)
+	assert.Empty(t, users)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestGetUserByLogin_Error(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+
+	repository := NewAuthRepository(db)
+
+	mock.ExpectQuery("SELECT id, login, password, created_at").
+		WithArgs("testuser").
+		WillReturnError(fmt.Errorf("database error"))
+
+	user, err := repository.GetUserByLogin(context.Background(), "testuser")
+
+	assert.Error(t, err)
+	assert.Equal(t, models.User{}, user)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}

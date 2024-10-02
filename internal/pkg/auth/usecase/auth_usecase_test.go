@@ -5,6 +5,7 @@ import (
 	mocks "2024_2_ThereWillBeName/internal/pkg/auth/mocks"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
+	"fmt"
 	"testing"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,6 +36,22 @@ func TestLogin_Success(t *testing.T) {
 	assert.NotEmpty(t, token)
 }
 
+func TestLogin_UserNotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockAuthRepo(ctrl)
+	mockJWT := jwt.NewJWT("secret_key")
+
+	authUsecase := NewAuthUsecase(mockRepo, mockJWT)
+
+	mockRepo.EXPECT().GetUserByLogin(gomock.Any(), "nonexistent").Return(models.User{}, fmt.Errorf("user not found")).Times(1)
+
+	_, err := authUsecase.Login(context.Background(), "nonexistent", "password123")
+	assert.Error(t, err)
+	assert.Equal(t, "user not found", err.Error())
+}
+
 func TestSignUp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -56,4 +73,29 @@ func TestSignUp(t *testing.T) {
 
 	err := authUsecase.SignUp(context.Background(), user)
 	assert.NoError(t, err)
+}
+
+func TestLogin_InvalidPassword(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockRepo := mocks.NewMockAuthRepo(ctrl)
+	mockJWT := jwt.NewJWT("secret_key")
+
+	authUsecase := NewAuthUsecase(mockRepo, mockJWT)
+
+	user := models.User{
+		ID:    1,
+		Login: "testuser",
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
+	assert.NoError(t, err)
+	user.Password = string(hashedPassword)
+
+	mockRepo.EXPECT().GetUserByLogin(gomock.Any(), user.Login).Return(user, nil).Times(1)
+
+	_, err = authUsecase.Login(context.Background(), user.Login, "wrongpassword")
+	assert.Error(t, err)
+	assert.Equal(t, "crypto/bcrypt: hashedPassword is not the hash of the given password", err.Error())
 }
