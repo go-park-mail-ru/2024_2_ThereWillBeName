@@ -5,6 +5,7 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
 type AuthUsecase interface {
 	SignUp(ctx context.Context, user models.User) error
 	Login(ctx context.Context, login, password string) (string, error) // Возвращает JWT токен
