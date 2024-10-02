@@ -38,7 +38,7 @@ func TestGetPlaceHandler(t *testing.T) {
 			mockReturn:   places,
 			mockError:    nil,
 			expectedCode: http.StatusOK,
-			expectedBody: stringPlaces,
+			expectedBody: stringPlaces + "\n",
 		},
 		{
 			name:         "Error",
