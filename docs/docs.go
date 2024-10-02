@@ -98,6 +98,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/places": {
+            "get": {
+                "description": "Retrieve a list of places from the database",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get a list of places",
+                "responses": {
+                    "200": {
+                        "description": "List of places",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Place"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/signup": {
             "post": {
                 "description": "Create a new user with login and password",
@@ -157,6 +183,12 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "type": "string"
                         }

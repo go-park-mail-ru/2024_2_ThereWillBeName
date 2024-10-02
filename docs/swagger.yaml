@@ -83,6 +83,23 @@ paths:
           schema:
             type: string
       summary: Logout a user
+  /places:
+    get:
+      description: Retrieve a list of places from the database
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of places
+          schema:
+            items:
+              $ref: '#/definitions/models.Place'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get a list of places
   /signup:
     post:
       consumes:
@@ -123,6 +140,10 @@ paths:
             $ref: '#/definitions/models.User'
         "401":
           description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
           schema:
             type: string
       summary: Get the current user

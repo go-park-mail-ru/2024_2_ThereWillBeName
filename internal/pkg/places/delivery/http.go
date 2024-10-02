@@ -20,6 +20,7 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Produce json
 // @Success 200 {array} models.Place "List of places"
 // @Failure 500 {string} string
+// @Router /places [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	places, err := h.uc.GetPlaces(r.Context())
 	if err != nil {

@@ -119,6 +119,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Success 200 {object} models.User "Current user"
 // @Failure 401 {string} string "Unauthorized"
+// @Failure 500 {string} string "Internal Server Error"
 // @Router /users/me [get]
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.IdKey).(uint)
