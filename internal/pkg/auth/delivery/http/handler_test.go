@@ -103,9 +103,8 @@ func TestLogin_Success(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, rr.Code)
 
-	if resp := rr.Result(); resp.Body != nil {
-		defer resp.Body.Close()
-	}
+	response := rr.Result()
+	defer response.Body.Close()
 
 	cookie := rr.Result().Cookies()[0]
 	assert.Equal(t, "token", cookie.Name)
@@ -126,7 +125,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 		"login":    "testuser",
 		"password": "wrongpass",
 	})
-	req, _ := http.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(body))
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewBuffer(body))
 	rr := httptest.NewRecorder()
 
 	handler.Login(rr, req)
