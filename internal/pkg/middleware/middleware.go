@@ -19,13 +19,21 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			httpresponse.SendJSONResponse(w, map[string]string{"error": "Cookie not found"}, http.StatusUnauthorized)
+			response := httpresponse.ErrorResponse{
+				Message: "Cookie not found",
+				Code:    401,
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
 		}
 
 		claims, err := jwtService.ParseToken(cookie.Value)
 		if err != nil {
-			httpresponse.SendJSONResponse(w, map[string]string{"error": "Invalid Token"}, http.StatusUnauthorized)
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid token",
+				Code:    401,
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
 		}
 		userID := uint(claims["id"].(float64))

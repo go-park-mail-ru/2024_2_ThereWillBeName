@@ -19,12 +19,16 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Description Retrieve a list of places from the database
 // @Produce json
 // @Success 200 {array} models.Place "List of places"
-// @Failure 500 {object} map[string]string "Internal Server Error"
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	places, err := h.uc.GetPlaces(r.Context())
 	if err != nil {
-		httpresponse.SendJSONResponse(w, map[string]string{"error": "Не удалось получить список достопримечательностей"}, http.StatusInternalServerError)
+		response := httpresponse.ErrorResponse{
+			Message: "Не удалось получить список достопримечательностей",
+			Code:    500,
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)

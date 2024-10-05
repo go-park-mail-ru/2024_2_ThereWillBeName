@@ -5,11 +5,12 @@ import (
 	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
 	"context"
 	"encoding/json"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestGetPlaceHandler(t *testing.T) {
@@ -45,7 +46,7 @@ func TestGetPlaceHandler(t *testing.T) {
 			mockReturn:   nil,
 			mockError:    assert.AnError,
 			expectedCode: http.StatusInternalServerError,
-			expectedBody: "Не удалось получить список достопримечательностей\n",
+			expectedBody: "{\"message\":\"Не удалось получить список достопримечательностей\",\"code\":500}\n",
 		},
 	}
 

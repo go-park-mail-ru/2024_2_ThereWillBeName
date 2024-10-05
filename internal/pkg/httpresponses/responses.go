@@ -5,6 +5,11 @@ import (
 	"net/http"
 )
 
+type ErrorResponse struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 func SendJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 	w.WriteHeader(status)
 

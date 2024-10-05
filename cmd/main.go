@@ -64,7 +64,11 @@ func main() {
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		httpresponse.SendJSONResponse(w, map[string]string{"error": "Not found"}, http.StatusNotFound)
+		response := httpresponse.ErrorResponse{
+			Message: "Not found",
+			Code:    404,
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
 	})
 	r.HandleFunc("/healthcheck", healthcheckHandler).Methods(http.MethodGet)
 
@@ -98,12 +102,16 @@ func main() {
 // @Description Check the health status of the service
 // @Produce text/plain
 // @Success 200 {string} string "STATUS: OK"
-// @Failure 400 {object} map[string]string "Bad Request"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
 // @Router /healthcheck [get]
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
-		httpresponse.SendJSONResponse(w, map[string]string{"error": ""}, http.StatusBadRequest)
+		response := httpresponse.ErrorResponse{
+			Message: "",
+			Code:    400,
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 	}
 }
 
