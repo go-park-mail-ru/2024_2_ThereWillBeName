@@ -66,7 +66,6 @@ func main() {
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := httpresponse.ErrorResponse{
 			Message: "Not found",
-			Code:    404,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
 	})
@@ -109,7 +108,6 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: "",
-			Code:    400,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 	}

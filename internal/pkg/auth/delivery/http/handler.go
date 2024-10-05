@@ -45,7 +45,6 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: err.Error(),
-			Code:    400,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
@@ -59,7 +58,6 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if err := h.usecase.SignUp(context.Background(), user); err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: err.Error(),
-			Code:    500,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
@@ -86,7 +84,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: err.Error(),
-			Code:    400,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
@@ -96,7 +93,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: err.Error(),
-			Code:    401,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
@@ -144,7 +140,6 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		response := httpresponse.ErrorResponse{
 			Message: "Пользователь не авторизирован",
-			Code:    401,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
@@ -154,7 +149,6 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		response := httpresponse.ErrorResponse{
 			Message: "Пользователь не авторизирован",
-			Code:    401,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return

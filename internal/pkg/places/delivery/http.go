@@ -26,7 +26,6 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: "Не удалось получить список достопримечательностей",
-			Code:    500,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return

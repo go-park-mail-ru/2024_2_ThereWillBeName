@@ -21,7 +21,6 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 		if err != nil {
 			response := httpresponse.ErrorResponse{
 				Message: "Cookie not found",
-				Code:    401,
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
@@ -31,7 +30,6 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 		if err != nil {
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid token",
-				Code:    401,
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
