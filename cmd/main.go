@@ -11,6 +11,9 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
 	placerepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeusecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
+	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
+	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -39,7 +42,6 @@ func main() {
 	newPlaceRepo := placerepo.NewPLaceRepository()
 	placeUsecase := placeusecase.NewPlaceUsecase(newPlaceRepo)
 	handler := delivery.NewPlacesHandler(placeUsecase)
-
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(cfg.ConnStr)
@@ -58,7 +60,9 @@ func main() {
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
-
+	tripsRepo := triprepo.NewTripRepository(db)
+	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
+	tripHandler := triphandler.NewTripHandler(tripUsecase)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -80,6 +84,12 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+	trips := r.PathPrefix("/trips").Subrouter()
+	trips.HandleFunc("/create", tripHandler.CreateTripHandler).Methods(http.MethodPost)
+	trips.HandleFunc("/update/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
+	trips.HandleFunc("/delete/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
+	trips.HandleFunc("/trip/{id}", tripHandler.ReadTripHandler).Methods(http.MethodGet)
+	trips.HandleFunc("/{userID}", tripHandler.ReadTripsByUserIDHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
