@@ -174,7 +174,7 @@ func TestCurrentUser_NoUserID(t *testing.T) {
 	handler.CurrentUser(rr, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-	assert.Equal(t, "{\"message\":\"Пользователь не авторизирован\",\"code\":401}\n", rr.Body.String())
+	assert.Equal(t, "{\"message\":\"Пользователь не авторизирован\"}\n", rr.Body.String())
 }
 
 func TestCurrentUser_NoLogin(t *testing.T) {
@@ -191,7 +191,7 @@ func TestCurrentUser_NoLogin(t *testing.T) {
 	handler.CurrentUser(rr, req)
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-	assert.Equal(t, "{\"message\":\"Пользователь не авторизирован\",\"code\":401}\n", rr.Body.String())
+	assert.Equal(t, "{\"message\":\"Пользователь не авторизирован\"}\n", rr.Body.String())
 }
 
 func TestLogout_Success(t *testing.T) {

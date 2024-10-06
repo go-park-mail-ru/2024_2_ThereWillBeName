@@ -46,7 +46,7 @@ func TestGetPlaceHandler(t *testing.T) {
 			mockReturn:   nil,
 			mockError:    assert.AnError,
 			expectedCode: http.StatusInternalServerError,
-			expectedBody: "{\"message\":\"Не удалось получить список достопримечательностей\",\"code\":500}\n",
+			expectedBody: "{\"message\":\"Не удалось получить список достопримечательностей\"}\n",
 		},
 	}
 
