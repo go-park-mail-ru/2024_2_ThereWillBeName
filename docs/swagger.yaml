@@ -8,8 +8,6 @@ definitions:
     type: object
   httpresponses.ErrorResponse:
     properties:
-      code:
-        type: integer
       message:
         type: string
     type: object
