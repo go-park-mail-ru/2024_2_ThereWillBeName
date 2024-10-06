@@ -44,7 +44,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: err.Error(),
+			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
@@ -57,7 +57,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.usecase.SignUp(context.Background(), user); err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: err.Error(),
+			Message: "Registration failed",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
@@ -83,7 +83,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: err.Error(),
+			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
@@ -92,7 +92,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.usecase.Login(context.Background(), credentials.Login, credentials.Password)
 	if err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: err.Error(),
+			Message: "Invalid login or password",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
@@ -139,7 +139,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 		response := httpresponse.ErrorResponse{
-			Message: "Пользователь не авторизирован",
+			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
@@ -148,7 +148,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	login, ok := r.Context().Value(middleware.LoginKey).(string)
 	if !ok {
 		response := httpresponse.ErrorResponse{
-			Message: "Пользователь не авторизирован",
+			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return

@@ -107,7 +107,7 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: "",
+			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 	}
