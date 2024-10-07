@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
 	"log"
@@ -18,13 +19,19 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("token")
 		if err != nil {
-			http.Error(w, "Cookie not found", http.StatusUnauthorized)
+			response := httpresponse.ErrorResponse{
+				Message: "Cookie not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
 		}
 
 		claims, err := jwtService.ParseToken(cookie.Value)
 		if err != nil {
-			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid token",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 			return
 		}
 		userID := uint(claims["id"].(float64))

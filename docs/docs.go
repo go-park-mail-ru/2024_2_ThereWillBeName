@@ -32,7 +32,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -69,13 +69,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -118,7 +118,7 @@ const docTemplate = `{
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -155,13 +155,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -184,13 +184,13 @@ const docTemplate = `{
                     "401": {
                         "description": "Unauthorized",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -205,6 +205,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "httpresponses.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
                     "type": "string"
                 }
             }

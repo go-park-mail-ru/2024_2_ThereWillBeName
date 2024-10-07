@@ -6,6 +6,11 @@ definitions:
       password:
         type: string
     type: object
+  httpresponses.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
   models.Place:
     properties:
       description:
@@ -42,7 +47,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Health check
   /login:
     post:
@@ -66,11 +71,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Login a user
   /logout:
     post:
@@ -98,7 +103,7 @@ paths:
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Get a list of places
   /signup:
     post:
@@ -122,11 +127,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Sign up a new user
   /users/me:
     get:
@@ -141,10 +146,10 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            type: string
+            $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Get the current user
 swagger: "2.0"
