@@ -25,7 +25,7 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Description Retrieve a list of places from the database
 // @Produce json
 // @Success 200 {array} models.Place "List of places"
-// @Failure 500 {string} string
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
 func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request) {
 	places, err := h.uc.GetPlaces(r.Context())
@@ -159,6 +159,7 @@ func (h *PlacesHandler) GetPlacesBySearchHandler(w http.ResponseWriter, r *http.
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())
+
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)

@@ -36,14 +36,17 @@ func NewAuthHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
 // @Produce json
 // @Param credentials body Credentials true "User credentials"
 // @Success 201 {object} models.User "User created successfully"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 500 {string} string "Internal Server Error"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /signup [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	var credentials Credentials
 
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
 
@@ -53,7 +56,10 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.usecase.SignUp(context.Background(), user); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		response := httpresponse.ErrorResponse{
+			Message: "Registration failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
 	}
 
@@ -67,8 +73,8 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param credentials body Credentials true "User credentials"
 // @Success 200 {string} string "Token"
-// @Failure 400 {string} string "Bad Request"
-// @Failure 401 {string} string "Unauthorized"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
+// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
@@ -76,13 +82,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
 
 	token, err := h.usecase.Login(context.Background(), credentials.Login, credentials.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid login or password",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
 	}
 
@@ -120,19 +132,25 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Description Retrieve the current authenticated user information
 // @Produce json
 // @Success 200 {object} models.User "Current user"
-// @Failure 401 {string} string "Unauthorized"
-// @Failure 500 {string} string "Internal Server Error"
+// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /users/me [get]
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
-		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
 	}
 
 	login, ok := r.Context().Value(middleware.LoginKey).(string)
 	if !ok {
-		http.Error(w, "Пользователь не авторизирован", http.StatusUnauthorized)
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
 		return
 	}
 

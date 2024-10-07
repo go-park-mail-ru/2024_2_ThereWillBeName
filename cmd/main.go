@@ -5,6 +5,7 @@ import (
 	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
 	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
 	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
+	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
@@ -44,6 +45,7 @@ func main() {
 	defer db.Close()
 
 	jwtSecret, err := generateSecretKey(32)
+
 	if err != nil {
 		logger.Fatal("Error generating secret key:", err)
 	}
@@ -62,7 +64,10 @@ func main() {
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Not Found", http.StatusNotFound)
+		response := httpresponse.ErrorResponse{
+			Message: "Not found",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
 	})
 	r.HandleFunc("/healthcheck", healthcheckHandler).Methods(http.MethodGet)
 
@@ -101,12 +106,15 @@ func main() {
 // @Description Check the health status of the service
 // @Produce text/plain
 // @Success 200 {string} string "STATUS: OK"
-// @Failure 400 {string} string "Bad Request"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
 // @Router /healthcheck [get]
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
-		http.Error(w, "", http.StatusBadRequest)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 	}
 }
 

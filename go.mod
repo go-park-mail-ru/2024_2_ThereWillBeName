@@ -15,7 +15,6 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.3
-	go.uber.org/mock v0.4.0
 )
 
 require (
