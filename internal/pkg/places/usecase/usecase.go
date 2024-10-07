@@ -23,24 +23,25 @@ func (i *PlaceUsecaseImpl) GetPlaces(ctx context.Context) ([]models.Place, error
 }
 
 func (i *PlaceUsecaseImpl) CreatePlace(ctx context.Context, place models.Place) error {
-	err := i.repo.CreatePlace(ctx, place)
-	return err
+	return i.repo.CreatePlace(ctx, place)
 }
 
 func (i *PlaceUsecaseImpl) UpdatePlace(ctx context.Context, place models.Place) error {
-	err := i.repo.UpdatePlace(ctx, place)
-	return err
+	return i.repo.UpdatePlace(ctx, place)
 }
 
 func (i *PlaceUsecaseImpl) DeletePlace(ctx context.Context, name string) error {
-	err := i.repo.DeletePlace(ctx, name)
-	return err
+	return i.repo.DeletePlace(ctx, name)
 }
 
-func (i *PlaceUsecaseImpl) ReadPlace(ctx context.Context, name string) (models.Place, error) {
-	place, err := i.repo.ReadPlace(ctx, name)
+func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, name string) (models.Place, error) {
+	place, err := i.repo.GetPlace(ctx, name)
 	if err != nil {
 		return models.Place{}, err
 	}
 	return place, nil
+}
+
+func (i *PlaceUsecaseImpl) GetPlacesBySearch(ctx context.Context, name string) ([]models.Place, error) {
+	return i.repo.GetPlacesBySearch(ctx, name)
 }

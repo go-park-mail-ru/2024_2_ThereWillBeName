@@ -8,6 +8,12 @@ definitions:
     type: object
   models.Place:
     properties:
+      address:
+        type: string
+      category:
+        type: string
+      city:
+        type: string
       description:
         type: string
       id:
@@ -16,6 +22,12 @@ definitions:
         type: string
       name:
         type: string
+      numberOfReviews:
+        type: integer
+      phoneNumber:
+        type: string
+      rating:
+        type: integer
     type: object
   models.User:
     properties:
@@ -29,6 +41,62 @@ definitions:
 info:
   contact: {}
 paths:
+  /create:
+    post:
+      consumes:
+      - application/json
+      description: Add a new place to the database
+      parameters:
+      - description: Place data
+        in: body
+        name: place
+        required: true
+        schema:
+          $ref: '#/definitions/models.Place'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Place successfully created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Create a new place
+  /delete/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a place from the database by its name
+      parameters:
+      - description: Name of the place to be deleted
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Place successfully deleted
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete an existing place
   /healthcheck:
     get:
       description: Check the health status of the service
@@ -83,6 +151,34 @@ paths:
           schema:
             type: string
       summary: Logout a user
+  /place/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Get details of a place from the database by its name
+      parameters:
+      - description: Name of the place to retrieve
+        in: body
+        name: name
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Details of the requested place
+          schema:
+            $ref: '#/definitions/models.Place'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Retrieve an existing place
   /places:
     get:
       description: Retrieve a list of places from the database
@@ -100,6 +196,37 @@ paths:
           schema:
             type: string
       summary: Get a list of places
+  /search:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of places from the database that match the provided
+        search string
+      parameters:
+      - description: Name of the places to retrieve
+        in: body
+        name: searchString
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of places matching the provided searchString
+          schema:
+            items:
+              $ref: '#/definitions/models.Place'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Retrieve places by search string
   /signup:
     post:
       consumes:
@@ -128,6 +255,34 @@ paths:
           schema:
             type: string
       summary: Sign up a new user
+  /update/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Update the details of an existing place in the database
+      parameters:
+      - description: Updated place data
+        in: body
+        name: place
+        required: true
+        schema:
+          $ref: '#/definitions/models.Place'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Place successfully updated
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update an existing place
   /users/me:
     get:
       description: Retrieve the current authenticated user information

@@ -16,6 +16,7 @@ services:
         POSTGRES_USER: "service"
         POSTGRES_PASSWORD: "test"
     volumes:
+      - ./data:/var/lib/postgresql/data
       - ./migrations:/docker-entrypoint-initdb.d
     restart: unless-stopped
     ports:
