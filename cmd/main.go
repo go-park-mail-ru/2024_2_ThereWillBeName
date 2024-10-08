@@ -81,15 +81,16 @@ func main() {
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
+	user := users.PathPrefix("/{userID}").Subrouter()
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	trips := r.PathPrefix("/trips").Subrouter()
-	trips.HandleFunc("/create", tripHandler.CreateTripHandler).Methods(http.MethodPost)
-	trips.HandleFunc("/update/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
-	trips.HandleFunc("/delete/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
-	trips.HandleFunc("/trip/{id}", tripHandler.ReadTripHandler).Methods(http.MethodGet)
-	trips.HandleFunc("/{userID}", tripHandler.ReadTripsByUserIDHandler).Methods(http.MethodGet)
+	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
+	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
+	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
+	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
+	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,

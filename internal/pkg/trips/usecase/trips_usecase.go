@@ -4,6 +4,7 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/trips"
 	"context"
+	"errors"
 )
 
 type TripsUsecaseImpl struct {
@@ -21,23 +22,39 @@ func (u *TripsUsecaseImpl) CreateTrip(ctx context.Context, trip models.Trip) err
 }
 
 func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) error {
-	return u.tripRepo.UpdateTrip(ctx, trip)
+	err := u.tripRepo.UpdateTrip(ctx, trip)
+	if err != nil {
+		if err.Error() == "no rows were updated" {
+			return errors.New("trip not found")
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (u *TripsUsecaseImpl) DeleteTrip(ctx context.Context, id uint) error {
-	return u.tripRepo.DeleteTrip(ctx, id)
+	err := u.tripRepo.DeleteTrip(ctx, id)
+	if err != nil {
+		if err.Error() == "no rows were deleted" {
+			return errors.New("trip not found")
+		}
+		return err
+	}
+
+	return nil
 }
 
-func (u *TripsUsecaseImpl) ReadTripsByUserID(ctx context.Context, userID uint) ([]models.Trip, error) {
-	trips, err := u.tripRepo.ReadTripsByUserID(ctx, userID)
+func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint) ([]models.Trip, error) {
+	trips, err := u.tripRepo.GetTripsByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
 	}
 	return trips, nil
 }
 
-func (u *TripsUsecaseImpl) ReadTrip(ctx context.Context, tripID uint) (models.Trip, error) {
-	trip, err := u.tripRepo.ReadTrip(ctx, tripID)
+func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
+	trip, err := u.tripRepo.GetTrip(ctx, tripID)
 	if err != nil {
 		return models.Trip{}, err
 	}

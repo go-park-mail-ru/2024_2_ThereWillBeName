@@ -167,7 +167,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/trips/create": {
+        "/trips": {
             "post": {
                 "description": "Create a new trip with given fields",
                 "consumes": [
@@ -196,7 +196,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "User does not exist",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -210,7 +210,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/trips/trip/{id}": {
+        "/trips/{id}": {
             "get": {
                 "description": "Get trip details by trip ID",
                 "produces": [
@@ -234,7 +234,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Invalid trip ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trip not found",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -246,9 +252,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/trips/{id}": {
+            },
             "put": {
                 "description": "Update trip details by trip ID",
                 "consumes": [
@@ -284,7 +288,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Invalid trip data",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trip not found",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -317,54 +327,25 @@ const docTemplate = `{
                         "description": "Trip deleted successfully"
                     },
                     "400": {
-                        "description": "Invalid request",
+                        "description": "Invalid trip ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Trip not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Cannot delete trip: it has associated records",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Failed to delete trip",
-                        "schema": {
-                            "$ref": "#/definitions/httpresponses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/trips/{userID}": {
-            "get": {
-                "description": "Get all trips for a specific user",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Retrieve trips by user ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "User ID",
-                        "name": "userID",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "List of trips",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Trip"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid request",
-                        "schema": {
-                            "$ref": "#/definitions/httpresponses.ErrorResponse"
-                        }
-                    },
-                    "500": {
-                        "description": "Failed to retrieve trips",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -394,6 +375,53 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userID}/trips": {
+            "get": {
+                "description": "Get all trips for a specific user",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retrieve trips by user ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of trips",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Trip"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No trips found fot the user",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve trips",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -442,13 +470,13 @@ const docTemplate = `{
         "models.Trip": {
             "type": "object",
             "properties": {
+                "city_id": {
+                    "type": "integer"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "description": {
-                    "type": "string"
-                },
-                "destination": {
                     "type": "string"
                 },
                 "end_date": {
