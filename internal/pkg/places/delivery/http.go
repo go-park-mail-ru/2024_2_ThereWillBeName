@@ -31,7 +31,7 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 	places, err := h.uc.GetPlaces(r.Context())
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf("Не удалось получить список достопримечательностей: %v", err)
+		logger.Printf("Couldn't get list of places: %v", err)
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)
@@ -148,14 +148,14 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 400 {string} string
 // @Failure 500 {string} string
 // @Router /search [get]
-func (h *PlacesHandler) GetPlacesBySearchHandler(w http.ResponseWriter, r *http.Request) {
+func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
 	var searchString string
 	if err := json.NewDecoder(r.Body).Decode(&searchString); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
 		return
 	}
-	places, err := h.uc.GetPlacesBySearch(r.Context(), searchString)
+	places, err := h.uc.SearchPlaces(r.Context(), searchString)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())

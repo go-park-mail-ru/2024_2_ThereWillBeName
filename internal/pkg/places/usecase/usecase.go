@@ -42,6 +42,6 @@ func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, name string) (models.Pl
 	return place, nil
 }
 
-func (i *PlaceUsecaseImpl) GetPlacesBySearch(ctx context.Context, name string) ([]models.Place, error) {
-	return i.repo.GetPlacesBySearch(ctx, name)
+func (i *PlaceUsecaseImpl) SearchPlaces(ctx context.Context, name string) ([]models.Place, error) {
+	return i.repo.SearchPlaces(ctx, name)
 }

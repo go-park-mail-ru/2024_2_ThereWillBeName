@@ -3,66 +3,64 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
-	"encoding/json"
+	"fmt"
+	"github.com/DATA-DOG/go-sqlmock"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestPlaceRepository_GetPlaces(t *testing.T) {
-
-	images := make([]models.Place, 0)
-	_ = json.Unmarshal(jsonFileData, &images)
-
-	tests := []struct {
-		name          string
-		mockReturn    []models.Place
-		mockError     error
-		expectedCode  []models.Place
-		expectedError error
-	}{
-		{
-			name:          "Success",
-			mockReturn:    images,
-			mockError:     nil,
-			expectedCode:  images,
-			expectedError: nil,
-		},
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
 	}
-	for _, testCase := range tests {
-		t.Run(testCase.name, func(t *testing.T) {
-			r := NewPLaceRepository()
-			got, err := r.GetPlaces(context.Background())
-			assert.Equal(t, testCase.expectedError, err)
-			assert.Equal(t, testCase.expectedCode, got)
-		})
-	}
-}
+	defer db.Close()
 
-func TestPlaceRepository_GetPlaces_ErrorUnmarshal(t *testing.T) {
-	badJsonFileData := []byte(`{"invalid": "data"}`)
+	mock.ExpectQuery("SELECT id, name, image, description FROM places").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "image", "description"}).
+			AddRow(0, "testName", "testImage.png", "testDescription"))
 
-	originalJsonFileData := jsonFileData
-	defer func() { jsonFileData = originalJsonFileData }()
-	jsonFileData = badJsonFileData
+	expectedCode := []models.Place{{ID: 0, Name: "testName", Image: "testImage.png", Description: "testDescription"}}
 
-	r := NewPLaceRepository()
-	got, err := r.GetPlaces(context.Background())
-
-	assert.Error(t, err)
-	assert.Nil(t, got)
-}
-
-func TestPlaceRepository_GetPlaces_EmptyFile(t *testing.T) {
-	emptyJsonFileData := []byte(`[]`)
-
-	originalJsonFileData := jsonFileData
-	defer func() { jsonFileData = originalJsonFileData }()
-	jsonFileData = emptyJsonFileData
-
-	r := NewPLaceRepository()
-	got, err := r.GetPlaces(context.Background())
+	r := NewPLaceRepository(db)
+	places, err := r.GetPlaces(context.Background())
 
 	assert.NoError(t, err)
-	assert.Empty(t, got)
+	assert.Len(t, places, len(expectedCode))
+	assert.Equal(t, expectedCode, places)
+}
+
+func TestPlaceRepository_GetPlaces_DbError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+
+	mock.ExpectQuery("SELECT id, name, image, description FROM places").
+		WillReturnError(fmt.Errorf("couldn't get places: %w", err))
+
+	r := NewPLaceRepository(db)
+	places, err := r.GetPlaces(context.Background())
+
+	assert.Error(t, err)
+	assert.Nil(t, places)
+}
+
+func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
+	rows := sqlmock.NewRows([]string{"id", "name", "image", "description", "fail"}).
+		AddRow(0, "name", "image", "description", "fail")
+	mock.ExpectQuery("SELECT id, name, image, description FROM places").
+		WillReturnRows(rows)
+	r := NewPLaceRepository(db)
+	places, err := r.GetPlaces(context.Background())
+	fmt.Println(places, err)
+	assert.Error(t, err)
+	assert.Nil(t, places)
 }
