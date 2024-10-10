@@ -5,6 +5,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/auth"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
+	"errors"
 	"log"
 
 	"golang.org/x/crypto/bcrypt"
@@ -23,6 +24,10 @@ func NewAuthUsecase(repo auth.AuthRepo, jwt *jwt.JWT) *AuthUsecaseImpl {
 }
 
 func (a *AuthUsecaseImpl) SignUp(ctx context.Context, user models.User) error {
+	_, err := a.repo.GetUserByLogin(ctx, user.Login)
+	if err == nil {
+		return errors.New("user already exists")
+	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
 	return a.repo.CreateUser(ctx, user)
