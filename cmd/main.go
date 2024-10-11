@@ -11,6 +11,9 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
 	placerepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeusecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
+	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -59,6 +62,9 @@ func main() {
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
 
+	reviewsRepo := reviewrepo.NewReviewRepository(db)
+	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
+	reviewHandler := reviewhandler.NewReviewHandler(reviewUsecase)
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -80,6 +86,12 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+	reviews := r.PathPrefix("/reviews").Subrouter()
+	reviews.HandleFunc("/", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
+	reviews.HandleFunc("/{id}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
+	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
+	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("/place/{placeID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
