@@ -6,10 +6,19 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/trips"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/gorilla/mux"
+)
+
+var (
+	ErrNotFound = errors.New("trip not found")
+	ErrConflict = errors.New("foreign key constraint violation")
+	ErrInternal = errors.New("internal repository error")
+	//ErrForeignKeyViolation = errors.New("foreign key constraint violation")
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type TripHandler struct {
@@ -44,7 +53,14 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = h.uc.CreateTrip(context.Background(), trip)
 	if err != nil {
-		if err.Error() == "failed to create trip: foreign key constraint violation" {
+		if errors.Is(err, ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid request",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, ErrConflict) {
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid user ID or city",
 			}
@@ -97,7 +113,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	trip.ID = uint(tripID)
 	err = h.uc.UpdateTrip(context.Background(), trip)
 	if err != nil {
-		if err.Error() == "trip not found" {
+		if errors.Is(err, ErrNotFound) {
 			response := httpresponse.ErrorResponse{
 				Message: "Trip not found",
 			}
@@ -139,14 +155,14 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = h.uc.DeleteTrip(context.Background(), uint(id))
 	if err != nil {
-		if err.Error() == "trip not found" {
+		if errors.Is(err, ErrNotFound) {
 			response := httpresponse.ErrorResponse{
 				Message: "Trip not found",
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else if err.Error() == "cannot delete trip: it has associated records" {
+		} else if errors.Is(err, ErrConflict) {
 			response := httpresponse.ErrorResponse{
-				Message: "Cannot delete trip: it has associated records",
+				Message: "Failed to delete trip",
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusConflict)
 		} else {
@@ -185,9 +201,14 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 
 	trips, err := h.uc.GetTripsByUserID(context.Background(), uint(userID))
 	if err != nil {
-		if err.Error() == "no trips found for the user" {
+		if errors.Is(err, ErrUserNotFound) {
 			response := httpresponse.ErrorResponse{
-				Message: "No trips found for the the user",
+				Message: "Invalid user ID",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
+		} else if errors.Is(err, ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "Trips not found",
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
 		} else {
@@ -226,7 +247,7 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 
 	trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
 	if err != nil {
-		if err.Error() == "trip not found" {
+		if errors.Is(err, ErrNotFound) {
 			response := httpresponse.ErrorResponse{
 				Message: "Trip not found",
 			}

@@ -5,6 +5,15 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/trips"
 	"context"
 	"errors"
+	"fmt"
+)
+
+var (
+	ErrNotFound = errors.New("trip not found")
+	ErrConflict = errors.New("foreign key constraint violation")
+	ErrInternal = errors.New("internal repository error")
+	//ErrForeignKeyViolation = errors.New("foreign key constraint violation")
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type TripsUsecaseImpl struct {
@@ -18,16 +27,28 @@ func NewTripsUsecase(repo trips.TripsRepo) *TripsUsecaseImpl {
 }
 
 func (u *TripsUsecaseImpl) CreateTrip(ctx context.Context, trip models.Trip) error {
-	return u.tripRepo.CreateTrip(ctx, trip)
+	err := u.tripRepo.CreateTrip(ctx, trip)
+	if err != nil {
+		if errors.Is(err, ErrConflict) {
+			return fmt.Errorf("invalid request: %w", ErrConflict)
+		} else if errors.Is(err, ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", ErrNotFound)
+		} else {
+			return fmt.Errorf("internal error: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) error {
 	err := u.tripRepo.UpdateTrip(ctx, trip)
 	if err != nil {
-		if err.Error() == "no rows were updated" {
-			return errors.New("trip not found")
+		if errors.Is(err, ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", ErrNotFound)
+		} else {
+			return fmt.Errorf("internal error: %w", err)
 		}
-		return err
 	}
 
 	return nil
@@ -36,10 +57,12 @@ func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) err
 func (u *TripsUsecaseImpl) DeleteTrip(ctx context.Context, id uint) error {
 	err := u.tripRepo.DeleteTrip(ctx, id)
 	if err != nil {
-		if err.Error() == "no rows were deleted" {
-			return errors.New("trip not found")
+		if errors.Is(err, ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", ErrNotFound)
+		} else if errors.Is(err, ErrConflict) {
+			return fmt.Errorf("invalid request: %w", ErrConflict)
 		}
-		return err
+		return fmt.Errorf("internal error: %w", err)
 	}
 
 	return nil
@@ -48,7 +71,12 @@ func (u *TripsUsecaseImpl) DeleteTrip(ctx context.Context, id uint) error {
 func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint) ([]models.Trip, error) {
 	trips, err := u.tripRepo.GetTripsByUserID(ctx, userID)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, ErrUserNotFound) {
+			return nil, fmt.Errorf("invalid request: %w", ErrUserNotFound)
+		} else if errors.Is(err, ErrNotFound) {
+			return nil, fmt.Errorf("invalid request: %w", ErrNotFound)
+		}
+		return nil, fmt.Errorf("internal error: %w", err)
 	}
 	return trips, nil
 }
@@ -56,7 +84,10 @@ func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint) ([
 func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
 	trip, err := u.tripRepo.GetTrip(ctx, tripID)
 	if err != nil {
-		return models.Trip{}, err
+		if errors.Is(err, ErrNotFound) {
+			return models.Trip{}, fmt.Errorf("invalid request: %w", ErrNotFound)
+		}
+		return models.Trip{}, fmt.Errorf("internal error^ %w", err)
 	}
 	return trip, nil
 }
