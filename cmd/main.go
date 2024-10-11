@@ -91,7 +91,7 @@ func main() {
 	reviews.HandleFunc("/{id}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
 	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
 	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
-	reviews.HandleFunc("/place/{placeID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
