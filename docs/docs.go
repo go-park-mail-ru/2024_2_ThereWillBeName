@@ -196,7 +196,13 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "User does not exist",
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -338,12 +344,6 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
-                    "409": {
-                        "description": "Cannot delete trip: it has associated records",
-                        "schema": {
-                            "$ref": "#/definitions/httpresponses.ErrorResponse"
-                        }
-                    },
                     "500": {
                         "description": "Failed to delete trip",
                         "schema": {
@@ -415,7 +415,7 @@ const docTemplate = `{
                         }
                     },
                     "404": {
-                        "description": "No trips found fot the user",
+                        "description": "Trips not found",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }

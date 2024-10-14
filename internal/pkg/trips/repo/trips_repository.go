@@ -2,20 +2,12 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-
-	"github.com/lib/pq"
-)
-
-var (
-	ErrNotFound = errors.New("trip not found")
-	ErrConflict = errors.New("foreign key constraint violation")
-	ErrInternal = errors.New("internal repository error")
-	//ErrForeignKeyViolation = errors.New("foreign key constraint violation")
-	ErrUserNotFound = errors.New("user not found")
+	"log"
 )
 
 type TripRepository struct {
@@ -32,19 +24,18 @@ func (r *TripRepository) CreateTrip(ctx context.Context, trip models.Trip) error
 
 	result, err := r.db.ExecContext(ctx, query, trip.UserID, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private)
 	if err != nil {
-		// Проверяем на нарушение внешнего ключа
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23503" {
-			return fmt.Errorf("failed to create a trip: %w", ErrConflict)
-		}
-		return fmt.Errorf("failed to create a trip: %w", err)
+		log.Println(err)
+		return fmt.Errorf("failed to create a trip: %w", models.ErrInternal.CustomError)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve rows affected: %w", err)
+		log.Println(err)
+		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal.CustomError)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no rows were created: %w", ErrNotFound)
+		log.Println("no rows were created")
+		return fmt.Errorf("no rows were created: %w", models.ErrNotFound.CustomError)
 	}
 
 	return nil
@@ -57,14 +48,17 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
 
 	result, err := r.db.ExecContext(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
 	if err != nil {
-		return fmt.Errorf("failed to execute update query: %w", err)
+		log.Println(err)
+		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal.CustomError)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("failed to retrieve rows affected: %w", err)
+		log.Println(err)
+		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal.CustomError)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no rows were updated: %w", ErrNotFound)
+		log.Println("no rows were updated")
+		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound.CustomError)
 	}
 
 	return nil
@@ -74,52 +68,65 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 	query := `DELETE FROM trips WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23503" {
-			return fmt.Errorf("failed to delete trip: %w", ErrConflict)
-		}
-		return fmt.Errorf("failed to delete trip: %w", err)
+		log.Println(err)
+		return fmt.Errorf("failed to delete trip: %w", models.ErrInternal.CustomError)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
+		log.Println(err)
 		return fmt.Errorf("failed to retrieve rows affected %w", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("no rows were deleted: %w", ErrNotFound)
+		log.Println("no rows were deleted")
+		return fmt.Errorf("no rows were deleted: %w", models.ErrNotFound.CustomError)
 	}
 	return nil
 }
 
 func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint) ([]models.Trip, error) {
+	var exists bool
+	checkUserQuery := `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`
+	err := r.db.QueryRowContext(ctx, checkUserQuery, userID).Scan(&exists)
+	if err != nil {
+		log.Println(err)
+		return nil, fmt.Errorf("failed to find user: %w", models.ErrInternal.CustomError)
+	}
+
+	if !exists {
+		log.Println("user not found")
+		return nil, fmt.Errorf("user not found: %w", models.ErrUserNotFound.CustomError)
+	}
+
 	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at 
               FROM trips 
               WHERE user_id = $1
               ORDER BY created_at DESC`
 
 	rows, err := r.db.QueryContext(ctx, query, userID)
+
 	if err != nil {
-		// Проверяем на нарушение внешнего ключа
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23503" {
-			return nil, fmt.Errorf("failed to retrieve trips: %w", ErrUserNotFound)
-		}
-		return nil, fmt.Errorf("failed to retrieve trips: %w", err)
+		log.Println(err)
+		return nil, fmt.Errorf("failed to retrieve trips: %w", models.ErrInternal.CustomError)
 	}
 	defer rows.Close()
 
-	var trips []models.Trip
+	var tripRows []models.Trip
 	for rows.Next() {
 		var trip models.Trip
 		if err := rows.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan trip row: %w", err)
+			log.Println(err)
+			return nil, fmt.Errorf("failed to scan trip row: %w", models.ErrInternal.CustomError)
 		}
-		trips = append(trips, trip)
+		tripRows = append(tripRows, trip)
 	}
 
-	if len(trips) == 0 {
-		return nil, fmt.Errorf("no trips found: %w", ErrNotFound)
+	if len(tripRows) == 0 {
+		log.Println("no trips were found")
+		return nil, fmt.Errorf("no trips found: %w", models.ErrNotFound.CustomError)
 	}
 
-	return trips, nil
+	return tripRows, nil
 }
 
 func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
@@ -132,10 +139,11 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 	var trip models.Trip
 	err := row.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt)
 	if err != nil {
+		log.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
-			return models.Trip{}, fmt.Errorf("trip not found: %w", ErrNotFound)
+			return models.Trip{}, fmt.Errorf("trip not found: %w", models.ErrNotFound.CustomError)
 		}
-		return models.Trip{}, fmt.Errorf("failed to scan trip row: %w", err)
+		return models.Trip{}, fmt.Errorf("failed to scan trip row: %w", models.ErrInternal.CustomError)
 	}
 
 	return trip, nil
