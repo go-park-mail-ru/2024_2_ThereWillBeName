@@ -6,10 +6,14 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+)
+
+var (
+	ErrUserAlreadyExists = errors.New("User already exists")
 )
 
 type Credentials struct {
@@ -55,7 +59,15 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.Password,
 	}
 
-	if err := h.usecase.SignUp(context.Background(), user); err != nil {
+	err := h.usecase.SignUp(context.Background(), user)
+	if err != nil {
+		if errors.Is(err, ErrUserAlreadyExists) {
+			response := httpresponse.ErrorResponse{
+				Message: "user already exists",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			return
+		}
 		response := httpresponse.ErrorResponse{
 			Message: "Registration failed",
 		}
