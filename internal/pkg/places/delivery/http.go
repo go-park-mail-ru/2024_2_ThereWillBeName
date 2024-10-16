@@ -5,9 +5,14 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/places"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
+)
+
+var (
+	ErrNotFound = errors.New("place not found")
 )
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -28,7 +33,16 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
 func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request) {
-	places, err := h.uc.GetPlaces(r.Context())
+	var requestData struct {
+		Limit  int `json:"limit"`
+		Offset int `json:"offset"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
+		logger.Printf(err.Error())
+		return
+	}
+	places, err := h.uc.GetPlaces(r.Context(), requestData.Limit, requestData.Offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf("Couldn't get list of places: %v", err)
@@ -98,13 +112,15 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {string} string
 // @Router /delete/{id} [delete]
 func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var name string
-	if err := json.NewDecoder(r.Body).Decode(&name); err != nil {
+	var data struct {
+		Id int `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
 		return
 	}
-	if err := h.uc.DeletePlace(r.Context(), name); err != nil {
+	if err := h.uc.DeletePlace(r.Context(), data.Id); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())
 		return
@@ -123,14 +139,24 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {string} string
 // @Router /place/{id} [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var name string
-	if err := json.NewDecoder(r.Body).Decode(&name); err != nil {
+	var data struct {
+		Id int `json:"id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
 		return
 	}
-	place, err := h.uc.GetPlace(r.Context(), name)
+	place, err := h.uc.GetPlace(r.Context(), data.Id)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "place not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
+			logger.Printf(err.Error())
+			return
+		}
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())
 		return
@@ -149,17 +175,20 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {string} string
 // @Router /search [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
-	var searchString string
-	if err := json.NewDecoder(r.Body).Decode(&searchString); err != nil {
+	var requestData struct {
+		Limit  int    `json:"limit"`
+		Offset int    `json:"offset"`
+		Name   string `json:"name"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
 		return
 	}
-	places, err := h.uc.SearchPlaces(r.Context(), searchString)
+	places, err := h.uc.SearchPlaces(r.Context(), requestData.Name, requestData.Limit, requestData.Offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())
-
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)

@@ -81,10 +81,10 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", handler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("", handler.PostPlaceHandler).Methods(http.MethodPost)
+	places.HandleFunc("/search", handler.SearchPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", handler.PutPlaceHandler).Methods(http.MethodPut)
 	places.HandleFunc("/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
-	places.HandleFunc("search", handler.SearchPlacesHandler).Methods(http.MethodGet)
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	srv := &http.Server{
