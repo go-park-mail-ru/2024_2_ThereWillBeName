@@ -23,10 +23,10 @@ func (u *TripsUsecaseImpl) CreateTrip(ctx context.Context, trip models.Trip) err
 	err := u.tripRepo.CreateTrip(ctx, trip)
 	if err != nil {
 		log.Println(err)
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			return fmt.Errorf("invalid request: %w", models.ErrNotFound.CustomError)
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		} else {
-			return fmt.Errorf("internal error: %w", models.ErrInternal.CustomError)
+			return fmt.Errorf("internal error: %w", models.ErrInternal)
 		}
 	}
 
@@ -37,10 +37,10 @@ func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) err
 	err := u.tripRepo.UpdateTrip(ctx, trip)
 	if err != nil {
 		log.Println(err)
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			return fmt.Errorf("invalid request: %w", models.ErrNotFound.CustomError)
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		} else {
-			return fmt.Errorf("internal error: %w", models.ErrInternal.CustomError)
+			return fmt.Errorf("internal error: %w", models.ErrInternal)
 		}
 	}
 
@@ -51,25 +51,23 @@ func (u *TripsUsecaseImpl) DeleteTrip(ctx context.Context, id uint) error {
 	err := u.tripRepo.DeleteTrip(ctx, id)
 	if err != nil {
 		log.Println(err)
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			return fmt.Errorf("invalid request: %w", models.ErrNotFound.CustomError)
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return fmt.Errorf("internal error: %w", models.ErrInternal.CustomError)
+		return fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 
 	return nil
 }
 
-func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint) ([]models.Trip, error) {
-	tripsFound, err := u.tripRepo.GetTripsByUserID(ctx, userID)
+func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
+	tripsFound, err := u.tripRepo.GetTripsByUserID(ctx, userID, limit, offset)
 	if err != nil {
 		log.Println(err)
-		if errors.Is(err, models.ErrUserNotFound.CustomError) {
-			return nil, fmt.Errorf("invalid request: %w", models.ErrUserNotFound.CustomError)
-		} else if errors.Is(err, models.ErrNotFound.CustomError) {
-			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound.CustomError)
+		if errors.Is(err, models.ErrNotFound) {
+			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return nil, fmt.Errorf("internal error: %w", models.ErrInternal.CustomError)
+		return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 	return tripsFound, nil
 }
@@ -78,10 +76,10 @@ func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Tri
 	trip, err := u.tripRepo.GetTrip(ctx, tripID)
 	if err != nil {
 		log.Println(err)
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			return models.Trip{}, fmt.Errorf("invalid request: %w", models.ErrNotFound.CustomError)
+		if errors.Is(err, models.ErrNotFound) {
+			return models.Trip{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return models.Trip{}, fmt.Errorf("internal error^ %w", models.ErrInternal.CustomError)
+		return models.Trip{}, fmt.Errorf("internal error^ %w", models.ErrInternal)
 	}
 	return trip, nil
 }

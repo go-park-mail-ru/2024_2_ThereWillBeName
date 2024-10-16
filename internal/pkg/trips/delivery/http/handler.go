@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +21,21 @@ type TripHandler struct {
 
 func NewTripHandler(uc trips.TripsUsecase) *TripHandler {
 	return &TripHandler{uc}
+}
+
+func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
+	if errors.Is(err, models.ErrNotFound) {
+		log.Println("not found")
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		return response, http.StatusNotFound
+	}
+	log.Println("internal server error")
+	response := httpresponse.ErrorResponse{
+		Message: fmt.Sprintf("Failed to %s trip", action),
+	}
+	return response, http.StatusInternalServerError
 }
 
 // CreateTripHandler godoc
@@ -35,6 +52,7 @@ func NewTripHandler(uc trips.TripsUsecase) *TripHandler {
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
 	var trip models.Trip
 	err := json.NewDecoder(r.Body).Decode(&trip)
+	log.Println(trip, err)
 	if err != nil {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
@@ -45,17 +63,8 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = h.uc.CreateTrip(context.Background(), trip)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			response := httpresponse.ErrorResponse{
-				Message: "Invalid request",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-			return
-		}
-		response := httpresponse.ErrorResponse{
-			Message: "Failed to create trip",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		response, status := ErrorCheck(err, "create")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -98,17 +107,8 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	trip.ID = uint(tripID)
 	err = h.uc.UpdateTrip(context.Background(), trip)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			response := httpresponse.ErrorResponse{
-				Message: "Trip not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to update trip",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "update")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -139,17 +139,8 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	err = h.uc.DeleteTrip(context.Background(), uint(id))
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			response := httpresponse.ErrorResponse{
-				Message: "Trip not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to delete trip",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "delete")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -178,25 +169,24 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
-
-	trip, err := h.uc.GetTripsByUserID(context.Background(), uint(userID))
-	if err != nil {
-		if errors.Is(err, models.ErrUserNotFound.CustomError) {
+	pageStr := r.URL.Query().Get("page")
+	page := 1
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
 			response := httpresponse.ErrorResponse{
-				Message: "Invalid user ID",
+				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else if errors.Is(err, models.ErrNotFound.CustomError) {
-			response := httpresponse.ErrorResponse{
-				Message: "Trips not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to retrieve trips",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			return
 		}
+	}
+	limit := 10
+	offset := limit * (page - 1)
+	trip, err := h.uc.GetTripsByUserID(context.Background(), uint(userID), limit, offset)
+	if err != nil {
+		response, status := ErrorCheck(err, "retrieve")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -227,17 +217,9 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 
 	trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound.CustomError) {
-			response := httpresponse.ErrorResponse{
-				Message: "Trip not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to retrieve trip",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "retrieve")
+		httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 

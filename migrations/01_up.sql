@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS trips
     name VARCHAR(255) NOT NULL, -- Название поездки
     description VARCHAR(1000), -- Описание поездки
     city_id INTEGER NOT NULL, -- Направление поездки
-    start_date VARCHAR(10), -- Дата начала поездки
-    end_date VARCHAR(10), -- Дата окончания поездки
+    start_date DATE, -- Дата начала поездки
+    end_date DATE, -- Дата окончания поездки
     private BOOLEAN DEFAULT TRUE, -- Кому видна поездка (всем или выбранным пользователям)
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания поездки
     user_id INTEGER NOT NULL, -- Идентификатор пользователя-создателя поездки
