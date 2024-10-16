@@ -36,10 +36,6 @@ func main() {
 	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
 
-	newPlaceRepo := placerepo.NewPLaceRepository()
-	placeUsecase := placeusecase.NewPlaceUsecase(newPlaceRepo)
-	handler := delivery.NewPlacesHandler(placeUsecase)
-
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(cfg.ConnStr)
@@ -59,6 +55,10 @@ func main() {
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
 
+	newPlaceRepo := placerepo.NewPLaceRepository(db)
+	placeUsecase := placeusecase.NewPlaceUsecase(newPlaceRepo)
+	handler := delivery.NewPlacesHandler(placeUsecase)
+
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -77,8 +77,15 @@ func main() {
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
+
 	places := r.PathPrefix("/places").Subrouter()
-	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("", handler.GetPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("", handler.PostPlaceHandler).Methods(http.MethodPost)
+	places.HandleFunc("/search", handler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", handler.PutPlaceHandler).Methods(http.MethodPut)
+	places.HandleFunc("/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
+
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
