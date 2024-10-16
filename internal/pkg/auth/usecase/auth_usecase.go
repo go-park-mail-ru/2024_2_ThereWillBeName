@@ -26,7 +26,8 @@ func NewAuthUsecase(repo auth.AuthRepo, jwt *jwt.JWT) *AuthUsecaseImpl {
 func (a *AuthUsecaseImpl) SignUp(ctx context.Context, user models.User) error {
 	_, err := a.repo.GetUserByLogin(ctx, user.Login)
 	if err == nil {
-		return errors.New("user already exists")
+		err = errors.New("user already exists")
+		return err
 	}
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)

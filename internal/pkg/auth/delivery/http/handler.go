@@ -65,7 +65,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 			response := httpresponse.ErrorResponse{
 				Message: "user already exists",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			httpresponse.SendJSONResponse(w, response, http.StatusConflict)
 			return
 		}
 		response := httpresponse.ErrorResponse{
