@@ -26,8 +26,8 @@ func (u *reviewsUsecaseImpl) DeleteReview(ctx context.Context, reviewID uint) er
 	return u.repo.DeleteReview(ctx, reviewID)
 }
 
-func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID uint) ([]models.Review, error) {
-	return u.repo.GetReviewsByPlaceID(ctx, placeID)
+func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.Review, error) {
+	return u.repo.GetReviewsByPlaceID(ctx, placeID, limit, offset)
 }
 
 func (u *reviewsUsecaseImpl) GetReview(ctx context.Context, reviewID uint) (models.Review, error) {
