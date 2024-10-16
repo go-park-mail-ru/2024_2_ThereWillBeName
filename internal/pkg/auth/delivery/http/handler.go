@@ -12,10 +12,6 @@ import (
 	"net/http"
 )
 
-var (
-	ErrUserAlreadyExists = errors.New("User already exists")
-)
-
 type Credentials struct {
 	Login    string `json:"login"`
 	Password string `json:"password"`
@@ -61,7 +57,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := h.usecase.SignUp(context.Background(), user)
 	if err != nil {
-		if errors.Is(err, ErrUserAlreadyExists) {
+		if errors.Is(err, models.ErrUserAlreadyExists.CustomError) {
 			response := httpresponse.ErrorResponse{
 				Message: "user already exists",
 			}
