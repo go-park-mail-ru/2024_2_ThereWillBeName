@@ -25,13 +25,13 @@ func NewTripHandler(uc trips.TripsUsecase) *TripHandler {
 
 func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 	if errors.Is(err, models.ErrNotFound) {
-		log.Println("not found")
+		log.Printf("%s error: %s", action, err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
 		return response, http.StatusNotFound
 	}
-	log.Println("internal server error")
+	log.Printf("%s error: %s", action, err)
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s trip", action),
 	}
@@ -52,8 +52,8 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
 	var trip models.Trip
 	err := json.NewDecoder(r.Body).Decode(&trip)
-	log.Println(trip, err)
 	if err != nil {
+		log.Printf("create error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
@@ -89,6 +89,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
 	if err != nil || tripID < 0 {
+		log.Printf("update error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
@@ -97,6 +98,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	err = json.NewDecoder(r.Body).Decode(&trip)
 	if err != nil {
+		log.Printf("update error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip data",
 		}
@@ -130,6 +132,7 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 	idStr := vars["id"]
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		log.Printf("delete error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
@@ -163,6 +166,7 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 	userIDStr := vars["userID"]
 	userID, err := strconv.ParseUint(userIDStr, 10, 64)
 	if err != nil {
+		log.Printf("retrieve error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid user ID",
 		}
@@ -174,6 +178,7 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
+			log.Printf("retrieve error: %s", err)
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid page number",
 			}
@@ -208,6 +213,7 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	tripIDStr := vars["id"]
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
 	if err != nil {
+		log.Printf("retrieve error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
@@ -218,7 +224,6 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve")
-		httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
 		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}

@@ -7,7 +7,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 )
 
 type TripRepository struct {
@@ -24,13 +23,11 @@ func (r *TripRepository) CreateTrip(ctx context.Context, trip models.Trip) error
 
 	result, err := r.db.ExecContext(ctx, query, trip.UserID, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private)
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to create a trip: %w", models.ErrInternal)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
 	}
 	if rowsAffected == 0 {
@@ -47,12 +44,10 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
 
 	result, err := r.db.ExecContext(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
 	}
 	if rowsAffected == 0 {
@@ -66,13 +61,11 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 	query := `DELETE FROM trips WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to delete trip: %w", models.ErrInternal)
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		log.Println(err)
 		return fmt.Errorf("failed to retrieve rows affected %w", models.ErrInternal)
 	}
 	if rowsAffected == 0 {
@@ -91,7 +84,6 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 
 	if err != nil {
-		log.Println(err)
 		return nil, fmt.Errorf("failed to retrieve trips: %w", models.ErrInternal)
 	}
 	defer rows.Close()
@@ -100,7 +92,6 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 	for rows.Next() {
 		var trip models.Trip
 		if err := rows.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt); err != nil {
-			log.Println(err)
 			return nil, fmt.Errorf("failed to scan trip row: %w", models.ErrInternal)
 		}
 		tripRows = append(tripRows, trip)
@@ -123,7 +114,6 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 	var trip models.Trip
 	err := row.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt)
 	if err != nil {
-		log.Println(err)
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Trip{}, fmt.Errorf("trip not found: %w", models.ErrNotFound)
 		}
