@@ -22,6 +22,21 @@ definitions:
       name:
         type: string
     type: object
+  models.Review:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      place_id:
+        type: integer
+      rating:
+        type: integer
+      review_text:
+        type: string
+      user_id:
+        type: integer
+    type: object
   models.User:
     properties:
       created_at:
@@ -105,6 +120,156 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Get a list of places
+  /places/{placeID}/reviews:
+    get:
+      description: Get all reviews for a specific place
+      parameters:
+      - description: Place ID
+        in: path
+        name: placeID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of reviews
+          schema:
+            items:
+              $ref: '#/definitions/models.Review'
+            type: array
+        "400":
+          description: Invalid place ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: No reviews found for the place
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve reviews
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve reviews by place ID
+  /reviews:
+    post:
+      consumes:
+      - application/json
+      description: Create a new review for a place
+      parameters:
+      - description: Review details
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Review created successfully
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to create review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Create a new review
+  /reviews/{id}:
+    delete:
+      description: Delete a review by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Review deleted successfully
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to delete review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Delete a review
+    get:
+      description: Get review details by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Review details
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve a review by ID
+    put:
+      consumes:
+      - application/json
+      description: Update review details by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated review details
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Review updated successfully
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to update review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Update an existing review
   /signup:
     post:
       consumes:
