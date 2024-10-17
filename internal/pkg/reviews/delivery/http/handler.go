@@ -6,6 +6,9 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -18,6 +21,21 @@ type ReviewHandler struct {
 
 func NewReviewHandler(uc reviews.ReviewsUsecase) *ReviewHandler {
 	return &ReviewHandler{uc}
+}
+
+func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
+	if errors.Is(err, models.ErrNotFound) {
+		log.Printf("%s error: %s", action, err)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		return response, http.StatusNotFound
+	}
+	log.Printf("%s error: %s", action, err)
+	response := httpresponse.ErrorResponse{
+		Message: fmt.Sprintf("Failed to %s review", action),
+	}
+	return response, http.StatusInternalServerError
 }
 
 // CreateReviewHandler godoc
@@ -34,6 +52,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	var review models.Review
 	err := json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
+		log.Printf("create error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
@@ -43,10 +62,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	err = h.uc.CreateReview(context.Background(), review)
 	if err != nil {
-		response := httpresponse.ErrorResponse{
-			Message: "Failed to create review",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		response, status := ErrorCheck(err, "create")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -78,6 +95,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 	err = json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
+		log.Printf("update error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review data",
 		}
@@ -88,17 +106,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	review.ID = uint(reviewID)
 	err = h.uc.UpdateReview(context.Background(), review)
 	if err != nil {
-		if err.Error() == "review not found" {
-			response := httpresponse.ErrorResponse{
-				Message: "Review not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to update review",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "update")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -120,6 +129,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	idStr := vars["id"]
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
+		log.Printf("delete error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
@@ -129,17 +139,8 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	err = h.uc.DeleteReview(context.Background(), uint(id))
 	if err != nil {
-		if err.Error() == "review not found" {
-			response := httpresponse.ErrorResponse{
-				Message: "Review not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to delete review",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "delete")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -161,26 +162,32 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	placeIDStr := vars["placeID"]
 	placeID, err := strconv.ParseUint(placeIDStr, 10, 64)
 	if err != nil {
+		log.Printf("retrieve error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid place ID",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
-
-	reviews, err := h.uc.GetReviewsByPlaceID(context.Background(), uint(placeID))
-	if err != nil {
-		if err.Error() == "no reviews found for the place" {
+	pageStr := r.URL.Query().Get("page")
+	page := 1
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
+			log.Printf("retrieve error: %s", err)
 			response := httpresponse.ErrorResponse{
-				Message: "No reviews found for the place",
+				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to retrieve reviews",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			return
 		}
+	}
+	limit := 10
+	offset := limit * (page - 1)
+	reviews, err := h.uc.GetReviewsByPlaceID(context.Background(), uint(placeID), limit, offset)
+	if err != nil {
+		response, status := ErrorCheck(err, "retrieve")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
@@ -202,6 +209,7 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 	reviewIDStr := vars["id"]
 	reviewID, err := strconv.ParseUint(reviewIDStr, 10, 64)
 	if err != nil {
+		log.Printf("retrieve error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
@@ -211,17 +219,8 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 	review, err := h.uc.GetReview(context.Background(), uint(reviewID))
 	if err != nil {
-		if err.Error() == "review not found" {
-			response := httpresponse.ErrorResponse{
-				Message: "Review not found",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-		} else {
-			response := httpresponse.ErrorResponse{
-				Message: "Failed to retrieve review",
-			}
-			httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
-		}
+		response, status := ErrorCheck(err, "retrieve")
+		httpresponse.SendJSONResponse(w, response, status)
 		return
 	}
 
