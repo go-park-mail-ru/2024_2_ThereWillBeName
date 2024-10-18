@@ -14,6 +14,7 @@ import (
 
 type Credentials struct {
 	Login    string `json:"login"`
+	Email    string `json:"email"`
 	Password string `json:"password"`
 }
 
@@ -52,6 +53,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	user := models.User{
 		Login:    credentials.Login,
+		Email:    credentials.Email,
 		Password: credentials.Password,
 	}
 
@@ -62,6 +64,23 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
 	}
+
+	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
 
 	w.WriteHeader(http.StatusCreated)
 }
@@ -78,7 +97,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
-		Login    string `json:"login"`
+		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -89,12 +108,21 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.usecase.Login(context.Background(), credentials.Login, credentials.Password)
+	user, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
 	if err != nil {
 		response := httpresponse.ErrorResponse{
-			Message: "Invalid login or password",
+			Message: "Invalid email or password",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+		return
+	}
+
+	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
 		return
 	}
 
