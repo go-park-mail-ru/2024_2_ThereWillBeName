@@ -82,7 +82,13 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 	})
 
-	w.WriteHeader(http.StatusCreated)
+	response := models.User{
+		ID:    user.ID,
+		Login: user.Login,
+		Email: user.Email,
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK)
 }
 
 // Login godoc
@@ -134,7 +140,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Secure:   false,
 	})
 
-	w.WriteHeader(http.StatusOK)
+	response := models.User{
+		ID:    user.ID,
+		Login: user.Login,
+		Email: user.Email,
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK)
+
 }
 
 // Logout godoc
