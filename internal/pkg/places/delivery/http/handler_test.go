@@ -3,6 +3,7 @@ package http
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -13,11 +14,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetPlaceHandler(t *testing.T) {
-	places := []models.Place{
-		{ID: 1, Name: "Place 1", Image: "/image1.png", Description: "1"},
-		{ID: 2, Name: "Place 2", Image: "/image2.png", Description: "2"},
+func TestGetPlacesHandler(t *testing.T) {
+	places := []models.GetPlace{
+		{
+			ID:              1,
+			Name:            "Central Park",
+			ImagePath:       "/images/central_park.jpg",
+			Description:     "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:          5,
+			NumberOfReviews: 2500,
+			Address:         "59th St to 110th St, New York, NY 10022",
+			City:            "New York",
+			PhoneNumber:     "+1 212-310-6600",
+			Categories:      []string{"Park", "Recreation", "Nature"},
+		},
+		{
+			ID:              2,
+			Name:            "Central Park",
+			ImagePath:       "/images/central_park.jpg",
+			Description:     "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:          5,
+			NumberOfReviews: 2500,
+			Address:         "59th St to 110th St, New York, NY 10022",
+			City:            "New York",
+			PhoneNumber:     "+1 212-310-6600",
+			Categories:      []string{"Park", "Recreation", "Nature"},
+		},
 	}
+
 	jsonPlaces, _ := json.Marshal(places)
 	stringPlaces := string(jsonPlaces)
 
@@ -29,7 +53,7 @@ func TestGetPlaceHandler(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		mockReturn   []models.Place
+		mockReturn   []models.GetPlace
 		mockError    error
 		expectedCode int
 		expectedBody string
@@ -46,19 +70,19 @@ func TestGetPlaceHandler(t *testing.T) {
 			mockReturn:   nil,
 			mockError:    assert.AnError,
 			expectedCode: http.StatusInternalServerError,
-			expectedBody: "{\"message\":\"Failed to get list of attractions\"}\n",
+			expectedBody: "",
 		},
 	}
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			mockUsecase.EXPECT().GetPlaces(gomock.Any()).Return(testcase.mockReturn, testcase.mockError)
+			mockUsecase.EXPECT().GetPlaces(gomock.Any(), gomock.Any(), gomock.Any()).Return(testcase.mockReturn, testcase.mockError)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places", nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places", bytes.NewBufferString(`{"limit": 10, "offset": 0}`))
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
-			handler.GetPlaceHandler(rr, req)
+			handler.GetPlacesHandler(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
 			assert.Equal(t, testcase.expectedBody, rr.Body.String())
