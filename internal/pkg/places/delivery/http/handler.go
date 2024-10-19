@@ -35,13 +35,13 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	places, err := h.uc.GetPlaces(r.Context(), requestData.Limit, requestData.Offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf("Couldn't get list of places: %v", err)
+		logger.Println("Couldn't get list of places: %v", err)
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)
@@ -61,12 +61,12 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 	var place models.CreatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	if err := h.uc.CreatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	httpresponse.SendJSONResponse(w, "place succesfully created", http.StatusCreated)
@@ -86,12 +86,12 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 	var place models.UpdatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	if err := h.uc.UpdatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	httpresponse.SendJSONResponse(w, "place successfully updated", http.StatusOK)
@@ -113,17 +113,17 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	if err := h.uc.DeletePlace(r.Context(), data.Id); err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			httpresponse.SendJSONResponse(w, nil, http.StatusNotFound)
-			logger.Printf(err.Error())
+			logger.Println(err.Error())
 			return
 		}
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	httpresponse.SendJSONResponse(w, "place successfully deleted", http.StatusOK)
@@ -145,7 +145,7 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	place, err := h.uc.GetPlace(r.Context(), data.Id)
@@ -155,11 +155,11 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 				Message: "place not found",
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
-			logger.Printf(err.Error())
+			logger.Println(err.Error())
 			return
 		}
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	httpresponse.SendJSONResponse(w, place, http.StatusOK)
@@ -183,13 +183,13 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 	}
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	places, err := h.uc.SearchPlaces(r.Context(), requestData.Name, requestData.Limit, requestData.Offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Printf(err.Error())
+		logger.Println(err.Error())
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)

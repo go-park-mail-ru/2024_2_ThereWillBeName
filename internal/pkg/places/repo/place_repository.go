@@ -47,6 +47,9 @@ func (r *PlaceRepository) CreatePlace(ctx context.Context, place models.CreatePl
 	for _, categoryId := range place.CategoriesId {
 		query = "INSERT INTO places_categories (place_id, category_id) VALUES ($1, $2)"
 		result, err := r.db.ExecContext(ctx, query, id, categoryId)
+		if err != nil {
+			return fmt.Errorf("coldn't create place_categories: %w", err)
+		}
 		if _, err = result.RowsAffected(); err != nil {
 			return fmt.Errorf("couldn't get number of rows affected: %w", err)
 		}
@@ -98,6 +101,9 @@ func (r *PlaceRepository) UpdatePlace(ctx context.Context, place models.UpdatePl
 	for _, categoryId := range place.CategoriesId {
 		query = "INSERT INTO places_categories (place_id, category_id) VALUES ($1, $2)"
 		result, err := r.db.ExecContext(ctx, query, place.ID, categoryId)
+		if err != nil {
+			return fmt.Errorf("coldn't create place_categories: %w", err)
+		}
 		if _, err = result.RowsAffected(); err != nil {
 			return fmt.Errorf("couldn't get number of rows affected: %w", err)
 		}
