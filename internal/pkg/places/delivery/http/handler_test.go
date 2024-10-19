@@ -1,4 +1,4 @@
-package delivery
+package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"

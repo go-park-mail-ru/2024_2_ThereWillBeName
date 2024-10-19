@@ -36,7 +36,7 @@ func (m *MockPlaceRepo) EXPECT() *MockPlaceRepoMockRecorder {
 }
 
 // CreatePlace mocks base method.
-func (m *MockPlaceRepo) CreatePlace(ctx context.Context, place models.Place) error {
+func (m *MockPlaceRepo) CreatePlace(ctx context.Context, place models.CreatePlace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePlace", ctx, place)
 	ret0, _ := ret[0].(error)
@@ -50,66 +50,66 @@ func (mr *MockPlaceRepoMockRecorder) CreatePlace(ctx, place interface{}) *gomock
 }
 
 // DeletePlace mocks base method.
-func (m *MockPlaceRepo) DeletePlace(ctx context.Context, name string) error {
+func (m *MockPlaceRepo) DeletePlace(ctx context.Context, id int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePlace", ctx, name)
+	ret := m.ctrl.Call(m, "DeletePlace", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeletePlace indicates an expected call of DeletePlace.
-func (mr *MockPlaceRepoMockRecorder) DeletePlace(ctx, name interface{}) *gomock.Call {
+func (mr *MockPlaceRepoMockRecorder) DeletePlace(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePlace", reflect.TypeOf((*MockPlaceRepo)(nil).DeletePlace), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePlace", reflect.TypeOf((*MockPlaceRepo)(nil).DeletePlace), ctx, id)
 }
 
 // GetPlace mocks base method.
-func (m *MockPlaceRepo) GetPlace(ctx context.Context, name string) (models.Place, error) {
+func (m *MockPlaceRepo) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlace", ctx, name)
-	ret0, _ := ret[0].(models.Place)
+	ret := m.ctrl.Call(m, "GetPlace", ctx, id)
+	ret0, _ := ret[0].(models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPlace indicates an expected call of GetPlace.
-func (mr *MockPlaceRepoMockRecorder) GetPlace(ctx, name interface{}) *gomock.Call {
+func (mr *MockPlaceRepoMockRecorder) GetPlace(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlace", reflect.TypeOf((*MockPlaceRepo)(nil).GetPlace), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlace", reflect.TypeOf((*MockPlaceRepo)(nil).GetPlace), ctx, id)
 }
 
 // GetPlaces mocks base method.
-func (m *MockPlaceRepo) GetPlaces(ctx context.Context) ([]models.Place, error) {
+func (m *MockPlaceRepo) GetPlaces(ctx context.Context, limit, offset int) ([]models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlaces", ctx)
-	ret0, _ := ret[0].([]models.Place)
+	ret := m.ctrl.Call(m, "GetPlaces", ctx, limit, offset)
+	ret0, _ := ret[0].([]models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPlaces indicates an expected call of GetPlaces.
-func (mr *MockPlaceRepoMockRecorder) GetPlaces(ctx interface{}) *gomock.Call {
+func (mr *MockPlaceRepoMockRecorder) GetPlaces(ctx, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaces", reflect.TypeOf((*MockPlaceRepo)(nil).GetPlaces), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaces", reflect.TypeOf((*MockPlaceRepo)(nil).GetPlaces), ctx, limit, offset)
 }
 
-// GetPlacesBySearch mocks base method.
-func (m *MockPlaceRepo) GetPlacesBySearch(ctx context.Context, name string) ([]models.Place, error) {
+// SearchPlaces mocks base method.
+func (m *MockPlaceRepo) SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlacesBySearch", ctx, name)
-	ret0, _ := ret[0].([]models.Place)
+	ret := m.ctrl.Call(m, "SearchPlaces", ctx, name, limit, offset)
+	ret0, _ := ret[0].([]models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPlacesBySearch indicates an expected call of GetPlacesBySearch.
-func (mr *MockPlaceRepoMockRecorder) GetPlacesBySearch(ctx, name interface{}) *gomock.Call {
+// SearchPlaces indicates an expected call of SearchPlaces.
+func (mr *MockPlaceRepoMockRecorder) SearchPlaces(ctx, name, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlacesBySearch", reflect.TypeOf((*MockPlaceRepo)(nil).GetPlacesBySearch), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPlaces", reflect.TypeOf((*MockPlaceRepo)(nil).SearchPlaces), ctx, name, limit, offset)
 }
 
 // UpdatePlace mocks base method.
-func (m *MockPlaceRepo) UpdatePlace(ctx context.Context, place models.Place) error {
+func (m *MockPlaceRepo) UpdatePlace(ctx context.Context, place models.UpdatePlace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdatePlace", ctx, place)
 	ret0, _ := ret[0].(error)
@@ -146,7 +146,7 @@ func (m *MockPlaceUsecase) EXPECT() *MockPlaceUsecaseMockRecorder {
 }
 
 // CreatePlace mocks base method.
-func (m *MockPlaceUsecase) CreatePlace(ctx context.Context, place models.Place) error {
+func (m *MockPlaceUsecase) CreatePlace(ctx context.Context, place models.CreatePlace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreatePlace", ctx, place)
 	ret0, _ := ret[0].(error)
@@ -160,66 +160,66 @@ func (mr *MockPlaceUsecaseMockRecorder) CreatePlace(ctx, place interface{}) *gom
 }
 
 // DeletePlace mocks base method.
-func (m *MockPlaceUsecase) DeletePlace(ctx context.Context, name string) error {
+func (m *MockPlaceUsecase) DeletePlace(ctx context.Context, id int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeletePlace", ctx, name)
+	ret := m.ctrl.Call(m, "DeletePlace", ctx, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeletePlace indicates an expected call of DeletePlace.
-func (mr *MockPlaceUsecaseMockRecorder) DeletePlace(ctx, name interface{}) *gomock.Call {
+func (mr *MockPlaceUsecaseMockRecorder) DeletePlace(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePlace", reflect.TypeOf((*MockPlaceUsecase)(nil).DeletePlace), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeletePlace", reflect.TypeOf((*MockPlaceUsecase)(nil).DeletePlace), ctx, id)
 }
 
 // GetPlace mocks base method.
-func (m *MockPlaceUsecase) GetPlace(ctx context.Context, name string) (models.Place, error) {
+func (m *MockPlaceUsecase) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlace", ctx, name)
-	ret0, _ := ret[0].(models.Place)
+	ret := m.ctrl.Call(m, "GetPlace", ctx, id)
+	ret0, _ := ret[0].(models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPlace indicates an expected call of GetPlace.
-func (mr *MockPlaceUsecaseMockRecorder) GetPlace(ctx, name interface{}) *gomock.Call {
+func (mr *MockPlaceUsecaseMockRecorder) GetPlace(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlace", reflect.TypeOf((*MockPlaceUsecase)(nil).GetPlace), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlace", reflect.TypeOf((*MockPlaceUsecase)(nil).GetPlace), ctx, id)
 }
 
 // GetPlaces mocks base method.
-func (m *MockPlaceUsecase) GetPlaces(ctx context.Context) ([]models.Place, error) {
+func (m *MockPlaceUsecase) GetPlaces(ctx context.Context, limit, offset int) ([]models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlaces", ctx)
-	ret0, _ := ret[0].([]models.Place)
+	ret := m.ctrl.Call(m, "GetPlaces", ctx, limit, offset)
+	ret0, _ := ret[0].([]models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetPlaces indicates an expected call of GetPlaces.
-func (mr *MockPlaceUsecaseMockRecorder) GetPlaces(ctx interface{}) *gomock.Call {
+func (mr *MockPlaceUsecaseMockRecorder) GetPlaces(ctx, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaces", reflect.TypeOf((*MockPlaceUsecase)(nil).GetPlaces), ctx)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlaces", reflect.TypeOf((*MockPlaceUsecase)(nil).GetPlaces), ctx, limit, offset)
 }
 
-// GetPlacesBySearch mocks base method.
-func (m *MockPlaceUsecase) GetPlacesBySearch(ctx context.Context, name string) ([]models.Place, error) {
+// SearchPlaces mocks base method.
+func (m *MockPlaceUsecase) SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetPlacesBySearch", ctx, name)
-	ret0, _ := ret[0].([]models.Place)
+	ret := m.ctrl.Call(m, "SearchPlaces", ctx, name, limit, offset)
+	ret0, _ := ret[0].([]models.GetPlace)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetPlacesBySearch indicates an expected call of GetPlacesBySearch.
-func (mr *MockPlaceUsecaseMockRecorder) GetPlacesBySearch(ctx, name interface{}) *gomock.Call {
+// SearchPlaces indicates an expected call of SearchPlaces.
+func (mr *MockPlaceUsecaseMockRecorder) SearchPlaces(ctx, name, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPlacesBySearch", reflect.TypeOf((*MockPlaceUsecase)(nil).GetPlacesBySearch), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SearchPlaces", reflect.TypeOf((*MockPlaceUsecase)(nil).SearchPlaces), ctx, name, limit, offset)
 }
 
 // UpdatePlace mocks base method.
-func (m *MockPlaceUsecase) UpdatePlace(ctx context.Context, place models.Place) error {
+func (m *MockPlaceUsecase) UpdatePlace(ctx context.Context, place models.UpdatePlace) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdatePlace", ctx, place)
 	ret0, _ := ret[0].(error)

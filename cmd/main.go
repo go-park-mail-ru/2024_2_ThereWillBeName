@@ -8,7 +8,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
+	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placerepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeusecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
 	"crypto/rand"

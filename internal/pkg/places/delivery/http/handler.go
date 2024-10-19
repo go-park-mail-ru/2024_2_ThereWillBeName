@@ -1,4 +1,4 @@
-package delivery
+package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
@@ -9,10 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-)
-
-var (
-	ErrNotFound = errors.New("place not found")
 )
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -62,7 +58,7 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string
 // @Router /create [post]
 func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var place models.Place
+	var place models.CreatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
@@ -87,7 +83,7 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {string} string
 // @Router /update/{id} [put]
 func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var place models.Place
+	var place models.UpdatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Printf(err.Error())
@@ -121,6 +117,11 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if err := h.uc.DeletePlace(r.Context(), data.Id); err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			httpresponse.SendJSONResponse(w, nil, http.StatusNotFound)
+			logger.Printf(err.Error())
+			return
+		}
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf(err.Error())
 		return
@@ -149,7 +150,7 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	place, err := h.uc.GetPlace(r.Context(), data.Id)
 	if err != nil {
-		if errors.Is(err, ErrNotFound) {
+		if errors.Is(err, models.ErrNotFound) {
 			response := httpresponse.ErrorResponse{
 				Message: "place not found",
 			}
