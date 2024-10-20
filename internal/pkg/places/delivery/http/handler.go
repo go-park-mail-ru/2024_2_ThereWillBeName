@@ -41,7 +41,7 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 	places, err := h.uc.GetPlaces(r.Context(), requestData.Limit, requestData.Offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
-		logger.Println("Couldn't get list of places: %v", err)
+		logger.Printf("Couldn't get list of places: %v", err)
 		return
 	}
 	httpresponse.SendJSONResponse(w, places, http.StatusOK)
