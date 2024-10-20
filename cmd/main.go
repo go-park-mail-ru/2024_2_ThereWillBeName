@@ -5,12 +5,18 @@ import (
 	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
 	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
 	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
+	categoriesDelivery "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
+	categoriesRepo "2024_2_ThereWillBeName/internal/pkg/categories/repo"
+	categoriesUsecase "2024_2_ThereWillBeName/internal/pkg/categories/usecase"
+	citiesDelivery "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
+	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
+	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
-	placerepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
-	placeusecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
+	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
+	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -36,10 +42,6 @@ func main() {
 	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
 
-	newPlaceRepo := placerepo.NewPLaceRepository()
-	placeUsecase := placeusecase.NewPlaceUsecase(newPlaceRepo)
-	handler := delivery.NewPlacesHandler(placeUsecase)
-
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(cfg.ConnStr)
@@ -59,6 +61,18 @@ func main() {
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
 
+	placeRepo := placeRepo.NewPLaceRepository(db)
+	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
+	placeHandler := delivery.NewPlacesHandler(placeUsecase)
+
+	cityRepo := citiesRepo.NewCitiesRepository(db)
+	cityUsecase := citiesUsecase.NewCitiesUsecase(cityRepo)
+	cityHandler := citiesDelivery.NewCityHandler(cityUsecase)
+
+	categoryRepo := categoriesRepo.NewCategoriesRepository(db)
+	categoryUsecase := categoriesUsecase.NewCategoriesUsecase(categoryRepo)
+	categoryHandler := categoriesDelivery.NewCategoryHandler(categoryUsecase)
+
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -77,8 +91,29 @@ func main() {
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
+
 	places := r.PathPrefix("/places").Subrouter()
-	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
+	places.HandleFunc("/search", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", placeHandler.PutPlaceHandler).Methods(http.MethodPut)
+	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
+
+	cities := r.PathPrefix("/cities").Subrouter()
+	cities.HandleFunc("", cityHandler.GetCitiesHandler).Methods(http.MethodGet)
+	cities.HandleFunc("", cityHandler.PostCityHandler).Methods(http.MethodPost)
+	cities.HandleFunc("/{id}", cityHandler.DeleteCityHandler).Methods(http.MethodDelete)
+	cities.HandleFunc("/{id}", cityHandler.GetCityHandler).Methods(http.MethodGet)
+	cities.HandleFunc("/{id}", cityHandler.PutCityHandler).Methods(http.MethodPut)
+
+	categories := r.PathPrefix("/categories").Subrouter()
+	categories.HandleFunc("", categoryHandler.GetCategoriesHandler).Methods(http.MethodGet)
+	categories.HandleFunc("", categoryHandler.PostCategoryHandler).Methods(http.MethodPost)
+	categories.HandleFunc("/{id}", categoryHandler.DeleteCategoryHandler).Methods(http.MethodDelete)
+	categories.HandleFunc("/{id}", categoryHandler.GetCategoryHandler).Methods(http.MethodGet)
+	categories.HandleFunc("/{id}", categoryHandler.PutCategoryHandler).Methods(http.MethodPut)
+
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
