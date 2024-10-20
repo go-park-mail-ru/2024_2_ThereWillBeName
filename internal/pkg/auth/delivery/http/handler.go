@@ -57,7 +57,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := h.usecase.SignUp(context.Background(), user)
 	if err != nil {
-		if errors.Is(err, models.ErrUserAlreadyExists.CustomError) {
+		if errors.Is(err, models.ErrUserAlreadyExists) {
 			response := httpresponse.ErrorResponse{
 				Message: "user already exists",
 			}
