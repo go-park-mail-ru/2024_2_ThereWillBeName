@@ -22,6 +22,27 @@ definitions:
       name:
         type: string
     type: object
+  models.Trip:
+    properties:
+      city_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      private:
+        type: boolean
+      start_date:
+        type: string
+      user_id:
+        type: integer
+    type: object
   models.User:
     properties:
       created_at:
@@ -133,6 +154,160 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Sign up a new user
+  /trips:
+    post:
+      consumes:
+      - application/json
+      description: Create a new trip with given fields
+      parameters:
+      - description: Trip details
+        in: body
+        name: trip
+        required: true
+        schema:
+          $ref: '#/definitions/models.Trip'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Trip created successfully
+          schema:
+            $ref: '#/definitions/models.Trip'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to create trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Create a new trip
+  /trips/{id}:
+    delete:
+      description: Delete a trip by trip ID
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Trip deleted successfully
+        "400":
+          description: Invalid trip ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Trip not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to delete trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Delete a trip
+    get:
+      description: Get trip details by trip ID
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trip details
+          schema:
+            $ref: '#/definitions/models.Trip'
+        "400":
+          description: Invalid trip ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Trip not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve a trip by ID
+    put:
+      consumes:
+      - application/json
+      description: Update trip details by trip ID
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated trip details
+        in: body
+        name: trip
+        required: true
+        schema:
+          $ref: '#/definitions/models.Trip'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Trip updated successfully
+          schema:
+            $ref: '#/definitions/models.Trip'
+        "400":
+          description: Invalid trip data
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Trip not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to update trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Update an existing trip
+  /users/{userID}/trips:
+    get:
+      description: Get all trips for a specific user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of trips
+          schema:
+            items:
+              $ref: '#/definitions/models.Trip'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Trips not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve trips
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve trips by user ID
   /users/me:
     get:
       description: Retrieve the current authenticated user information
