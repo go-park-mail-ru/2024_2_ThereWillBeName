@@ -8,9 +8,9 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/places/delivery"
-	placerepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
-	placeusecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
+	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
+	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
@@ -39,9 +39,6 @@ func main() {
 	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
 
-	newPlaceRepo := placerepo.NewPLaceRepository()
-	placeUsecase := placeusecase.NewPlaceUsecase(newPlaceRepo)
-	handler := delivery.NewPlacesHandler(placeUsecase)
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(cfg.ConnStr)
@@ -60,9 +57,15 @@ func main() {
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
+
+	placeRepo := placeRepo.NewPLaceRepository(db)
+	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
+	placeHandler := delivery.NewPlacesHandler(placeUsecase)
+
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
+
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -81,9 +84,17 @@ func main() {
 	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
+
 	user := users.PathPrefix("/{userID}").Subrouter()
+
 	places := r.PathPrefix("/places").Subrouter()
-	places.HandleFunc("", handler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
+	places.HandleFunc("/search", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
+	places.HandleFunc("/{id}", placeHandler.PutPlaceHandler).Methods(http.MethodPut)
+	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
+
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)

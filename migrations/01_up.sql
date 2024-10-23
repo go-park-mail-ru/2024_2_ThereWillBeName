@@ -13,6 +13,35 @@ CREATE TABLE IF NOT EXISTS cities
     created_at TIMESTAMP NOT NULL DEFAULT NOW() -- Дата создания города
 );
 
+CREATE TABLE IF NOT EXISTS places
+(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL, -- название места
+    imagePath VARCHAR(255) NOT NULL, -- путь к картинке
+    description TEXT NOT NULL, -- описание места
+    rating INT NOT NULL, -- рейтинг места
+    numberOfReviews INT NOT NULL, -- количество отзывов
+    address VARCHAR(255) NOT NULL, -- адрес места
+    cityId INT NOT NULL, -- город, где находится место
+    phoneNumber VARCHAR(10), -- номер телефона
+    FOREIGN KEY (cityId) REFERENCES cities(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS categories
+(
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS places_categories
+(
+    place_id INT NOT NULL,
+    category_id INT NOT NULL,
+    PRIMARY KEY(place_id, category_id),
+    FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS trips
 (
     id SERIAL PRIMARY KEY,          -- Уникальный идентификатор поездки
@@ -27,14 +56,6 @@ CREATE TABLE IF NOT EXISTS trips
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_city FOREIGN KEY (city_id) REFERENCES cities(id) ON DELETE CASCADE
  );
-
-CREATE TABLE IF NOT EXISTS places
-(
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL, -- название места
-    image VARCHAR(255) NOT NULL, -- путь к картинке
-    description TEXT NOT NULL -- описание места
-);
 
 CREATE TABLE IF NOT EXISTS trips_places ( --таблица для сопоставления поездки и достопримечательности, которая в нее входит
     id SERIAL PRIMARY KEY, 
