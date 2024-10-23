@@ -4,8 +4,9 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -20,6 +21,12 @@ func NewAuthRepository(db *sql.DB) *RepositoryImpl {
 func (r *RepositoryImpl) CreateUser(ctx context.Context, user models.User) error {
 	query := "INSERT INTO users (login, password, created_at) VALUES ($1, $2, NOW())"
 	_, err := r.db.ExecContext(ctx, query, user.Login, user.Password)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return models.ErrAlreadyExists
+		}
+	}
 	return err
 }
 
