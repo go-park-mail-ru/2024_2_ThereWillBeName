@@ -24,7 +24,7 @@ func (r *RepositoryImpl) CreateUser(ctx context.Context, user models.User) error
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
-			return models.ErrUserAlreadyExists
+			return models.ErrAlreadyExists
 		}
 	}
 	return err

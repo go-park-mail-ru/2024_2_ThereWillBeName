@@ -3,5 +3,5 @@ package models
 import "errors"
 
 var (
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrAlreadyExists = errors.New("already exists")
 )
