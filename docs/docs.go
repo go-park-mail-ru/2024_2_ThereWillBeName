@@ -15,92 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/create": {
-            "post": {
-                "description": "Add a new place to the database",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Create a new place",
-                "parameters": [
-                    {
-                        "description": "Place data",
-                        "name": "place",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Place"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Place successfully created",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/delete/{id}": {
-            "delete": {
-                "description": "Remove a place from the database by its name",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Delete an existing place",
-                "parameters": [
-                    {
-                        "description": "Name of the place to be deleted",
-                        "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Place successfully deleted",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/healthcheck": {
             "get": {
                 "description": "Check the health status of the service",
@@ -184,49 +98,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/place/{id}": {
-            "get": {
-                "description": "Get details of a place from the database by its name",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Retrieve an existing place",
-                "parameters": [
-                    {
-                        "description": "Name of the place to retrieve",
-                        "name": "name",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Details of the requested place",
-                        "schema": {
-                            "$ref": "#/definitions/models.Place"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/places": {
             "get": {
                 "description": "Retrieve a list of places from the database",
@@ -240,8 +111,55 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/models.Place"
+                                "$ref": "#/definitions/models.GetPlace"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a new place to the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a new place",
+                "parameters": [
+                    {
+                        "description": "Place data",
+                        "name": "place",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreatePlace"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Place successfully created",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "500": {
@@ -253,7 +171,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/search": {
+        "/places/search": {
             "get": {
                 "description": "Get a list of places from the database that match the provided search string",
                 "consumes": [
@@ -278,22 +196,144 @@ const docTemplate = `{
                     "200": {
                         "description": "List of places matching the provided searchString",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/models.Place"
-                            }
+                            "$ref": "#/definitions/models.GetPlace"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/places/{id}": {
+            "get": {
+                "description": "Get details of a place from the database by its id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retrieve an existing place",
+                "parameters": [
+                    {
+                        "description": "ID of the place to retrieve",
+                        "name": "id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Details of the requested place",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetPlace"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update the details of an existing place in the database",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update an existing place",
+                "parameters": [
+                    {
+                        "description": "Updated place data",
+                        "name": "place",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.UpdatePlace"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Place successfully updated",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Remove a place from the database by its name",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete an existing place",
+                "parameters": [
+                    {
+                        "description": "Name of the place to be deleted",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
                             "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Place successfully deleted",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     }
                 }
@@ -337,49 +377,6 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
-                        }
-                    }
-                }
-            }
-        },
-        "/update/{id}": {
-            "put": {
-                "description": "Update the details of an existing place in the database",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Update an existing place",
-                "parameters": [
-                    {
-                        "description": "Updated place data",
-                        "name": "place",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/models.Place"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Place successfully updated",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
                         }
                     }
                 }
@@ -435,14 +432,52 @@ const docTemplate = `{
                 }
             }
         },
-        "models.Place": {
+        "models.CreatePlace": {
             "type": "object",
             "properties": {
                 "address": {
                     "type": "string"
                 },
-                "category": {
+                "categoriesId": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "cityId": {
+                    "type": "integer"
+                },
+                "description": {
                     "type": "string"
+                },
+                "imagePath": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "numberOfReviews": {
+                    "type": "integer"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.GetPlace": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "categories": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "city": {
                     "type": "string"
@@ -453,7 +488,45 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
-                "image": {
+                "imagePath": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "numberOfReviews": {
+                    "type": "integer"
+                },
+                "phoneNumber": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.UpdatePlace": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "categoriesId": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "cityId": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "imagePath": {
                     "type": "string"
                 },
                 "name": {

@@ -25,7 +25,7 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Summary Get a list of places
 // @Description Retrieve a list of places from the database
 // @Produce json
-// @Success 200 {array} models.Place "List of places"
+// @Success 200 {array} models.GetPlace "List of places"
 // @Failure 400 {object} httpresponses.ErrorResponse "Bad request"
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
@@ -78,7 +78,7 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Description Update the details of an existing place in the database
 // @Accept json
 // @Produce json
-// @Param place body models.Place true "Updated place data"
+// @Param place body models.UpdatePlace true "Updated place data"
 // @Success 200 {object} httpresponses.ErrorResponse "Place successfully updated"
 // @Failure 400 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
@@ -139,7 +139,7 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} models.GetPlace "Details of the requested place"
 // @Failure 400 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
-// @Router /place/{id} [get]
+// @Router /places/{id} [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Id int `json:"id"`
@@ -175,7 +175,7 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} models.GetPlace "List of places matching the provided searchString"
 // @Failure 400 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
-// @Router places/search [get]
+// @Router /places/search [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
 	var requestData struct {
 		Limit  int    `json:"limit"`
