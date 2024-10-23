@@ -11,6 +11,9 @@ import (
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
+	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
+	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
@@ -59,6 +62,10 @@ func main() {
 	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
 	placeHandler := delivery.NewPlacesHandler(placeUsecase)
 
+	tripsRepo := triprepo.NewTripRepository(db)
+	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
+	tripHandler := triphandler.NewTripHandler(tripUsecase)
+
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -78,6 +85,8 @@ func main() {
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
 
+	user := users.PathPrefix("/{userID}").Subrouter()
+
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
@@ -87,6 +96,12 @@ func main() {
 	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+	trips := r.PathPrefix("/trips").Subrouter()
+	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
+	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
+	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
+	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
+	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,
