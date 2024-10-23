@@ -6,9 +6,9 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 )
 
@@ -57,7 +57,15 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.Password,
 	}
 
-	if err := h.usecase.SignUp(context.Background(), user); err != nil {
+	err := h.usecase.SignUp(context.Background(), user)
+	if err != nil {
+		if errors.Is(err, models.ErrAlreadyExists) {
+			response := httpresponse.ErrorResponse{
+				Message: "user already exists",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusConflict)
+			return
+		}
 		response := httpresponse.ErrorResponse{
 			Message: "Registration failed",
 		}
@@ -163,6 +171,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
+		MaxAge:   0,
 	})
 
 	w.WriteHeader(http.StatusOK)
