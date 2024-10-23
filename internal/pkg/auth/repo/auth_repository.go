@@ -4,8 +4,9 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
-
+	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
 
@@ -18,19 +19,27 @@ func NewAuthRepository(db *sql.DB) *RepositoryImpl {
 }
 
 func (r *RepositoryImpl) CreateUser(ctx context.Context, user models.User) error {
-	query := "INSERT INTO users (login, password, created_at) VALUES ($1, $2, NOW())"
-	_, err := r.db.ExecContext(ctx, query, user.Login, user.Password)
+	query := "INSERT INTO users (login, email, password, created_at) VALUES ($1, $2, $3, NOW())"
+	_, err := r.db.ExecContext(ctx, query, user.Login, user.Email, user.Password)
+
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
+			return models.ErrAlreadyExists
+		}
+	}
+
 	return err
 }
 
-func (r *RepositoryImpl) GetUserByLogin(ctx context.Context, login string) (models.User, error) {
+func (r *RepositoryImpl) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var user models.User
-	query := "SELECT id, login, password, created_at FROM users WHERE login = $1"
-	row := r.db.QueryRowContext(ctx, query, login)
-	err := row.Scan(&user.ID, &user.Login, &user.Password, &user.CreatedAt)
+	query := "SELECT id, login, email, password, created_at FROM users WHERE email = $1"
+	row := r.db.QueryRowContext(ctx, query, email)
+	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password, &user.CreatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found with login: %s", login)
+			return models.User{}, fmt.Errorf("user not found with email: %s", email)
 		}
 		return models.User{}, err
 	}
@@ -38,8 +47,8 @@ func (r *RepositoryImpl) GetUserByLogin(ctx context.Context, login string) (mode
 }
 
 func (r *RepositoryImpl) UpdateUser(ctx context.Context, user models.User) error {
-	query := "UPDATE users SET login = $1, password = $2 WHERE id = $3"
-	_, err := r.db.ExecContext(ctx, query, user.Login, user.Password, user.ID)
+	query := "UPDATE users SET login = $1, email=$2, password = $3 WHERE id = $4"
+	_, err := r.db.ExecContext(ctx, query, user.Login, user.Email, user.Password, user.ID)
 	return err
 }
 
@@ -50,7 +59,7 @@ func (r *RepositoryImpl) DeleteUser(ctx context.Context, id string) error {
 }
 
 func (r *RepositoryImpl) GetUsers(ctx context.Context, count, offset int64) ([]models.User, error) {
-	query := "SELECT id, login, created_at FROM users LIMIT $1 OFFSET $2"
+	query := "SELECT id, login, email, created_at FROM users LIMIT $1 OFFSET $2"
 	rows, err := r.db.QueryContext(ctx, query, count, offset)
 	if err != nil {
 		return nil, err
@@ -60,7 +69,7 @@ func (r *RepositoryImpl) GetUsers(ctx context.Context, count, offset int64) ([]m
 	var users []models.User
 	for rows.Next() {
 		var user models.User
-		if err := rows.Scan(&user.ID, &user.Login, &user.CreatedAt); err != nil {
+		if err := rows.Scan(&user.ID, &user.Login, &user.Email, &user.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, user)

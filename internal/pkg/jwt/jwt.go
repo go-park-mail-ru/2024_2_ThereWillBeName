@@ -17,9 +17,10 @@ func NewJWT(secret string) *JWT {
 	}
 }
 
-func (j *JWT) GenerateToken(userID uint, login string) (string, error) {
+func (j *JWT) GenerateToken(userID uint, email, login string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":    userID,
+		"email": email,
 		"login": login,
 		"exp":   time.Now().Add(time.Hour * 24).Unix(),
 	}
