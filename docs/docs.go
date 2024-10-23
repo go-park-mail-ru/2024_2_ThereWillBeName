@@ -339,6 +339,233 @@ const docTemplate = `{
                 }
             }
         },
+        "/places/{placeID}/reviews": {
+            "get": {
+                "description": "Get all reviews for a specific place",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retrieve reviews by place ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Place ID",
+                        "name": "placeID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of reviews",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Review"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid place ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No reviews found for the place",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve reviews",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reviews": {
+            "post": {
+                "description": "Create a new review for a place",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a new review",
+                "parameters": [
+                    {
+                        "description": "Review details",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Review"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Review created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.Review"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create review",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/reviews/{id}": {
+            "get": {
+                "description": "Get review details by review ID",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retrieve a review by ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Review details",
+                        "schema": {
+                            "$ref": "#/definitions/models.Review"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid review ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve review",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Update review details by review ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update an existing review",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Updated review details",
+                        "name": "review",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.Review"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Review updated successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.Review"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid review ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to update review",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a review by review ID",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete a review",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Review ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Review deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid review ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Review not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete review",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/signup": {
             "post": {
                 "description": "Create a new user with login and password",
@@ -801,6 +1028,29 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "start_date": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "models.Review": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "place_id": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "review_text": {
                     "type": "string"
                 },
                 "user_id": {

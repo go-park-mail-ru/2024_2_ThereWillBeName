@@ -8,6 +8,10 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+
+	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
+	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
@@ -58,13 +62,16 @@ func main() {
 	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
 	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
 
+	reviewsRepo := reviewrepo.NewReviewRepository(db)
+	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
+	reviewHandler := reviewhandler.NewReviewHandler(reviewUsecase)
 	placeRepo := placeRepo.NewPLaceRepository(db)
 	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
 	placeHandler := delivery.NewPlacesHandler(placeUsecase)
-
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
+
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -96,6 +103,13 @@ func main() {
 	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
+	reviews := r.PathPrefix("/reviews").Subrouter()
+	reviews.HandleFunc("/", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
+	reviews.HandleFunc("/{id}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
+	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
+	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
+  
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
 	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)

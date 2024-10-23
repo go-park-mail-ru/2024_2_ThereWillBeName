@@ -105,6 +105,21 @@ definitions:
       user_id:
         type: integer
     type: object
+  models.Review:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      place_id:
+        type: integer
+      rating:
+        type: integer
+      review_text:
+        type: string
+      user_id:
+        type: integer
+    type: object
   models.User:
     properties:
       created_at:
