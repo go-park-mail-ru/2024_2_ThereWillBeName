@@ -26,6 +26,7 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Description Retrieve a list of places from the database
 // @Produce json
 // @Success 200 {array} models.Place "List of places"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad request"
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
 func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request) {
@@ -52,11 +53,11 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Description Add a new place to the database
 // @Accept json
 // @Produce json
-// @Param place body models.Place true "Place data"
-// @Success 201 {string} string "Place successfully created"
-// @Failure 400 {string} string
-// @Failure 500 {string} string
-// @Router /create [post]
+// @Param place body models.CreatePlace true "Place data"
+// @Success 201 {object} httpresponses.ErrorResponse "Place successfully created"
+// @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 500 {object} httpresponses.ErrorResponse
+// @Router /places [post]
 func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	var place models.CreatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
@@ -78,10 +79,10 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Accept json
 // @Produce json
 // @Param place body models.Place true "Updated place data"
-// @Success 200 {string} string "Place successfully updated"
-// @Failure 400 {string} string
-// @Failure 500 {string} string
-// @Router /update/{id} [put]
+// @Success 200 {object} httpresponses.ErrorResponse "Place successfully updated"
+// @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 500 {object} httpresponses.ErrorResponse
+// @Router /places/{id} [put]
 func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	var place models.UpdatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
@@ -103,10 +104,10 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Param name body string true "Name of the place to be deleted"
-// @Success 200 {string} string "Place successfully deleted"
-// @Failure 400 {string} string
-// @Failure 500 {string} string
-// @Router /delete/{id} [delete]
+// @Success 200 {object} httpresponses.ErrorResponse "Place successfully deleted"
+// @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 500 {object} httpresponses.ErrorResponse
+// @Router /places/{id} [delete]
 func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Id int `json:"id"`
@@ -131,13 +132,13 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 
 // GetPlaceHandler godoc
 // @Summary Retrieve an existing place
-// @Description Get details of a place from the database by its name
+// @Description Get details of a place from the database by its id
 // @Accept json
 // @Produce json
-// @Param name body string true "Name of the place to retrieve"
-// @Success 200 {object} models.Place "Details of the requested place"
-// @Failure 400 {string} string
-// @Failure 500 {string} string
+// @Param id body int true "ID of the place to retrieve"
+// @Success 200 {object} models.GetPlace "Details of the requested place"
+// @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /place/{id} [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
 	var data struct {
@@ -171,10 +172,10 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Param searchString body string true "Name of the places to retrieve"
-// @Success 200 {array} models.Place "List of places matching the provided searchString"
-// @Failure 400 {string} string
-// @Failure 500 {string} string
-// @Router /search [get]
+// @Success 200 {object} models.GetPlace "List of places matching the provided searchString"
+// @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 500 {object} httpresponses.ErrorResponse
+// @Router places/search [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
 	var requestData struct {
 		Limit  int    `json:"limit"`
