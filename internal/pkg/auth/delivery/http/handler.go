@@ -171,7 +171,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
-		MaxAge:   0,
+		MaxAge:   -1,
 	})
 
 	w.WriteHeader(http.StatusOK)
