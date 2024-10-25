@@ -50,7 +50,7 @@ func (mr *MockPlaceRepoMockRecorder) CreatePlace(ctx, place interface{}) *gomock
 }
 
 // DeletePlace mocks base method.
-func (m *MockPlaceRepo) DeletePlace(ctx context.Context, id int) error {
+func (m *MockPlaceRepo) DeletePlace(ctx context.Context, id uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeletePlace", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -64,7 +64,7 @@ func (mr *MockPlaceRepoMockRecorder) DeletePlace(ctx, id interface{}) *gomock.Ca
 }
 
 // GetPlace mocks base method.
-func (m *MockPlaceRepo) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
+func (m *MockPlaceRepo) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPlace", ctx, id)
 	ret0, _ := ret[0].(models.GetPlace)
@@ -160,7 +160,7 @@ func (mr *MockPlaceUsecaseMockRecorder) CreatePlace(ctx, place interface{}) *gom
 }
 
 // DeletePlace mocks base method.
-func (m *MockPlaceUsecase) DeletePlace(ctx context.Context, id int) error {
+func (m *MockPlaceUsecase) DeletePlace(ctx context.Context, id uint) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeletePlace", ctx, id)
 	ret0, _ := ret[0].(error)
@@ -174,7 +174,7 @@ func (mr *MockPlaceUsecaseMockRecorder) DeletePlace(ctx, id interface{}) *gomock
 }
 
 // GetPlace mocks base method.
-func (m *MockPlaceUsecase) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
+func (m *MockPlaceUsecase) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetPlace", ctx, id)
 	ret0, _ := ret[0].(models.GetPlace)
