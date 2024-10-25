@@ -9,12 +9,12 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 
-	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
-	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
-	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
+	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
@@ -72,7 +72,6 @@ func main() {
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
 
-
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
@@ -109,7 +108,7 @@ func main() {
 	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
 	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
-  
+
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
 	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
