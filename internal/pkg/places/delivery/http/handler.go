@@ -6,9 +6,11 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/places"
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -30,16 +32,19 @@ func NewPlacesHandler(uc places.PlaceUsecase) *PlacesHandler {
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /places [get]
 func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request) {
-	var requestData struct {
-		Limit  int `json:"limit"`
-		Offset int `json:"offset"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
-	places, err := h.uc.GetPlaces(r.Context(), requestData.Limit, requestData.Offset)
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
+		logger.Println(err.Error())
+		return
+	}
+	places, err := h.uc.GetPlaces(r.Context(), limit, offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Printf("Couldn't get list of places: %v", err)
@@ -101,7 +106,6 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // DeletePlaceHandler godoc
 // @Summary Delete an existing place
 // @Description Remove a place from the database by its name
-// @Accept json
 // @Produce json
 // @Param name body string true "Name of the place to be deleted"
 // @Success 200 {object} httpresponses.ErrorResponse "Place successfully deleted"
@@ -109,15 +113,14 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [delete]
 func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Id int `json:"id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
-	if err := h.uc.DeletePlace(r.Context(), data.Id); err != nil {
+	if err := h.uc.DeletePlace(r.Context(), uint(id)); err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			httpresponse.SendJSONResponse(w, nil, http.StatusNotFound)
 			logger.Println(err.Error())
@@ -133,7 +136,6 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 // GetPlaceHandler godoc
 // @Summary Retrieve an existing place
 // @Description Get details of a place from the database by its id
-// @Accept json
 // @Produce json
 // @Param id body int true "ID of the place to retrieve"
 // @Success 200 {object} models.GetPlace "Details of the requested place"
@@ -141,15 +143,14 @@ func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Reques
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
-	var data struct {
-		Id int `json:"id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	idStr := mux.Vars(r)["id"]
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
-	place, err := h.uc.GetPlace(r.Context(), data.Id)
+	place, err := h.uc.GetPlace(r.Context(), uint(id))
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			response := httpresponse.ErrorResponse{
@@ -169,25 +170,27 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // GetPlacesByNameHandler godoc
 // @Summary Retrieve places by search string
 // @Description Get a list of places from the database that match the provided search string
-// @Accept json
 // @Produce json
 // @Param searchString body string true "Name of the places to retrieve"
 // @Success 200 {object} models.GetPlace "List of places matching the provided searchString"
 // @Failure 400 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
-// @Router /places/search [get]
+// @Router /places/search/{placeName} [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
-	var requestData struct {
-		Limit  int    `json:"limit"`
-		Offset int    `json:"offset"`
-		Name   string `json:"name"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+	placeName := mux.Vars(r)["placeName"]
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
-	places, err := h.uc.SearchPlaces(r.Context(), requestData.Name, requestData.Limit, requestData.Offset)
+	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+	if err != nil {
+		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
+		logger.Println(err.Error())
+		return
+	}
+	places, err := h.uc.SearchPlaces(r.Context(), placeName, limit, offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Println(err.Error())

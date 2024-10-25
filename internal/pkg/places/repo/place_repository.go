@@ -57,7 +57,7 @@ func (r *PlaceRepository) CreatePlace(ctx context.Context, place models.CreatePl
 	return nil
 }
 
-func (r *PlaceRepository) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
+func (r *PlaceRepository) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	var place models.GetPlace
 	query := "SELECT p.id, p.name, p.imagePath, p.description, p.rating, p.numberOfReviews, p.address, p.phoneNumber, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM places p JOIN cities c ON p.cityId = c.id JOIN places_categories pc ON p.id = pc.place_id JOIN categories ca ON pc.category_id = ca.id WHERE p.id = $1 GROUP BY p.id, c.name ORDER BY p.id"
 	row := r.db.QueryRowContext(ctx, query, id)
@@ -111,7 +111,7 @@ func (r *PlaceRepository) UpdatePlace(ctx context.Context, place models.UpdatePl
 	return nil
 }
 
-func (r *PlaceRepository) DeletePlace(ctx context.Context, id int) error {
+func (r *PlaceRepository) DeletePlace(ctx context.Context, id uint) error {
 	query := "DELETE FROM places WHERE id=$1"
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
