@@ -9,18 +9,16 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 
-	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
-	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
-	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
+	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
+	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
-	"crypto/rand"
 	"database/sql"
-	"encoding/hex"
 	"flag"
 	"fmt"
 	"log"
@@ -51,7 +49,7 @@ func main() {
 	}
 	defer db.Close()
 
-	jwtSecret, err := generateSecretKey(32)
+	jwtSecret := os.Getenv("JWT_SECRET")
 
 	if err != nil {
 		logger.Fatal("Error generating secret key:", err)
@@ -71,7 +69,6 @@ func main() {
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
-
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -97,7 +94,7 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
-	places.HandleFunc("/search", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/search/{placeName}", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placeHandler.PutPlaceHandler).Methods(http.MethodPut)
 	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
@@ -109,7 +106,7 @@ func main() {
 	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
 	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
-  
+
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
 	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
@@ -161,13 +158,4 @@ func openDB(connStr string) (*sql.DB, error) {
 	}
 
 	return db, nil
-}
-
-func generateSecretKey(length int) (string, error) {
-	key := make([]byte, length)
-	_, err := rand.Read(key)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(key), nil
 }

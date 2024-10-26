@@ -1,6 +1,8 @@
 definitions:
   http.Credentials:
     properties:
+      email:
+        type: string
       login:
         type: string
       password:
@@ -59,6 +61,42 @@ definitions:
       rating:
         type: integer
     type: object
+  models.Review:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      place_id:
+        type: integer
+      rating:
+        type: integer
+      review_text:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  models.Trip:
+    properties:
+      city_id:
+        type: integer
+      created_at:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      private:
+        type: boolean
+      start_date:
+        type: string
+      user_id:
+        type: integer
+    type: object
   models.UpdatePlace:
     properties:
       address:
@@ -84,45 +122,11 @@ definitions:
       rating:
         type: integer
     type: object
-  models.Trip:
-    properties:
-      city_id:
-        type: integer
-      created_at:
-        type: string
-      description:
-        type: string
-      end_date:
-        type: string
-      id:
-        type: integer
-      name:
-        type: string
-      private:
-        type: boolean
-      start_date:
-        type: string
-      user_id:
-        type: integer
-    type: object
-  models.Review:
-    properties:
-      created_at:
-        type: string
-      id:
-        type: integer
-      place_id:
-        type: integer
-      rating:
-        type: integer
-      review_text:
-        type: string
-      user_id:
-        type: integer
-    type: object
   models.User:
     properties:
       created_at:
+        type: string
+      email:
         type: string
       id:
         type: integer
@@ -236,8 +240,6 @@ paths:
       summary: Create a new place
   /places/{id}:
     delete:
-      consumes:
-      - application/json
       description: Remove a place from the database by its name
       parameters:
       - description: Name of the place to be deleted
@@ -263,8 +265,6 @@ paths:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Delete an existing place
     get:
-      consumes:
-      - application/json
       description: Get details of a place from the database by its id
       parameters:
       - description: ID of the place to retrieve
@@ -316,10 +316,39 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Update an existing place
-  /places/search:
+  /places/{placeID}/reviews:
     get:
-      consumes:
+      description: Get all reviews for a specific place
+      parameters:
+      - description: Place ID
+        in: path
+        name: placeID
+        required: true
+        type: integer
+      produces:
       - application/json
+      responses:
+        "200":
+          description: List of reviews
+          schema:
+            items:
+              $ref: '#/definitions/models.Review'
+            type: array
+        "400":
+          description: Invalid place ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: No reviews found for the place
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve reviews
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve reviews by place ID
+  /places/search/{placeName}:
+    get:
       description: Get a list of places from the database that match the provided
         search string
       parameters:
@@ -345,6 +374,125 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Retrieve places by search string
+  /reviews:
+    post:
+      consumes:
+      - application/json
+      description: Create a new review for a place
+      parameters:
+      - description: Review details
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Review created successfully
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to create review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Create a new review
+  /reviews/{id}:
+    delete:
+      description: Delete a review by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Review deleted successfully
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to delete review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Delete a review
+    get:
+      description: Get review details by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Review details
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve a review by ID
+    put:
+      consumes:
+      - application/json
+      description: Update review details by review ID
+      parameters:
+      - description: Review ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated review details
+        in: body
+        name: review
+        required: true
+        schema:
+          $ref: '#/definitions/models.Review'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Review updated successfully
+          schema:
+            $ref: '#/definitions/models.Review'
+        "400":
+          description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Review not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to update review
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Update an existing review
   /signup:
     post:
       consumes:

@@ -87,7 +87,7 @@ func (r *PlaceRepository) CreatePlace(ctx context.Context, place models.CreatePl
 	return nil
 }
 
-func (r *PlaceRepository) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
+func (r *PlaceRepository) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	var place models.GetPlace
 	query, args, err := squirrel.Select("p.id", "p.name", "p.imagePath", "p.description", "p.rating", "p.numberOfReviews", "p.address", "p.phoneNumber", "c.name AS city_name", "ARRAY_AGG(ca.name) AS categories").
 		From("place p").
@@ -172,7 +172,7 @@ func (r *PlaceRepository) UpdatePlace(ctx context.Context, place models.UpdatePl
 	return nil
 }
 
-func (r *PlaceRepository) DeletePlace(ctx context.Context, id int) error {
+func (r *PlaceRepository) DeletePlace(ctx context.Context, id uint) error {
 	query, args, err := squirrel.Delete("place").
 		Where("id = ?", id).
 		PlaceholderFormat(squirrel.Dollar). // Используем формат для PostgreSQL

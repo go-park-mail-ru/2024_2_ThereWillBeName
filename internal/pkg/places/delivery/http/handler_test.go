@@ -3,7 +3,6 @@ package http
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -78,7 +77,7 @@ func TestGetPlacesHandler(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			mockUsecase.EXPECT().GetPlaces(gomock.Any(), gomock.Any(), gomock.Any()).Return(testcase.mockReturn, testcase.mockError)
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places", bytes.NewBufferString(`{"limit": 10, "offset": 0}`))
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places?limit=5&offset=0", nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()

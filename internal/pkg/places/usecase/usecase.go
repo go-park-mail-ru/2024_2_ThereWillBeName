@@ -31,11 +31,11 @@ func (i *PlaceUsecaseImpl) UpdatePlace(ctx context.Context, place models.UpdateP
 	return i.repo.UpdatePlace(ctx, place)
 }
 
-func (i *PlaceUsecaseImpl) DeletePlace(ctx context.Context, id int) error {
+func (i *PlaceUsecaseImpl) DeletePlace(ctx context.Context, id uint) error {
 	return i.repo.DeletePlace(ctx, id)
 }
 
-func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, id int) (models.GetPlace, error) {
+func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	return i.repo.GetPlace(ctx, id)
 }
 
