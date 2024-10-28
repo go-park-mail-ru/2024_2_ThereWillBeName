@@ -1,7 +1,6 @@
 CREATE TABLE IF NOT EXISTS users
 (
     id SERIAL PRIMARY KEY,          -- Уникальный идентификатор пользователя
-    email VARCHAR(255) NOT NULL UNIQUE, -- Email пользователя
     login VARCHAR(255) NOT NULL UNIQUE,    -- Логин пользователя
     email TEXT NOT NULL,
     password VARCHAR(255) NOT NULL, -- Хэш пароля
@@ -25,7 +24,7 @@ CREATE TABLE IF NOT EXISTS places
     numberOfReviews INT NOT NULL, -- количество отзывов
     address VARCHAR(255) NOT NULL, -- адрес места
     cityId INT NOT NULL, -- город, где находится место
-    phoneNumber VARCHAR(10), -- номер телефона
+    phoneNumber TEXT, -- номер телефона
     FOREIGN KEY (cityId) REFERENCES cities(id) ON DELETE CASCADE
 );
 
@@ -79,3 +78,19 @@ CREATE TABLE IF NOT EXISTS trips_places ( --таблица для сопоста
     FOREIGN KEY (trip_id) REFERENCES trips(id) ON DELETE CASCADE,
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE
 );
+
+COPY cities(name)
+    FROM '/docker-entrypoint-initdb.d/cities.csv'
+    WITH (FORMAT csv, HEADER true);
+
+COPY places(name, imagePath, description, rating, numberOfReviews, address, cityId, phoneNumber)
+    FROM '/docker-entrypoint-initdb.d/places.csv'
+    WITH (FORMAT csv, HEADER true,  DELIMITER ';');
+
+COPY categories(name)
+    FROM '/docker-entrypoint-initdb.d/categories.csv'
+    WITH (FORMAT csv, HEADER true);
+
+COPY places_categories(place_id,category_id)
+    FROM '/docker-entrypoint-initdb.d/places_categories.csv'
+    WITH (FORMAT csv, HEADER true, DELIMITER ',');
