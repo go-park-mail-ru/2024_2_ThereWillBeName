@@ -5,11 +5,12 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/auth"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
-	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	middleware "2024_2_ThereWillBeName/internal/pkg/middleware"
 	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 )
 
 type Credentials struct {
@@ -88,6 +89,31 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
+	})
+
+	tokenExpTime := time.Now().Unix() + 3600
+	hashToken, err := middleware.NewHMACHashToken("your_secret_key")
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "CSRF token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+	csrfToken, err := hashToken.GenerateCSRFToken(user.ID, tokenExpTime)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "CSRF token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	})
 
 	response := models.User{
