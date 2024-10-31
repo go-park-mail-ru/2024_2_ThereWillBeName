@@ -6,11 +6,13 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/places"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
+	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 var logger = log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
@@ -64,12 +66,21 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places [post]
 func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var place models.CreatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
+
+	place.Name = template.HTMLEscapeString(place.Name)
+	place.ImagePath = template.HTMLEscapeString(place.ImagePath)
+	place.Description = template.HTMLEscapeString(place.Description)
+	place.Address = template.HTMLEscapeString(place.Address)
+	place.PhoneNumber = template.HTMLEscapeString(place.PhoneNumber)
+
 	if err := h.uc.CreatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Println(err.Error())
@@ -89,12 +100,21 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [put]
 func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var place models.UpdatePlace
 	if err := json.NewDecoder(r.Body).Decode(&place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest)
 		logger.Println(err.Error())
 		return
 	}
+
+	place.Name = template.HTMLEscapeString(place.Name)
+	place.ImagePath = template.HTMLEscapeString(place.ImagePath)
+	place.Description = template.HTMLEscapeString(place.Description)
+	place.Address = template.HTMLEscapeString(place.Address)
+	place.PhoneNumber = template.HTMLEscapeString(place.PhoneNumber)
+
 	if err := h.uc.UpdatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)
 		logger.Println(err.Error())
@@ -177,6 +197,8 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/search/{placeName} [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	placeName := mux.Vars(r)["placeName"]
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
@@ -190,6 +212,8 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		logger.Println(err.Error())
 		return
 	}
+	placeName = template.HTMLEscapeString(placeName)
+
 	places, err := h.uc.SearchPlaces(r.Context(), placeName, limit, offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError)

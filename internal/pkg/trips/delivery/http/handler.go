@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -50,6 +51,8 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var trip models.Trip
 	err := json.NewDecoder(r.Body).Decode(&trip)
 	if err != nil {
@@ -60,6 +63,9 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	trip.Name = template.HTMLEscapeString(trip.Name)
+	trip.Description = template.HTMLEscapeString(trip.Description)
 
 	err = h.uc.CreateTrip(context.Background(), trip)
 	if err != nil {
@@ -85,6 +91,8 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update trip"
 // @Router /trips/{id} [put]
 func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var trip models.Trip
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
@@ -105,6 +113,9 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	trip.Name = template.HTMLEscapeString(trip.Name)
+	trip.Description = template.HTMLEscapeString(trip.Description)
 
 	trip.ID = uint(tripID)
 	err = h.uc.UpdateTrip(context.Background(), trip)

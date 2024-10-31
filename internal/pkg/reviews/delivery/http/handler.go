@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -49,6 +50,8 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var review models.Review
 	err := json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
@@ -59,6 +62,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
 	err = h.uc.CreateReview(context.Background(), review)
 	if err != nil {
@@ -83,6 +88,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update review"
 // @Router /reviews/{id} [put]
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var review models.Review
 	vars := mux.Vars(r)
 	reviewID, err := strconv.Atoi(vars["id"])
@@ -102,6 +109,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
 	review.ID = uint(reviewID)
 	err = h.uc.UpdateReview(context.Background(), review)

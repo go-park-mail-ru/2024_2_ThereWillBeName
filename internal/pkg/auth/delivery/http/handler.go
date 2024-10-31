@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"html/template"
 	"net/http"
 	"time"
 )
@@ -42,6 +43,8 @@ func NewAuthHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /signup [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var credentials Credentials
 
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
@@ -51,6 +54,10 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	credentials.Login = template.HTMLEscapeString(credentials.Login)
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
 
 	user := models.User{
 		Login:    credentials.Login,
@@ -136,6 +143,8 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	var credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -147,6 +156,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
 
 	user, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
 	if err != nil {
@@ -172,6 +184,31 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   false,
+	})
+
+	tokenExpTime := time.Now().Unix() + 3600
+	hashToken, err := middleware.NewHMACHashToken("your_secret_key")
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "CSRF token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+	csrfToken, err := hashToken.GenerateCSRFToken(user.ID, tokenExpTime)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "CSRF token generation failed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    csrfToken,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	})
 
 	response := models.User{
