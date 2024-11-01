@@ -85,6 +85,7 @@ places_category:
 ```
 review:
 {id}->{user, place, rating, reviewText}
+{user,place}->{rating, reviewText}
 
 ```
 
