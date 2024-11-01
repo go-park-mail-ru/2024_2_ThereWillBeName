@@ -2,10 +2,10 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/auth"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	"2024_2_ThereWillBeName/internal/pkg/user"
 	"context"
 	"encoding/json"
 	"errors"
@@ -19,11 +19,11 @@ type Credentials struct {
 }
 
 type Handler struct {
-	usecase auth.AuthUsecase
+	usecase user.UserUsecase
 	jwt     *jwt.JWT
 }
 
-func NewAuthHandler(usecase auth.AuthUsecase, jwt *jwt.JWT) *Handler {
+func NewUserHandler(usecase user.UserUsecase, jwt *jwt.JWT) *Handler {
 	return &Handler{
 		usecase: usecase,
 		jwt:     jwt,
@@ -210,4 +210,11 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK)
+}
+
+func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+	}
 }
