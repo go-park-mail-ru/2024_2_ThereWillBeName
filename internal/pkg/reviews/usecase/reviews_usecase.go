@@ -52,7 +52,7 @@ func (u *reviewsUsecaseImpl) DeleteReview(ctx context.Context, reviewID uint) er
 	return nil
 }
 
-func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.Review, error) {
+func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.GetReview, error) {
 	reviewsFound, err := u.repo.GetReviewsByPlaceID(ctx, placeID, limit, offset)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -64,13 +64,13 @@ func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID ui
 	return reviewsFound, nil
 }
 
-func (u *reviewsUsecaseImpl) GetReview(ctx context.Context, reviewID uint) (models.Review, error) {
+func (u *reviewsUsecaseImpl) GetReview(ctx context.Context, reviewID uint) (models.GetReview, error) {
 	reviewFound, err := u.repo.GetReview(ctx, reviewID)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			return models.Review{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
+			return models.GetReview{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return models.Review{}, fmt.Errorf("internal error: %w", models.ErrInternal)
+		return models.GetReview{}, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 
 	return reviewFound, nil

@@ -104,12 +104,13 @@ func main() {
 	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
-	reviews := r.PathPrefix("/reviews").Subrouter()
-	reviews.HandleFunc("/", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
-	reviews.HandleFunc("/{id}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
-	reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
-	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
-	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
+
+	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
+	reviews.HandleFunc("", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
+	reviews.HandleFunc("/{reviewID}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
+	reviews.HandleFunc("/{reviewID}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
+	reviews.HandleFunc("/{reviewID}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
