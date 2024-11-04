@@ -101,7 +101,7 @@ func main() {
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
-	reviews := places.PathPrefix("{placeID}/reviews").Subrouter()
+	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
 	reviews.HandleFunc("", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
 	reviews.HandleFunc("/{reviewID}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
 	reviews.HandleFunc("/{reviewID}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
