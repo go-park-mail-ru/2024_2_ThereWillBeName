@@ -9,7 +9,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
+	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 type Credentials struct {
@@ -57,7 +61,8 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.Password,
 	}
 
-	err := h.usecase.SignUp(context.Background(), user)
+	var err error
+	user.ID, err = h.usecase.SignUp(context.Background(), user)
 	if err != nil {
 		if errors.Is(err, models.ErrAlreadyExists) {
 			response := httpresponse.ErrorResponse{
@@ -212,9 +217,119 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	httpresponse.SendJSONResponse(w, response, http.StatusOK)
 }
 
+// UploadAvatar godoc
+// @Summary Upload user avatar
+// @Description Upload an avatar image for the user
+// @Accept multipart/form-data
+// @Produce json
+// @Param avatar formData file true "Avatar file"
+// @Success 200 {string} string "Avatar uploaded successfully"
+// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
+// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Router /users/{userID}/avatar [put]
 func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(middleware.IdKey).(uint)
-	if !ok {
+	userIDStr := mux.Vars(r)["userID"]
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil || userID < 0 {
+		log.Printf("upload error: %s", err)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid user ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
 
 	}
+
+	authUserID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok || authUserID != uint(userID) {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized to upload avatar for this ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "File is too large",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	file, header, err := r.FormFile("avatar")
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid file upload",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	var avatarPath string
+	if avatarPath, err = h.usecase.UploadAvatar(context.Background(), uint(userID), file, header); err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Failed to upload avatar",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+	}
+
+	response := map[string]string{
+		"message":    "Avatar uploaded successfully",
+		"avatarPath": avatarPath,
+	}
+	httpresponse.SendJSONResponse(w, response, http.StatusOK)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Retrieve the user profile information
+// @Produce json
+// @Param userID path int true "User ID"
+// @Success 200 {object} models.UserProfile "User profile"
+// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
+// @Failure 404 {object} httpresponses.ErrorResponse "Not Found"
+// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Router /users/{userID}/profile [get]
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	userIDStr := mux.Vars(r)["userID"]
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid user ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	requesterID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+		return
+	}
+
+	profile, err := h.usecase.GetProfile(context.Background(), uint(userID), requesterID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound)
+			return
+		}
+		response := httpresponse.ErrorResponse{
+			Message: "Failed to retrieve user profile",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError)
+		return
+	}
+
+	httpresponse.SendJSONResponse(w, profile, http.StatusOK)
 }
