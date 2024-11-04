@@ -2,12 +2,12 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
-	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
-	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	httpHandler "2024_2_ThereWillBeName/internal/pkg/user/delivery/http"
+	userRepo "2024_2_ThereWillBeName/internal/pkg/user/repo"
+	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
@@ -50,15 +50,16 @@ func main() {
 	defer db.Close()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
 	if err != nil {
 		logger.Fatal("Error generating secret key:", err)
 	}
 
-	authRepo := repo.NewAuthRepository(db)
+	userRepo := userRepo.NewAuthRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
-	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
-	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
+	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)
+	h := httpHandler.NewUserHandler(userUseCase, jwtHandler)
 
 	reviewsRepo := reviewrepo.NewReviewRepository(db)
 	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
@@ -90,6 +91,9 @@ func main() {
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser))).Methods(http.MethodGet)
 
 	user := users.PathPrefix("/{userID}").Subrouter()
+
+	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar))).Methods(http.MethodPut)
+	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.GetProfile))).Methods(http.MethodGet)
 
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
