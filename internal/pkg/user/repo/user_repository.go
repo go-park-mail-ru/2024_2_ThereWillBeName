@@ -81,18 +81,12 @@ func (r *UserRepositoryImpl) GetUsers(ctx context.Context, count, offset int64) 
 }
 
 func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID uint) (string, error) {
-	queryBuilder := squirrel.Select("avatarPath").
-		From("users").
-		Where(squirrel.Eq{"id": userID}).
-		PlaceholderFormat(squirrel.Dollar)
+	query := "SELECT avatarPath FROM users WHERE id=$1"
 
-	query, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return "", fmt.Errorf("failed to build query: %w", models.ErrInternal)
-	}
+	row := r.db.QueryRowContext(ctx, query, userID)
 
 	var avatarPath string
-	err = r.db.QueryRowContext(ctx, query, args...).Scan(&avatarPath)
+	err := row.Scan(&avatarPath)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("user not found: %w", models.ErrNotFound)
@@ -104,17 +98,9 @@ func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID u
 }
 
 func (r *UserRepositoryImpl) UpdateAvatarPathByUserId(ctx context.Context, userID uint, avatarPath string) error {
-	queryBuilder := squirrel.Update("users").
-		Set("avatarpath", avatarPath).
-		Where(squirrel.Eq{"id": userID}).
-		PlaceholderFormat(squirrel.Dollar)
+	query := "UPDATE users SET avatarPath = $1 WHERE id = $2"
 
-	query, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return fmt.Errorf("failed to build update query: %w", models.ErrInternal)
-	}
-
-	result, err := r.db.ExecContext(ctx, query, args...)
+	result, err := r.db.ExecContext(ctx, query, avatarPath, userID)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
 	}
