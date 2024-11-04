@@ -80,11 +80,12 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 }
 
 func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.Review, error) {
-	query := `SELECT id, user_id, place_id, rating, review_text, created_at 
-              FROM reviews 
-              WHERE place_id = $1
-              ORDER BY created_at DESC
-			  LIMIT $2 OFFSET $3`
+	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
+              FROM reviews r
+              JOIN users u ON r.user_id = u.id
+              WHERE r.place_id = $1
+              ORDER BY r.created_at DESC
+              LIMIT $2 OFFSET $3`
 
 	rows, err := r.db.QueryContext(ctx, query, placeID, limit, offset)
 	if err != nil {
@@ -109,9 +110,10 @@ func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint
 }
 
 func (r *ReviewRepository) GetReview(ctx context.Context, reviewID uint) (models.Review, error) {
-	query := `SELECT id, user_id, place_id, rating, review_text, created_at 
-              FROM reviews 
-              WHERE id = $1`
+	query := `SELECT r.id, u.username, u.avatarPath, r.rating, r.review_text 
+              FROM reviews r
+              JOIN users u ON r.user_id = u.id
+              WHERE r.id = $1`
 
 	row := r.db.QueryRowContext(ctx, query, reviewID)
 
