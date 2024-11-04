@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/user"
 	"context"
 	"errors"
@@ -17,10 +16,11 @@ import (
 )
 
 type UserUsecaseImpl struct {
-	repo user.UserRepo
+	repo        user.UserRepo
+	storagePath string
 }
 
-func NewUserUsecase(repo user.UserRepo, jwt *jwt.JWT) *UserUsecaseImpl {
+func NewUserUsecase(repo user.UserRepo, storagePath string) *UserUsecaseImpl {
 	return &UserUsecaseImpl{
 		repo: repo,
 	}
@@ -73,23 +73,17 @@ func (a *UserUsecaseImpl) UploadAvatar(ctx context.Context, userID uint, avatarF
 		return "", fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 
-	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 	fileExt := filepath.Ext(header.Filename)
 
-	var realAvatarPath string
-	if avatarPath != "" {
-		//если путь к аватару есть в таблице у юзера -> изменяем только расширение у файла
-		realAvatarPath = avatarPath[:len(avatarPath)-len(filepath.Ext(avatarPath))] + fileExt
-	} else {
-		realAvatarPath = filepath.Join(storagePath, fmt.Sprintf("user_%d_avatar%s", userID, fileExt))
-	}
+	avatarFileName := fmt.Sprintf("user_%d_avatar%s", userID, fileExt)
+	realAvatarPath := filepath.Join(a.storagePath, avatarFileName)
 
 	if err := saveAvatarFile(avatarFile, realAvatarPath); err != nil {
 		return err.Error(), err
 	}
 
-	if avatarPath == "" || realAvatarPath != avatarPath {
-		if err := a.repo.UpdateAvatarPathByUserId(ctx, userID, realAvatarPath); err != nil {
+	if avatarPath == "" {
+		if err := a.repo.UpdateAvatarPathByUserId(ctx, userID, avatarFileName); err != nil {
 			return "", fmt.Errorf("failed to update avatar path in database: %w", models.ErrInternal)
 		}
 	}

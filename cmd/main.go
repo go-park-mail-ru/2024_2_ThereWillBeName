@@ -50,6 +50,7 @@ func main() {
 	defer db.Close()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
 	if err != nil {
 		logger.Fatal("Error generating secret key:", err)
@@ -57,7 +58,7 @@ func main() {
 
 	userRepo := userRepo.NewAuthRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
-	userUseCase := userUsecase.NewUserUsecase(userRepo, jwtHandler)
+	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)
 	h := httpHandler.NewUserHandler(userUseCase, jwtHandler)
 
 	reviewsRepo := reviewrepo.NewReviewRepository(db)
@@ -91,8 +92,7 @@ func main() {
 
 	user := users.PathPrefix("/{userID}").Subrouter()
 
-	user.Handle("/avatar", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar))).Methods(http.MethodPut)
-	// user.Handle("/avatar", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.DeleteAvatar))).Methods(http.MethodDelete)
+	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar))).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.GetProfile))).Methods(http.MethodGet)
 
 	places := r.PathPrefix("/places").Subrouter()

@@ -11,7 +11,7 @@ services:
     environment:
       - AVATAR_STORAGE_PATH=/assets/avatars
     volumes:
-      - ./assets:/assets
+      - ./assets/avatars:/assets/avatars
     ports:
       - 8080:8080
   tripdb:

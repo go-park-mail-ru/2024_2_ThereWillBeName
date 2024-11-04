@@ -6,7 +6,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
@@ -89,7 +88,6 @@ func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID u
 
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
-		log.Println("1: %w", err)
 		return "", fmt.Errorf("failed to build query: %w", models.ErrInternal)
 	}
 
@@ -99,7 +97,6 @@ func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID u
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", fmt.Errorf("user not found: %w", models.ErrNotFound)
 		}
-		log.Println("2:", err)
 		return "", fmt.Errorf("failed to retrieve avatar path: %w", models.ErrInternal)
 	}
 
