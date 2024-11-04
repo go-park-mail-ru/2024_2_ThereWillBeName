@@ -231,7 +231,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	userIDStr := mux.Vars(r)["userID"]
 	userID, err := strconv.ParseUint(userIDStr, 10, 32)
-	if err != nil || userID < 0 {
+	if err != nil {
 		log.Printf("upload error: %s", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid user ID",
