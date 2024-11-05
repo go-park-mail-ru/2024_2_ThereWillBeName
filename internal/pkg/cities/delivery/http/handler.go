@@ -43,6 +43,9 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Produce json
 // @Success 200 {array} models.City "Cities details"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid query"
+// @Failure 403 {object} httpresponses.ErrorResponse "CSRF token missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid CSRF token"
+// @Failure 404 {object} httpresponses.ErrorResponse "Cities not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
 // @Router /cities/search [get]
 func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +75,9 @@ func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http
 // @Param id path int true "City ID"
 // @Success 200 {object} models.City "City details"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid city ID"
+// @Failure 403 {object} httpresponses.ErrorResponse "CSRF token missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid CSRF token"
+// @Failure 404 {object} httpresponses.ErrorResponse "City not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
 // @Router /cities/{id} [get]
 func (h *CitiesHandler) SearchCityByIDHandler(w http.ResponseWriter, r *http.Request) {

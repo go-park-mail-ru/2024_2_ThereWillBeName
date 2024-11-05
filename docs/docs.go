@@ -38,6 +38,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid CSRF token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Cities not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Failed to retrieve cities",
                         "schema": {
@@ -72,6 +84,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid city ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid CSRF token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "City not found",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }

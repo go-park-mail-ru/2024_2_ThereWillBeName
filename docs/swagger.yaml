@@ -165,6 +165,14 @@ paths:
           description: Invalid city ID
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: City not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
           description: Failed to retrieve cities
           schema:
@@ -184,6 +192,14 @@ paths:
             type: array
         "400":
           description: Invalid query
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Cities not found
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
