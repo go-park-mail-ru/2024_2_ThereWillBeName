@@ -534,7 +534,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Review details",
                         "schema": {
-                            "$ref": "#/definitions/models.Review"
+                            "$ref": "#/definitions/models.GetReview"
                         }
                     },
                     "400": {
@@ -909,6 +909,97 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{userID}/avatar": {
+            "put": {
+                "description": "Upload an avatar image for the user",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Upload user avatar",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Avatar file",
+                        "name": "avatar",
+                        "in": "formData",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Avatar uploaded successfully",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userID}/profile": {
+            "get": {
+                "description": "Retrieve the user profile information",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get user profile",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile",
+                        "schema": {
+                            "$ref": "#/definitions/models.UserProfile"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{userID}/trips": {
             "get": {
                 "description": "Get all trips for a specific user",
@@ -1067,6 +1158,26 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GetReview": {
+            "type": "object",
+            "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "review_text": {
+                    "type": "string"
+                },
+                "user_login": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Review": {
             "type": "object",
             "properties": {
@@ -1163,6 +1274,9 @@ const docTemplate = `{
         "models.User": {
             "type": "object",
             "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1171,6 +1285,20 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "login": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.UserProfile": {
+            "type": "object",
+            "properties": {
+                "avatar_path": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
                 },
                 "login": {
                     "type": "string"

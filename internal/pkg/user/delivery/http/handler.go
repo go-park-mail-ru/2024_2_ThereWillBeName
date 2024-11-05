@@ -209,9 +209,19 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	email, ok := r.Context().Value(middleware.EmailKey).(string)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+		return
+	}
+
 	response := models.User{
 		ID:    userID,
 		Login: login,
+		Email: email,
 	}
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK)

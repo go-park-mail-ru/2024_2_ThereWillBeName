@@ -70,6 +70,19 @@ definitions:
       rating:
         type: integer
     type: object
+  models.GetReview:
+    properties:
+      avatar_path:
+        type: string
+      id:
+        type: integer
+      rating:
+        type: integer
+      review_text:
+        type: string
+      user_login:
+        type: string
+    type: object
   models.Review:
     properties:
       created_at:
@@ -133,12 +146,23 @@ definitions:
     type: object
   models.User:
     properties:
+      avatar_path:
+        type: string
       created_at:
         type: string
       email:
         type: string
       id:
         type: integer
+      login:
+        type: string
+    type: object
+  models.UserProfile:
+    properties:
+      avatar_path:
+        type: string
+      email:
+        type: string
       login:
         type: string
     type: object
@@ -514,7 +538,7 @@ paths:
         "200":
           description: Review details
           schema:
-            $ref: '#/definitions/models.Review'
+            $ref: '#/definitions/models.GetReview'
         "400":
           description: Invalid review ID
           schema:
@@ -715,6 +739,66 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Update an existing trip
+  /users/{userID}/avatar:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Upload an avatar image for the user
+      parameters:
+      - description: Avatar file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Avatar uploaded successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Upload user avatar
+  /users/{userID}/profile:
+    get:
+      description: Retrieve the user profile information
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/models.UserProfile'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Get user profile
   /users/{userID}/trips:
     get:
       description: Get all trips for a specific user

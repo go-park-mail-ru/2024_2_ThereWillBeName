@@ -13,6 +13,7 @@ type contextKey string
 const (
 	IdKey    contextKey = "userID"
 	LoginKey contextKey = "login"
+	EmailKey contextKey = "email"
 )
 
 func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
@@ -36,9 +37,11 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 		}
 		userID := uint(claims["id"].(float64))
 		login := claims["login"].(string)
+		email := claims["email"].(string)
 		log.Println("middleware: ", userID, IdKey)
 		ctx := context.WithValue(r.Context(), IdKey, userID)
 		ctx = context.WithValue(ctx, LoginKey, login)
+		ctx = context.WithValue(ctx, EmailKey, email)
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
