@@ -88,7 +88,7 @@ func (a *UserUsecaseImpl) UploadAvatar(ctx context.Context, userID uint, avatarF
 		}
 	}
 
-	return realAvatarPath, nil
+	return avatarFileName, nil
 }
 
 func (a *UserUsecaseImpl) GetProfile(ctx context.Context, userID, requesterID uint) (models.UserProfile, error) {
