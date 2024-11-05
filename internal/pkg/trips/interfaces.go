@@ -11,6 +11,7 @@ type TripsUsecase interface {
 	DeleteTrip(ctx context.Context, id uint) error
 	GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error)
 	GetTrip(ctx context.Context, tripID uint) (models.Trip, error)
+	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
 }
 
 type TripsRepo interface {
@@ -19,4 +20,5 @@ type TripsRepo interface {
 	DeleteTrip(ctx context.Context, id uint) error
 	GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error)
 	GetTrip(ctx context.Context, tripID uint) (models.Trip, error)
+	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
 }

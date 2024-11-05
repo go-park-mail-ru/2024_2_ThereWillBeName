@@ -8,6 +8,23 @@ definitions:
       password:
         type: string
     type: object
+  http.TripData:
+    properties:
+      city_id:
+        type: integer
+      description:
+        type: string
+      end_date:
+        type: string
+      name:
+        type: string
+      private:
+        type: boolean
+      start_date:
+        type: string
+      user_id:
+        type: integer
+    type: object
   httpresponses.ErrorResponse:
     properties:
       message:
@@ -624,10 +641,10 @@ paths:
       parameters:
       - description: Trip details
         in: body
-        name: trip
+        name: tripData
         required: true
         schema:
-          $ref: '#/definitions/models.Trip'
+          $ref: '#/definitions/http.TripData'
       produces:
       - application/json
       responses:
@@ -703,6 +720,38 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Retrieve a trip by ID
+    post:
+      description: Add a place with given place_id to a trip
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Place ID
+        in: body
+        name: place_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Place added to trip successfully
+        "400":
+          description: Invalid place ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Place not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to add place to trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Add a place to a trip
     put:
       consumes:
       - application/json
@@ -715,10 +764,10 @@ paths:
         type: integer
       - description: Updated trip details
         in: body
-        name: trip
+        name: tripData
         required: true
         schema:
-          $ref: '#/definitions/models.Trip'
+          $ref: '#/definitions/http.TripData'
       produces:
       - application/json
       responses:
