@@ -9,6 +9,9 @@ import (
 	userRepo "2024_2_ThereWillBeName/internal/pkg/user/repo"
 	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 
+	citieshandler "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
+	citiesrepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
+	citiesusecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
@@ -70,6 +73,9 @@ func main() {
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
+	citiesRepo := citiesrepo.NewCitiesRepository(db)
+	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
+	citiesHandler := citieshandler.NewCitiesHandler(citiesUsecase)
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -118,6 +124,11 @@ func main() {
 	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
 	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
 	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
+
+	cities := r.PathPrefix("/cities").Subrouter()
+	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
+	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,

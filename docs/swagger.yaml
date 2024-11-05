@@ -13,6 +13,15 @@ definitions:
       message:
         type: string
     type: object
+  models.City:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
   models.CreatePlace:
     properties:
       address:
@@ -136,6 +145,68 @@ definitions:
 info:
   contact: {}
 paths:
+  /cities/{id}:
+    get:
+      description: Get city details by city ID
+      parameters:
+      - description: City ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: City details
+          schema:
+            $ref: '#/definitions/models.City'
+        "400":
+          description: Invalid city ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: City not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve cities
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve a city by ID
+  /cities/search:
+    get:
+      description: Get cities details by city name
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cities details
+          schema:
+            items:
+              $ref: '#/definitions/models.City'
+            type: array
+        "400":
+          description: Invalid query
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Cities not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve cities
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve cities by name
   /healthcheck:
     get:
       description: Check the health status of the service
