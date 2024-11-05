@@ -73,7 +73,7 @@ func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Tri
 		if errors.Is(err, models.ErrNotFound) {
 			return models.Trip{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return models.Trip{}, fmt.Errorf("internal error^ %w", models.ErrInternal)
+		return models.Trip{}, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 	return trip, nil
 }
