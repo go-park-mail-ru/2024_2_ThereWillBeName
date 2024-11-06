@@ -2,9 +2,13 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	mock_places "2024_2_ThereWillBeName/internal/pkg/places/mocks"
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
 	"github.com/lib/pq"
 	"regexp"
 	"testing"
@@ -80,4 +84,136 @@ func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
 	fmt.Println(places, err)
 	assert.Error(t, err)
 	assert.Nil(t, places)
+}
+
+//func TestPlaceRepository_CreatePlace(t *testing.T) {
+//	db, mock, err := sqlmock.New()
+//	if err != nil {
+//		t.Fatalf("failed to open mock sql database: %v", err)
+//	}
+//	defer db.Close()
+//	r := NewPLaceRepository(db)
+//
+//	tests := []struct {
+//		name        string
+//		place       models.CreatePlace
+//		mockSetup   func()
+//		expectedErr error
+//	}{
+//		{
+//			name: "succesfull",
+//			place: models.CreatePlace{
+//				Name:            "Test Place",
+//				ImagePath:       "/path/to/image",
+//				Description:     "Test Description",
+//				Rating:          4,
+//				NumberOfReviews: 10,
+//				Address:         "Test Address",
+//				CityId:          1,
+//				PhoneNumber:     "1234567890",
+//				CategoriesId:    []int{1, 2, 3},
+//			},
+//			mockSetup: func() {
+//				mock.ExpectQueryRow("INSERT INTO places (name, imagePath, description, rating, numberOfReviews, address, cityId, phoneNumber) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id").WithArgs("Test Place", "/path/to/image", "Test Description", 4, 10, "Test Address", 1, "1234567890").
+//					WillReturnResult(sqlmock.NewResult(1, 1))
+//			},
+//			expectedErr: nil,
+//		},
+//	}
+//
+//	for _, tt := range tests {
+//		t.Run(tt.name, func(t *testing.T) {
+//			tt.mockSetup()
+//			err := r.CreatePlace(context.Background(), tt.place)
+//			if tt.expectedErr != nil {
+//				assert.EqualError(t, err, tt.expectedErr.Error())
+//			} else {
+//				assert.NoError(t, err)
+//			}
+//			assert.NoError(t, mock.ExpectationsWereMet())
+//		})
+//	}
+//
+//}
+
+func TestPlaceRepository_CreatePlace(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockPlaceRepo := mock_places.NewMockPlaceRepo(ctrl)
+
+	ctx := context.Background()
+
+	place := models.CreatePlace{
+		Name:            "Test Place",
+		ImagePath:       "/path/to/image",
+		Description:     "Test Description",
+		Rating:          4,
+		NumberOfReviews: 10,
+		Address:         "Test Address",
+		CityId:          1,
+		PhoneNumber:     "1234567890",
+		CategoriesId:    []int{1, 2, 3},
+	}
+
+	t.Run("success", func(t *testing.T) {
+		// Ожидаем вызов QueryRowContext
+		mockPlaceRepo.EXPECT().QueryRowContext(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, query string, args ...interface{}) *sql.Row {
+				// Возвращаем mock для Row, который вернет id
+				return &sql.Row{
+					Scan: func(dest ...interface{}) error {
+						// Устанавливаем id в 1
+						*(dest[0].(*int)) = 1
+						return nil
+					},
+				}
+			})
+
+		// Ожидаем вызов ExecContext для каждой категории
+		for _, categoryID := range place.CategoriesId {
+			mockPlaceRepo.EXPECT().ExecContext(ctx, gomock.Any(), gomock.Any(), categoryID).
+				Return(sql.Result(&sql.RowsAffected{}), nil)
+		}
+
+		err := mockPlaceRepo.CreatePlace(ctx, place)
+		assert.NoError(t, err)
+	})
+
+	t.Run("error on create place", func(t *testing.T) {
+		// Ожидаем вызов QueryRowContext с ошибкой
+		mockPlaceRepo.EXPECT().QueryRowContext(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(&sql.Row{
+				Scan: func(dest ...interface{}) error {
+					return errors.New("database error")
+				},
+			})
+
+		err := mockPlaceRepo.CreatePlace(ctx, place)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "coldn't create place: database error")
+	})
+
+	t.Run("error on create place_categories", func(t *testing.T) {
+		// Ожидаем вызов QueryRowContext
+		mockPlaceRepo.EXPECT().QueryRowContext(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+			DoAndReturn(func(ctx context.Context, query string, args ...interface{}) *sql.Row {
+				// Возвращаем mock для Row, который вернет id
+				return &sql.Row{
+					Scan: func(dest ...interface{}) error {
+						// Устанавливаем id в 1
+						*(dest[0].(*int)) = 1
+						return nil
+					},
+				}
+			})
+
+		// Ожидаем вызов ExecContext с ошибкой
+		mockPlaceRepo.EXPECT().ExecContext(ctx, gomock.Any(), gomock.Any(), gomock.Any()).
+			Return(nil, errors.New("database error"))
+
+		err := mockPlaceRepo.CreatePlace(ctx, place)
+		assert.Error(t, err)
+		assert.EqualError(t, err, "coldn't create place_categories: database error")
+	})
 }
