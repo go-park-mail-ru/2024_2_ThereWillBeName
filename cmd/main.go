@@ -2,13 +2,16 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	httpHandler "2024_2_ThereWillBeName/internal/pkg/auth/delivery/http"
-	"2024_2_ThereWillBeName/internal/pkg/auth/repo"
-	"2024_2_ThereWillBeName/internal/pkg/auth/usecase"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	httpHandler "2024_2_ThereWillBeName/internal/pkg/user/delivery/http"
+	userRepo "2024_2_ThereWillBeName/internal/pkg/user/repo"
+	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 
+	citieshandler "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
+	citiesrepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
+	citiesusecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
 	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
@@ -50,15 +53,16 @@ func main() {
 	defer db.Close()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
+	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
 	if err != nil {
 		logger.Fatal("Error generating secret key:", err)
 	}
 
-	authRepo := repo.NewAuthRepository(db)
+	userRepo := userRepo.NewAuthRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret))
-	authUseCase := usecase.NewAuthUsecase(authRepo, jwtHandler)
-	h := httpHandler.NewAuthHandler(authUseCase, jwtHandler)
+	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)
+	h := httpHandler.NewUserHandler(userUseCase, jwtHandler)
 
 	reviewsRepo := reviewrepo.NewReviewRepository(db)
 	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
@@ -69,6 +73,9 @@ func main() {
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase)
+	citiesRepo := citiesrepo.NewCitiesRepository(db)
+	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
+	citiesHandler := citieshandler.NewCitiesHandler(citiesUsecase)
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -91,6 +98,9 @@ func main() {
 
 	user := users.PathPrefix("/{userID}").Subrouter()
 
+	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar))).Methods(http.MethodPut)
+	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.GetProfile))).Methods(http.MethodGet)
+
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
 	// places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
@@ -103,15 +113,16 @@ func main() {
 	places.Handle("/{id}", middleware.CSRFMiddleware(http.HandlerFunc(placeHandler.DeletePlaceHandler))).Methods(http.MethodDelete)
 
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
-	reviews := r.PathPrefix("/reviews").Subrouter()
-	// reviews.HandleFunc("/", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
+
+	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
+	// reviews.HandleFunc("", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
 	reviews.Handle("/", middleware.CSRFMiddleware(http.HandlerFunc(reviewHandler.CreateReviewHandler))).Methods(http.MethodPost)
-	// reviews.HandleFunc("/{id}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
+	// reviews.HandleFunc("/{reviewID}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
 	reviews.Handle("/{id}", middleware.CSRFMiddleware(http.HandlerFunc(reviewHandler.UpdateReviewHandler))).Methods(http.MethodPut)
-	// reviews.HandleFunc("/{id}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
+	// reviews.HandleFunc("/{reviewID}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
 	reviews.Handle("/{id}", middleware.CSRFMiddleware(http.HandlerFunc(reviewHandler.DeleteReviewHandler))).Methods(http.MethodDelete)
-	reviews.HandleFunc("/{id}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
-	reviews.HandleFunc("/reviews/{reviewID}", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("/{reviewID}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
+	reviews.HandleFunc("", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
 	trips := r.PathPrefix("/trips").Subrouter()
 	// trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
@@ -121,7 +132,13 @@ func main() {
 	// trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
 	trips.Handle("/{id}", middleware.CSRFMiddleware(http.HandlerFunc(tripHandler.DeleteTripHandler))).Methods(http.MethodDelete)
 	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
+	trips.HandleFunc("/{id}", tripHandler.AddPlaceToTripHandler).Methods(http.MethodPost)
 	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
+
+	cities := r.PathPrefix("/cities").Subrouter()
+	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
+	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
+
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),
 		Handler:      r,

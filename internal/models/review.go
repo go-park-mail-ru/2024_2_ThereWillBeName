@@ -10,3 +10,11 @@ type Review struct {
 	ReviewText string    `json:"review_text"`
 	CreatedAt  time.Time `json:"created_at"`
 }
+
+type GetReview struct {
+	ID         uint   `json:"id"`
+	UserLogin  string `json:"user_login"`
+	AvatarPath string `json:"avatar_path"`
+	Rating     int    `json:"rating"`
+	ReviewText string `json:"review_text"`
+}

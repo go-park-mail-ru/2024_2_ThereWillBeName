@@ -208,14 +208,14 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 // @Description Get review details by review ID
 // @Produce json
 // @Param id path int true "Review ID"
-// @Success 200 {object} models.Review "Review details"
+// @Success 200 {object} models.GetReview "Review details"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid review ID"
 // @Failure 404 {object} httpresponses.ErrorResponse "Review not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve review"
 // @Router /reviews/{id} [get]
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	reviewIDStr := vars["id"]
+	reviewIDStr := vars["reviewID"]
 	reviewID, err := strconv.ParseUint(reviewIDStr, 10, 64)
 	if err != nil {
 		log.Printf("retrieve error: %s", err)

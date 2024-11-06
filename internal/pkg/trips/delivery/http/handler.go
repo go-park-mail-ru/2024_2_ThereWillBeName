@@ -16,6 +16,20 @@ import (
 	"github.com/gorilla/mux"
 )
 
+type AddPlaceRequest struct {
+	PlaceID uint `json:"place_id"`
+}
+
+type TripData struct {
+	UserID      uint   `json:"user_id"`
+	Name        string `json:"name"`
+	CityID      uint   `json:"city_id"`
+	Description string `json:"description"`
+	StartDate   string `json:"start_date"`
+	EndDate     string `json:"end_date"`
+	Private     bool   `json:"private"`
+}
+
 type TripHandler struct {
 	uc trips.TripsUsecase
 }
@@ -44,13 +58,15 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Description Create a new trip with given fields
 // @Accept json
 // @Produce json
-// @Param trip body models.Trip true "Trip details"
+// @Param tripData body TripData true "Trip details"
 // @Success 201 {object} models.Trip "Trip created successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid request"
 // @Failure 404 {object} httpresponses.ErrorResponse "Invalid request"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
+	var tripData TripData
+	err := json.NewDecoder(r.Body).Decode(&tripData)
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 
 	var trip models.Trip
@@ -63,7 +79,15 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
-
+	trip := models.Trip{
+		UserID:      tripData.UserID,
+		Name:        tripData.Name,
+		Description: tripData.Description,
+		CityID:      tripData.CityID,
+		StartDate:   tripData.StartDate,
+		EndDate:     tripData.EndDate,
+		Private:     tripData.Private,
+	}
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
@@ -74,7 +98,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	httpresponse.SendJSONResponse(w, "Trip created successfully", http.StatusCreated)
 }
 
 // UpdateTripHandler godoc
@@ -83,7 +107,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Accept json
 // @Produce json
 // @Param id path int true "Trip ID"
-// @Param trip body models.Trip true "Updated trip details"
+// @Param tripData body TripData true "Updated trip details"
 // @Success 200 {object} models.Trip "Trip updated successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip ID"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip data"
@@ -94,6 +118,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 
 	var trip models.Trip
+	var tripData TripData
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
 	if err != nil || tripID < 0 {
@@ -104,7 +129,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
-	err = json.NewDecoder(r.Body).Decode(&trip)
+	err = json.NewDecoder(r.Body).Decode(&tripData)
 	if err != nil {
 		log.Printf("update error: %s", err)
 		response := httpresponse.ErrorResponse{
@@ -116,8 +141,16 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
-
-	trip.ID = uint(tripID)
+	trip := models.Trip{
+		ID:          uint(tripID),
+		UserID:      tripData.UserID,
+		Name:        tripData.Name,
+		Description: tripData.Description,
+		CityID:      tripData.CityID,
+		StartDate:   tripData.StartDate,
+		EndDate:     tripData.EndDate,
+		Private:     tripData.Private,
+	}
 	err = h.uc.UpdateTrip(context.Background(), trip)
 	if err != nil {
 		response, status := ErrorCheck(err, "update")
@@ -125,7 +158,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	httpresponse.SendJSONResponse(w, "Trip updated successfully", http.StatusOK)
 }
 
 // DeleteTripHandler godoc
@@ -158,7 +191,7 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	httpresponse.SendJSONResponse(w, "Trip deleted successfully", http.StatusNoContent)
 }
 
 // GetTripsByUserIDHandler godoc
@@ -240,4 +273,57 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httpresponse.SendJSONResponse(w, trip, http.StatusOK)
+}
+
+// AddPlaceToTripHandler godoc
+// @Summary Add a place to a trip
+// @Description Add a place with given place_id to a trip
+// @Produce json
+// @Param id path int true "Trip ID"
+// @Param place_id body int true "Place ID"
+// @Success 201 "Place added to trip successfully"
+// @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip ID"
+// @Failure 400 {object} httpresponses.ErrorResponse "Invalid place ID"
+// @Failure 404 {object} httpresponses.ErrorResponse "Trip not found"
+// @Failure 404 {object} httpresponses.ErrorResponse "Place not found"
+// @Failure 500 {object} httpresponses.ErrorResponse "Failed to add place to trip"
+// @Router /trips/{id} [post]
+func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tripIDStr, ok := vars["id"]
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid trip ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
+	if err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid trip ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+	var req AddPlaceRequest
+	err = json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		log.Printf("add place error: %s", err)
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid place ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		return
+	}
+
+	err = h.uc.AddPlaceToTrip(context.Background(), uint(tripID), req.PlaceID)
+	if err != nil {
+		response, status := ErrorCheck(err, "add place")
+		httpresponse.SendJSONResponse(w, response, status)
+		return
+	}
+
+	httpresponse.SendJSONResponse(w, "Place added to trip successfully", http.StatusCreated)
 }

@@ -8,9 +8,35 @@ definitions:
       password:
         type: string
     type: object
+  http.TripData:
+    properties:
+      city_id:
+        type: integer
+      description:
+        type: string
+      end_date:
+        type: string
+      name:
+        type: string
+      private:
+        type: boolean
+      start_date:
+        type: string
+      user_id:
+        type: integer
+    type: object
   httpresponses.ErrorResponse:
     properties:
       message:
+        type: string
+    type: object
+  models.City:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
         type: string
     type: object
   models.CreatePlace:
@@ -60,6 +86,19 @@ definitions:
         type: string
       rating:
         type: integer
+    type: object
+  models.GetReview:
+    properties:
+      avatar_path:
+        type: string
+      id:
+        type: integer
+      rating:
+        type: integer
+      review_text:
+        type: string
+      user_login:
+        type: string
     type: object
   models.Review:
     properties:
@@ -124,6 +163,8 @@ definitions:
     type: object
   models.User:
     properties:
+      avatar_path:
+        type: string
       created_at:
         type: string
       email:
@@ -133,9 +174,80 @@ definitions:
       login:
         type: string
     type: object
+  models.UserProfile:
+    properties:
+      avatar_path:
+        type: string
+      email:
+        type: string
+      login:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
+  /cities/{id}:
+    get:
+      description: Get city details by city ID
+      parameters:
+      - description: City ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: City details
+          schema:
+            $ref: '#/definitions/models.City'
+        "400":
+          description: Invalid city ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: City not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve cities
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve a city by ID
+  /cities/search:
+    get:
+      description: Get cities details by city name
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Cities details
+          schema:
+            items:
+              $ref: '#/definitions/models.City'
+            type: array
+        "400":
+          description: Invalid query
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid CSRF token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Cities not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve cities
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve cities by name
   /healthcheck:
     get:
       description: Check the health status of the service
@@ -443,7 +555,7 @@ paths:
         "200":
           description: Review details
           schema:
-            $ref: '#/definitions/models.Review'
+            $ref: '#/definitions/models.GetReview'
         "400":
           description: Invalid review ID
           schema:
@@ -529,10 +641,10 @@ paths:
       parameters:
       - description: Trip details
         in: body
-        name: trip
+        name: tripData
         required: true
         schema:
-          $ref: '#/definitions/models.Trip'
+          $ref: '#/definitions/http.TripData'
       produces:
       - application/json
       responses:
@@ -608,6 +720,38 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Retrieve a trip by ID
+    post:
+      description: Add a place with given place_id to a trip
+      parameters:
+      - description: Trip ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Place ID
+        in: body
+        name: place_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Place added to trip successfully
+        "400":
+          description: Invalid place ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Place not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to add place to trip
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Add a place to a trip
     put:
       consumes:
       - application/json
@@ -620,10 +764,10 @@ paths:
         type: integer
       - description: Updated trip details
         in: body
-        name: trip
+        name: tripData
         required: true
         schema:
-          $ref: '#/definitions/models.Trip'
+          $ref: '#/definitions/http.TripData'
       produces:
       - application/json
       responses:
@@ -644,6 +788,66 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Update an existing trip
+  /users/{userID}/avatar:
+    put:
+      consumes:
+      - multipart/form-data
+      description: Upload an avatar image for the user
+      parameters:
+      - description: Avatar file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Avatar uploaded successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Upload user avatar
+  /users/{userID}/profile:
+    get:
+      description: Retrieve the user profile information
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User profile
+          schema:
+            $ref: '#/definitions/models.UserProfile'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Get user profile
   /users/{userID}/trips:
     get:
       description: Get all trips for a specific user

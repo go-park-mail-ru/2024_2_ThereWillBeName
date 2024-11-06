@@ -122,3 +122,24 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 
 	return trip, nil
 }
+
+func (r *TripRepository) AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error {
+	query := `INSERT INTO trips_places (trip_id, place_id, created_at) 
+              VALUES ($1, $2, NOW())`
+
+	result, err := r.db.ExecContext(ctx, query, tripID, placeID)
+
+	if err != nil {
+		return fmt.Errorf("failed to add place to a trip: %w", models.ErrInternal)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("no rows were created: %w", models.ErrNotFound)
+	}
+
+	return nil
+}

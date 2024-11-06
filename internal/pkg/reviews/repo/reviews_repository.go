@@ -79,12 +79,13 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 	return nil
 }
 
-func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.Review, error) {
-	query := `SELECT id, user_id, place_id, rating, review_text, created_at 
-              FROM reviews 
-              WHERE place_id = $1
-              ORDER BY created_at DESC
-			  LIMIT $2 OFFSET $3`
+func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.GetReview, error) {
+	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
+              FROM reviews r
+              JOIN users u ON r.user_id = u.id
+              WHERE r.place_id = $1
+              ORDER BY r.created_at DESC
+              LIMIT $2 OFFSET $3`
 
 	rows, err := r.db.QueryContext(ctx, query, placeID, limit, offset)
 	if err != nil {
@@ -92,10 +93,10 @@ func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint
 	}
 	defer rows.Close()
 
-	var reviews []models.Review
+	var reviews []models.GetReview
 	for rows.Next() {
-		var review models.Review
-		if err := rows.Scan(&review.ID, &review.UserID, &review.PlaceID, &review.Rating, &review.ReviewText, &review.CreatedAt); err != nil {
+		var review models.GetReview
+		if err := rows.Scan(&review.ID, &review.UserLogin, &review.AvatarPath, &review.Rating, &review.ReviewText); err != nil {
 			return nil, fmt.Errorf("failed to scan review row: %w", models.ErrInternal)
 		}
 		reviews = append(reviews, review)
@@ -108,20 +109,21 @@ func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint
 	return reviews, nil
 }
 
-func (r *ReviewRepository) GetReview(ctx context.Context, reviewID uint) (models.Review, error) {
-	query := `SELECT id, user_id, place_id, rating, review_text, created_at 
-              FROM reviews 
-              WHERE id = $1`
+func (r *ReviewRepository) GetReview(ctx context.Context, reviewID uint) (models.GetReview, error) {
+	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
+              FROM reviews r
+              JOIN users u ON r.user_id = u.id
+              WHERE r.id = $1`
 
 	row := r.db.QueryRowContext(ctx, query, reviewID)
 
-	var review models.Review
-	err := row.Scan(&review.ID, &review.UserID, &review.PlaceID, &review.Rating, &review.ReviewText, &review.CreatedAt)
+	var review models.GetReview
+	err := row.Scan(&review.ID, &review.UserLogin, &review.AvatarPath, &review.Rating, &review.ReviewText)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Review{}, fmt.Errorf("review with ID %d did not found: %w", reviewID, models.ErrNotFound)
+			return models.GetReview{}, fmt.Errorf("review with ID %d did not found: %w", reviewID, models.ErrNotFound)
 		}
-		return models.Review{}, fmt.Errorf("failed to scan review: %w", models.ErrInternal)
+		return models.GetReview{}, fmt.Errorf("failed to scan review: %w", models.ErrInternal)
 	}
 
 	return review, nil
