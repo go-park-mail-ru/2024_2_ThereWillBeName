@@ -36,7 +36,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "successful creation",
 			inputTrip: models.Trip{
-				ID:          1,
+				ID:          0,
 				UserID:      100,
 				Name:        "Test Trip",
 				Description: "A trip for testing",
@@ -51,7 +51,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "invalid input data",
 			inputTrip: models.Trip{
-				ID:        2,
+				ID:        0,
 				UserID:    101,
 				StartDate: "invalid-date",
 				EndDate:   "2024-12-15",
@@ -63,7 +63,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "internal server error",
 			inputTrip: models.Trip{
-				ID:          3,
+				ID:          0,
 				UserID:      102,
 				Name:        "Error Trip",
 				Description: "This trip causes an error",
@@ -327,3 +327,63 @@ func TestGetTripHandler(t *testing.T) {
 		})
 	}
 }
+
+// func TestAddPlaceToTripHandler(t *testing.T) {
+// 	ctrl := gomock.NewController(t)
+// 	defer ctrl.Finish()
+
+// 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
+// 	handler := NewTripHandler(mockUsecase)
+
+// 	tests := []struct {
+// 		name           string
+// 		ID             uint
+// 		requestBody    string
+// 		usecaseErr     error
+// 		expectedStatus int
+// 		expectedBody   httpresponse.ErrorResponse
+// 	}{
+// 		{
+// 			name:           "successful addition of place",
+// 			ID:             1,
+// 			requestBody:    `{"place_id": 2}`,
+// 			usecaseErr:     nil,
+// 			expectedStatus: http.StatusCreated,
+// 		},
+// 		{
+// 			name:           "invalid request body",
+// 			ID:             2,
+// 			requestBody:    `{"place_id": "invalid"}`,
+// 			usecaseErr:     nil,
+// 			expectedStatus: http.StatusBadRequest,
+// 			expectedBody:   httpresponse.ErrorResponse{Message: "Invalid place ID"},
+// 		},
+// 		{
+// 			name:           "error from usecase",
+// 			ID:             3,
+// 			requestBody:    `{"place_id": 2}`,
+// 			usecaseErr:     errors.New("usecase error"),
+// 			expectedStatus: http.StatusBadRequest,
+// 			expectedBody:   httpresponse.ErrorResponse{Message: "Invalid trip ID"},
+// 		},
+// 	}
+
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			mockUsecase.EXPECT().AddPlaceToTrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.usecaseErr)
+// 			req := httptest.NewRequest("POST", "/trips/"+strconv.Itoa(int(tt.ID)), bytes.NewReader([]byte(tt.requestBody)))
+// 			rec := httptest.NewRecorder()
+
+// 			handler.AddPlaceToTripHandler(rec, req)
+
+// 			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+// 			if tt.expectedStatus != http.StatusCreated {
+// 				var response httpresponse.ErrorResponse
+// 				_ = json.NewDecoder(rec.Body).Decode(&response)
+// 				fmt.Println(response)
+// 				assert.Equal(t, tt.expectedBody.Message, response.Message)
+// 			}
+// 		})
+// 	}
+// }
