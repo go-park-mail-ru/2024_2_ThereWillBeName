@@ -4,7 +4,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"context"
-	"log"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,14 +16,17 @@ const (
 	EmailKey contextKey = "email"
 )
 
-func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
+func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
 		cookie, err := r.Cookie("token")
 		if err != nil {
 			response := httpresponse.ErrorResponse{
 				Message: "Cookie not found",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+
+			logger.Error("Cookie not found", slog.Any("error", err.Error()))
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
 			return
 		}
 
@@ -32,13 +35,19 @@ func MiddlewareAuth(jwtService *jwt.JWT, next http.Handler) http.Handler {
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid token",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized)
+
+			if logger != nil {
+				logger.Error("Invalid token", slog.Any("error", err))
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
 			return
 		}
-		userID := uint(claims["id"].(float64))
+		userID := uint(claims["userID"].(float64))
 		login := claims["login"].(string)
 		email := claims["email"].(string)
-		log.Println("middleware: ", userID, IdKey)
+		if logger != nil {
+			logger.Info("Token parsed", slog.String("login", login), slog.String("email", email))
+		}
 		ctx := context.WithValue(r.Context(), IdKey, userID)
 		ctx = context.WithValue(ctx, LoginKey, login)
 		ctx = context.WithValue(ctx, EmailKey, email)
