@@ -122,7 +122,7 @@ func (h *CitiesHandler) SearchCityByIDHandler(w http.ResponseWriter, r *http.Req
 
 	city, err := h.uc.SearchCityByID(context.Background(), uint(cityID))
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.Int("ID", int(cityID)))
+		logCtx := log.AppendCtx(context.Background(), slog.Uint64("ID", (cityID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
 		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return

@@ -161,7 +161,7 @@ func TestUpdateTripHandler(t *testing.T) {
 			mockUsecase.EXPECT().UpdateTrip(gomock.Any(), tt.inputTrip).Return(tt.usecaseErr)
 
 			reqBody, _ := json.Marshal(tt.inputTrip)
-			req := httptest.NewRequest("PUT", "/trips/"+strconv.Itoa(int(tt.inputTrip.ID)), bytes.NewReader(reqBody))
+			req := httptest.NewRequest("PUT", "/trips/"+strconv.FormatUint(uint64(tt.inputTrip.ID), 10), bytes.NewReader(reqBody))
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()
@@ -218,7 +218,7 @@ func TestDeleteTripHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsecase.EXPECT().DeleteTrip(gomock.Any(), tt.tripID).Return(tt.usecaseErr)
 
-			req := httptest.NewRequest("DELETE", "/trips/"+strconv.Itoa(int(tt.tripID)), nil)
+			req := httptest.NewRequest("DELETE", "/trips/"+strconv.FormatUint(uint64(tt.tripID), 10), nil)
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()
@@ -282,7 +282,7 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsecase.EXPECT().GetTripsByUserID(gomock.Any(), tt.userID, gomock.Any(), gomock.Any()).Return(tt.expectedTrips, tt.usecaseErr)
 
-			req := httptest.NewRequest("GET", "/users/"+strconv.Itoa(int(tt.userID))+"/trips", nil)
+			req := httptest.NewRequest("GET", "/users/"+strconv.FormatUint(uint64(tt.userID), 10)+"/trips", nil)
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()

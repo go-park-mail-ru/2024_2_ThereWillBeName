@@ -63,7 +63,6 @@ func TestSignUpHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsecase.EXPECT().SignUp(gomock.Any(), gomock.Any()).Return(uint(1), tt.usecaseErr)
 
-			// Мокаем вызов GenerateToken
 			mockJWT.EXPECT().
 				GenerateToken(gomock.Any(), gomock.Any(), gomock.Any()).
 				Return("mocked_token", tt.jwtErr).
@@ -95,22 +94,17 @@ func TestLogoutHandler_Success(t *testing.T) {
 	}
 	handl := slog.NewJSONHandler(os.Stdout, opts)
 	logger := slog.New(handl)
-	// Мокаем необходимые зависимости (например, логгер)
 	handler := &Handler{
 		logger: logger,
 	}
 
-	// Мокаем контекст запроса
 	req := httptest.NewRequest("POST", "/logout", nil)
 	rec := httptest.NewRecorder()
 
-	// Выполняем запрос
 	handler.Logout(rec, req)
 
-	// Проверяем, что статус ответа 200 OK
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Проверяем, что cookie "token" имеет пустое значение и MaxAge = -1 (удаление cookie)
 	cookies := rec.Result().Cookies()
 	var tokenCookie *http.Cookie
 	for _, cookie := range cookies {
@@ -135,27 +129,21 @@ func TestCurrentUserHandler_Success(t *testing.T) {
 	handl := slog.NewJSONHandler(os.Stdout, opts)
 	logger := slog.New(handl)
 
-	// Мокаем необходимые зависимости
 	handler := &Handler{
 		logger: logger,
 	}
 
-	// Создаем контекст с нужными данными для успешного запроса
 	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
 	ctx = context.WithValue(ctx, middleware.LoginKey, "userlogin")
 	ctx = context.WithValue(ctx, middleware.EmailKey, "user@example.com")
 
-	// Создаем запрос и записываем результат
 	req := httptest.NewRequest("GET", "/currentuser", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 
-	// Выполняем запрос
 	handler.CurrentUser(rec, req)
 
-	// Проверяем, что статус ответа 200 OK
 	assert.Equal(t, http.StatusOK, rec.Code)
 
-	// Проверяем, что в ответе возвращены правильные данные пользователя
 	var response models.User
 	_ = json.NewDecoder(rec.Body).Decode(&response)
 	assert.Equal(t, uint(1), response.ID)
@@ -173,25 +161,19 @@ func TestCurrentUserHandler_Unauthorized(t *testing.T) {
 	handl := slog.NewJSONHandler(os.Stdout, opts)
 	logger := slog.New(handl)
 
-	// Мокаем необходимые зависимости
 	handler := &Handler{
 		logger: logger,
 	}
 
-	// Создаем контекст без нужных данных
 	ctx := context.Background()
 
-	// Создаем запрос и записываем результат
 	req := httptest.NewRequest("GET", "/currentuser", nil).WithContext(ctx)
 	rec := httptest.NewRecorder()
 
-	// Выполняем запрос
 	handler.CurrentUser(rec, req)
 
-	// Проверяем, что статус ответа 401 Unauthorized
 	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 
-	// Проверяем, что в ответе сообщение об ошибке
 	var response httpresponse.ErrorResponse
 	_ = json.NewDecoder(rec.Body).Decode(&response)
 	assert.Equal(t, "User is not authorized", response.Message)
@@ -227,7 +209,7 @@ func TestUploadAvatar(t *testing.T) {
 			usecaseErr:     nil,
 			uploadSuccess:  true,
 			expectedStatus: http.StatusOK,
-			expectedBody:   httpresponse.ErrorResponse{}, // Empty body on success
+			expectedBody:   httpresponse.ErrorResponse{},
 		},
 		{
 			name:           "unauthorized user",
@@ -242,49 +224,42 @@ func TestUploadAvatar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Настройка мока на основе условий теста
 			if tt.uploadSuccess && tt.userID == tt.authUserID {
-				// Ожидаем вызов только, если `uploadSuccess` и `userID` совпадают с `authUserID`
 				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).
 					Return("mocked/avatar/path", tt.usecaseErr).Times(1)
 			} else if tt.userID == tt.authUserID {
-				// Если userID совпадает с authUserID, но uploadSuccess не установлен
 				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).
 					Return("", tt.usecaseErr).Times(1)
 			}
 
-			// Создание тела запроса с изображением
 			body := new(bytes.Buffer)
 			writer := multipart.NewWriter(body)
 			part, _ := writer.CreateFormFile("avatar", "avatar.png")
-			part.Write([]byte("dummy avatar content"))
+			_, err := part.Write([]byte("dummy avatar content"))
+			if err != nil {
+				t.Errorf("failed to write to part: %v", err)
+			}
 			_ = writer.Close()
 
 			req := httptest.NewRequest(http.MethodPut, "/users/"+strconv.Itoa(int(tt.userID))+"/avatars", body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
 
-			// Подстановка в контекст ID авторизованного пользователя
 			ctx := context.WithValue(req.Context(), middleware.IdKey, uint(tt.authUserID))
 			req = req.WithContext(ctx)
 
-			// Настройка маршрутизатора
 			router := mux.NewRouter()
 			router.HandleFunc("/users/{userID}/avatars", handler.UploadAvatar).Methods(http.MethodPut)
 
-			// Запуск запроса
 			rec := httptest.NewRecorder()
 			router.ServeHTTP(rec, req)
 
-			// Проверка статуса ответа
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			// Обработка успешного или ошибочного ответа
 			if tt.expectedStatus != http.StatusOK {
 				var response httpresponse.ErrorResponse
 				_ = json.NewDecoder(rec.Body).Decode(&response)
 				assert.Equal(t, tt.expectedBody.Message, response.Message)
 			} else {
-				// Обработка успешного ответа, если статус 200
 				var response map[string]string
 				_ = json.NewDecoder(rec.Body).Decode(&response)
 				assert.Equal(t, "Avatar uploaded successfully", response["message"])

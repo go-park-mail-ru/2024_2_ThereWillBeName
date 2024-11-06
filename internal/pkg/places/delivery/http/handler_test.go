@@ -24,6 +24,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const errorParse = "ErrorParse"
+
 func TestGetPlacesHandler(t *testing.T) {
 	places := []models.GetPlace{
 		{
@@ -188,7 +190,7 @@ func TestPostPlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			mockReturn:   []byte(`{ "name": "Test Place", "imagePath": "/path/to/image", "description": "Test Description", "rating": 4.5, "numberOfReviews": 10, "address": "Test Address", "cityId": 1, "phoneNumber": "1234567890", "categoriesId": [1, 2, 3]`),
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -198,7 +200,7 @@ func TestPostPlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().CreatePlace(context.Background(), gomock.Any()).Return(testcase.mockError)
 			}
 
@@ -263,7 +265,7 @@ func TestPutPlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			mockReturn:   []byte(`{ "name": "Test Place", "imagePath": "/path/to/image", "description": "Test Description", "rating": 4.5, "numberOfReviews": 10, "address": "Test Address", "cityId": 1, "phoneNumber": "1234567890", "categoriesId": [1, 2, 3]`),
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -273,7 +275,7 @@ func TestPutPlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().UpdatePlace(context.Background(), gomock.Any()).Return(testcase.mockError)
 			}
 
@@ -321,7 +323,7 @@ func TestDeletePlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			id:           -1,
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -331,7 +333,7 @@ func TestDeletePlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().DeletePlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockError)
 			}
 
