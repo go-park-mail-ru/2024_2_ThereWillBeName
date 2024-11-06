@@ -65,12 +65,10 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	var tripData TripData
 	err := json.NewDecoder(r.Body).Decode(&tripData)
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 
-	var trip models.Trip
-	err := json.NewDecoder(r.Body).Decode(&trip)
 	if err != nil {
 		log.Printf("create error: %s", err)
 		response := httpresponse.ErrorResponse{
@@ -79,6 +77,10 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
 		return
 	}
+
+	tripData.Name = template.HTMLEscapeString(tripData.Name)
+	tripData.Description = template.HTMLEscapeString(tripData.Description)
+
 	trip := models.Trip{
 		UserID:      tripData.UserID,
 		Name:        tripData.Name,
@@ -88,8 +90,6 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		EndDate:     tripData.EndDate,
 		Private:     tripData.Private,
 	}
-	trip.Name = template.HTMLEscapeString(trip.Name)
-	trip.Description = template.HTMLEscapeString(trip.Description)
 
 	err = h.uc.CreateTrip(context.Background(), trip)
 	if err != nil {
@@ -117,7 +117,6 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 
-	var trip models.Trip
 	var tripData TripData
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
@@ -139,8 +138,8 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	trip.Name = template.HTMLEscapeString(trip.Name)
-	trip.Description = template.HTMLEscapeString(trip.Description)
+	tripData.Name = template.HTMLEscapeString(tripData.Name)
+	tripData.Description = template.HTMLEscapeString(tripData.Description)
 	trip := models.Trip{
 		ID:          uint(tripID),
 		UserID:      tripData.UserID,
