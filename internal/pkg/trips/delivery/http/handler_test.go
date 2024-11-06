@@ -369,6 +369,7 @@ func TestGetTripHandler(t *testing.T) {
 	}
 }
 
+
 // func TestAddPlaceToTripHandler(t *testing.T) {
 // 	ctrl := gomock.NewController(t)
 // 	defer ctrl.Finish()
