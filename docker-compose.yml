@@ -10,6 +10,7 @@ services:
       - .env
     environment:
       - AVATAR_STORAGE_PATH=/assets/avatars
+      - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:

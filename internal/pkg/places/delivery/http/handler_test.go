@@ -5,8 +5,10 @@ import (
 	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 
 	"github.com/golang/mock/gomock"
@@ -47,8 +49,12 @@ func TestGetPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
+
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
