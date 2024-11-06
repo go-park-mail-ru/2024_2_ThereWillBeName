@@ -10,6 +10,6 @@ type Trip struct {
 	CityID      uint      `json:"city_id"`
 	StartDate   string    `json:"start_date"`
 	EndDate     string    `json:"end_date"`
-	Private     bool      `json:"private"`
+	Private     bool      `json:"private_trip"`
 	CreatedAt   time.Time `json:"created_at"`
 }

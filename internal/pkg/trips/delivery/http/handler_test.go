@@ -328,62 +328,73 @@ func TestGetTripHandler(t *testing.T) {
 	}
 }
 
-// func TestAddPlaceToTripHandler(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestAddPlaceToTripHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-// 	handler := NewTripHandler(mockUsecase)
+	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
+	handler := NewTripHandler(mockUsecase)
 
-// 	tests := []struct {
-// 		name           string
-// 		ID             uint
-// 		requestBody    string
-// 		usecaseErr     error
-// 		expectedStatus int
-// 		expectedBody   httpresponse.ErrorResponse
-// 	}{
-// 		{
-// 			name:           "successful addition of place",
-// 			ID:             1,
-// 			requestBody:    `{"place_id": 2}`,
-// 			usecaseErr:     nil,
-// 			expectedStatus: http.StatusCreated,
-// 		},
-// 		{
-// 			name:           "invalid request body",
-// 			ID:             2,
-// 			requestBody:    `{"place_id": "invalid"}`,
-// 			usecaseErr:     nil,
-// 			expectedStatus: http.StatusBadRequest,
-// 			expectedBody:   httpresponse.ErrorResponse{Message: "Invalid place ID"},
-// 		},
-// 		{
-// 			name:           "error from usecase",
-// 			ID:             3,
-// 			requestBody:    `{"place_id": 2}`,
-// 			usecaseErr:     errors.New("usecase error"),
-// 			expectedStatus: http.StatusBadRequest,
-// 			expectedBody:   httpresponse.ErrorResponse{Message: "Invalid trip ID"},
-// 		},
-// 	}
+	tests := []struct {
+		name           string
+		ID             uint
+		requestBody    string
+		usecaseErr     error
+		expectedStatus int
+		expectedBody   httpresponse.ErrorResponse
+		expectUsecase  bool
+	}{
+		{
+			name:           "successful addition of place",
+			ID:             1,
+			requestBody:    `{"place_id": 2}`,
+			usecaseErr:     nil,
+			expectedStatus: http.StatusCreated,
+			expectUsecase:  true,
+		},
+		{
+			name:           "invalid request body",
+			ID:             2,
+			requestBody:    `{"place_id": "invalid"}`,
+			usecaseErr:     nil,
+			expectedStatus: http.StatusBadRequest,
+			expectedBody:   httpresponse.ErrorResponse{Message: "Invalid place ID"},
+			expectUsecase:  false,
+		},
+		{
+			name:           "error from usecase",
+			ID:             3,
+			requestBody:    `{"place_id": 2}`,
+			usecaseErr:     errors.New("usecase error"),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   httpresponse.ErrorResponse{Message: "Failed to add place trip"},
+			expectUsecase:  true,
+		},
+	}
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mockUsecase.EXPECT().AddPlaceToTrip(gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.usecaseErr)
-// 			req := httptest.NewRequest("POST", "/trips/"+strconv.Itoa(int(tt.ID)), bytes.NewReader([]byte(tt.requestBody)))
-// 			rec := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.expectUsecase {
+				mockUsecase.EXPECT().AddPlaceToTrip(gomock.Any(), tt.ID, gomock.Any()).Return(tt.usecaseErr)
+			}
 
-// 			handler.AddPlaceToTripHandler(rec, req)
+			req := httptest.NewRequest("POST", "/trips/"+strconv.Itoa(int(tt.ID)), bytes.NewReader([]byte(tt.requestBody)))
+			req = mux.SetURLVars(req, map[string]string{"id": strconv.Itoa(int(tt.ID))})
 
-// 			assert.Equal(t, tt.expectedStatus, rec.Code)
+			rec := httptest.NewRecorder()
 
-// 			if tt.expectedStatus != http.StatusCreated {
-// 				var response httpresponse.ErrorResponse
-// 				_ = json.NewDecoder(rec.Body).Decode(&response)
-// 				fmt.Println(response)
-// 				assert.Equal(t, tt.expectedBody.Message, response.Message)
-// 			}
-// 		})
-// 	}
-// }
+			handler.AddPlaceToTripHandler(rec, req)
+
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			if tt.expectedStatus != http.StatusCreated {
+				var response httpresponse.ErrorResponse
+				err := json.NewDecoder(rec.Body).Decode(&response)
+				if err != nil {
+					t.Fatalf("failed to decode response body: %v", err)
+				}
+				assert.Equal(t, tt.expectedBody.Message, response.Message)
+			}
+		})
+	}
+}
