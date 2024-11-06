@@ -6,6 +6,13 @@ services:
     build:
       context: .
       dockerfile: ./build/main.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - AVATAR_STORAGE_PATH=/assets/avatars
+      - LOG_LEVEL=Debug
+    volumes:
+      - ./assets/avatars:/assets/avatars
     ports:
       - 8080:8080
   tripdb:
@@ -16,7 +23,8 @@ services:
         POSTGRES_USER: "service"
         POSTGRES_PASSWORD: "test"
     volumes:
-      - ./migrations:/docker-entrypoint-initdb.d
+      - ./db/migrations:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
       - 5432:5432

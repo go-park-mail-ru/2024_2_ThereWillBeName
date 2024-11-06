@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -9,17 +10,19 @@ import (
 
 type JWT struct {
 	secret []byte
+	logger *slog.Logger
 }
 
-func NewJWT(secret string) *JWT {
+func NewJWT(secret string, logger *slog.Logger) *JWT {
 	return &JWT{
 		secret: []byte(secret),
 	}
 }
 
-func (j *JWT) GenerateToken(userID uint, login string) (string, error) {
+func (j *JWT) GenerateToken(userID uint, email, login string) (string, error) {
 	claims := jwt.MapClaims{
 		"id":    userID,
+		"email": email,
 		"login": login,
 		"exp":   time.Now().Add(time.Hour * 24).Unix(),
 	}

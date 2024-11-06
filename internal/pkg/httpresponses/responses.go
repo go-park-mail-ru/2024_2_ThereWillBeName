@@ -2,10 +2,15 @@ package httpresponses
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net/http"
 )
 
-func SendJSONResponse(w http.ResponseWriter, data interface{}, status int) {
+type ErrorResponse struct {
+	Message string `json:"message"`
+}
+
+func SendJSONResponse(w http.ResponseWriter, data interface{}, status int, logger *slog.Logger) {
 	w.WriteHeader(status)
 
 	if data == nil {
@@ -14,6 +19,8 @@ func SendJSONResponse(w http.ResponseWriter, data interface{}, status int) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(data); err != nil {
-		http.Error(w, "Не удалось преобразовать в json", http.StatusInternalServerError)
+		logger.Error("Failed to encode response to JSON", slog.Any("error", err.Error()))
+
+		http.Error(w, "Failed to convert to json", http.StatusInternalServerError)
 	}
 }
