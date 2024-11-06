@@ -78,7 +78,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 	err := json.NewDecoder(r.Body).Decode(&trip)
 
 	var tripData TripData
-	err := json.NewDecoder(r.Body).Decode(&tripData)
+	err = json.NewDecoder(r.Body).Decode(&tripData)
 
 	if err != nil {
 		h.logger.Warn("Failed to decode trip data",
@@ -90,7 +90,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
-	trip := models.Trip{
+	trip = models.Trip{
 		UserID:      tripData.UserID,
 		Name:        tripData.Name,
 		Description: tripData.Description,
@@ -106,10 +106,9 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-
 	h.logger.DebugContext(logCtx, "Successfully created a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip created successfully", http.StatusCreated)
+	httpresponse.SendJSONResponse(w, "Trip created successfully", http.StatusCreated, h.logger)
 }
 
 // UpdateTripHandler godoc
@@ -153,7 +152,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
-	trip := models.Trip{
+	trip = models.Trip{
 		ID:          uint(tripID),
 		UserID:      tripData.UserID,
 		Name:        tripData.Name,
@@ -172,7 +171,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully updated a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip updated successfully", http.StatusOK)
+	httpresponse.SendJSONResponse(w, "Trip updated successfully", http.StatusOK, h.logger)
 }
 
 // DeleteTripHandler godoc
@@ -211,7 +210,7 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip deleted successfully", http.StatusNoContent)
+	httpresponse.SendJSONResponse(w, "Trip deleted successfully", http.StatusNoContent, h.logger)
 }
 
 // GetTripsByUserIDHandler godoc
@@ -328,7 +327,7 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -337,26 +336,26 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	var req AddPlaceRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		log.Printf("add place error: %s", err)
+		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", tripIDStr), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid place ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	err = h.uc.AddPlaceToTrip(context.Background(), uint(tripID), req.PlaceID)
 	if err != nil {
-		response, status := ErrorCheck(err, "add place")
-		httpresponse.SendJSONResponse(w, response, status)
+		response, status := ErrorCheck(err, "add place", h.logger, context.Background())
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
 
-	httpresponse.SendJSONResponse(w, "Place added to trip successfully", http.StatusCreated)
+	httpresponse.SendJSONResponse(w, "Place added to trip successfully", http.StatusCreated, h.logger)
 }
