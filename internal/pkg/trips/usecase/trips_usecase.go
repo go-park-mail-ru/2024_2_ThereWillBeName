@@ -73,7 +73,20 @@ func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Tri
 		if errors.Is(err, models.ErrNotFound) {
 			return models.Trip{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
-		return models.Trip{}, fmt.Errorf("internal error^ %w", models.ErrInternal)
+		return models.Trip{}, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 	return trip, nil
+}
+
+func (u *TripsUsecaseImpl) AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error {
+	err := u.tripRepo.AddPlaceToTrip(ctx, tripID, placeID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		} else {
+			return fmt.Errorf("internal error: %w", models.ErrInternal)
+		}
+	}
+
+	return nil
 }

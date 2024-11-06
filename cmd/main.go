@@ -124,6 +124,7 @@ func main() {
 	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
 	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
 	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
+	trips.HandleFunc("/{id}", tripHandler.AddPlaceToTripHandler).Methods(http.MethodPost)
 	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
 
 	cities := r.PathPrefix("/cities").Subrouter()
