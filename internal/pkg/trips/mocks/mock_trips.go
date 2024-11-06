@@ -40,6 +40,20 @@ func (m *MockTripsUsecase) EXPECT() *MockTripsUsecaseMockRecorder {
 	return m.recorder
 }
 
+// AddPlaceToTrip mocks base method.
+func (m *MockTripsUsecase) AddPlaceToTrip(ctx context.Context, tripID, placeID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPlaceToTrip", ctx, tripID, placeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPlaceToTrip indicates an expected call of AddPlaceToTrip.
+func (mr *MockTripsUsecaseMockRecorder) AddPlaceToTrip(ctx, tripID, placeID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlaceToTrip", reflect.TypeOf((*MockTripsUsecase)(nil).AddPlaceToTrip), ctx, tripID, placeID)
+}
+
 // CreateTrip mocks base method.
 func (m *MockTripsUsecase) CreateTrip(ctx context.Context, trip models.Trip) error {
 	m.ctrl.T.Helper()
@@ -133,6 +147,20 @@ func NewMockTripsRepo(ctrl *gomock.Controller) *MockTripsRepo {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockTripsRepo) EXPECT() *MockTripsRepoMockRecorder {
 	return m.recorder
+}
+
+// AddPlaceToTrip mocks base method.
+func (m *MockTripsRepo) AddPlaceToTrip(ctx context.Context, tripID, placeID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddPlaceToTrip", ctx, tripID, placeID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddPlaceToTrip indicates an expected call of AddPlaceToTrip.
+func (mr *MockTripsRepoMockRecorder) AddPlaceToTrip(ctx, tripID, placeID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlaceToTrip", reflect.TypeOf((*MockTripsRepo)(nil).AddPlaceToTrip), ctx, tripID, placeID)
 }
 
 // CreateTrip mocks base method.

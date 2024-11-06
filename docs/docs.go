@@ -707,11 +707,11 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Trip details",
-                        "name": "trip",
+                        "name": "tripData",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Trip"
+                            "$ref": "#/definitions/http.TripData"
                         }
                     }
                 ],
@@ -805,11 +805,11 @@ const docTemplate = `{
                     },
                     {
                         "description": "Updated trip details",
-                        "name": "trip",
+                        "name": "tripData",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.Trip"
+                            "$ref": "#/definitions/http.TripData"
                         }
                     }
                 ],
@@ -834,6 +834,54 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Failed to update trip",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Add a place with given place_id to a trip",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add a place to a trip",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Trip ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Place ID",
+                        "name": "place_id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Place added to trip successfully"
+                    },
+                    "400": {
+                        "description": "Invalid place ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Place not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to add place to trip",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -1060,6 +1108,32 @@ const docTemplate = `{
                 },
                 "password": {
                     "type": "string"
+                }
+            }
+        },
+        "http.TripData": {
+            "type": "object",
+            "properties": {
+                "city_id": {
+                    "type": "integer"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "private": {
+                    "type": "boolean"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
