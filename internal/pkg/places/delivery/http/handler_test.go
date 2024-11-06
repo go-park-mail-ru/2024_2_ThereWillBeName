@@ -6,15 +6,17 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 
+	"errors"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"errors"
-	"github.com/gorilla/mux"
 	"net/url"
+	"os"
 	"strconv"
+
+	"github.com/gorilla/mux"
 
 	"testing"
 
@@ -157,8 +159,12 @@ func TestPostPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
+
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -229,8 +235,11 @@ func TestPutPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -284,8 +293,11 @@ func TestDeletePlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -341,8 +353,11 @@ func TestGetPlaceHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	place := models.GetPlace{
 		ID:              1,
@@ -426,8 +441,11 @@ func TestSearchPlaceHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	places := []models.GetPlace{
 		{
