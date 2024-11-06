@@ -369,10 +369,12 @@ func TestGetTripHandler(t *testing.T) {
 	}
 }
 
-
 // func TestAddPlaceToTripHandler(t *testing.T) {
 // 	ctrl := gomock.NewController(t)
 // 	defer ctrl.Finish()
+// opts := &slog.HandlerOptions{
+// 	Level: slog.LevelDebug,
+// }
 
 // 	opts := &slog.HandlerOptions{
 // 		Level: slog.LevelDebug,
