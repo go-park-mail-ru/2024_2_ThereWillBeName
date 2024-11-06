@@ -75,15 +75,15 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 	h.logger.DebugContext(logCtx, "Handling request for creating a trip")
 
 	var trip models.Trip
-	err := json.NewDecoder(r.Body).Decode(&trip)
+	// err := json.NewDecoder(r.Body).Decode(&trip)
 
 	var tripData TripData
-	err = json.NewDecoder(r.Body).Decode(&tripData)
+	err := json.NewDecoder(r.Body).Decode(&tripData)
 
 	if err != nil {
 		h.logger.Warn("Failed to decode trip data",
 			slog.String("error", err.Error()),
-			slog.String("trip_data", fmt.Sprintf("%+v", trip)))
+			slog.String("trip_data", fmt.Sprintf("%+v", tripData)))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}

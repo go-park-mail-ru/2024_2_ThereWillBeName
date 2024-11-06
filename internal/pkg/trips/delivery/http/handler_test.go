@@ -65,7 +65,6 @@ func TestCreateTripHandler(t *testing.T) {
 			inputTrip: models.Trip{
 
 				ID:        0,
-
 				UserID:    101,
 				StartDate: "invalid-date",
 				EndDate:   "2024-12-15",
@@ -79,7 +78,6 @@ func TestCreateTripHandler(t *testing.T) {
 			inputTrip: models.Trip{
 
 				ID:          0,
-
 				UserID:      102,
 				Name:        "Error Trip",
 				Description: "This trip causes an error",
@@ -119,7 +117,6 @@ func TestUpdateTripHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}
@@ -129,7 +126,6 @@ func TestUpdateTripHandler(t *testing.T) {
 	logger := slog.New(handl)
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
 	handler := NewTripHandler(mockUsecase, logger)
-
 
 	tests := []struct {
 		name           string
@@ -196,7 +192,6 @@ func TestDeleteTripHandler(t *testing.T) {
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
 	handler := NewTripHandler(mockUsecase, logger)
 
-
 	tests := []struct {
 		name           string
 		tripID         uint
@@ -244,7 +239,6 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-
 	opts := &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}
@@ -254,7 +248,6 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 	logger := slog.New(handl)
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
 	handler := NewTripHandler(mockUsecase, logger)
-
 
 	tests := []struct {
 		name           string
@@ -323,7 +316,6 @@ func TestGetTripHandler(t *testing.T) {
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
 	handler := NewTripHandler(mockUsecase, logger)
 
-
 	tests := []struct {
 		name           string
 		tripID         uint
@@ -376,8 +368,6 @@ func TestGetTripHandler(t *testing.T) {
 		})
 	}
 }
-
-
 
 // func TestAddPlaceToTripHandler(t *testing.T) {
 // 	ctrl := gomock.NewController(t)
@@ -438,4 +428,3 @@ func TestGetTripHandler(t *testing.T) {
 // 		})
 // 	}
 // }
-

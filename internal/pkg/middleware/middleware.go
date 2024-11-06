@@ -42,7 +42,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
 			return
 		}
-		userID := uint(claims["id"].(float64))
+		userID := uint(claims["userID"].(float64))
 		login := claims["login"].(string)
 		email := claims["email"].(string)
 		if logger != nil {

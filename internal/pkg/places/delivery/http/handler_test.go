@@ -178,7 +178,7 @@ func TestPostPlacesHandler(t *testing.T) {
 			mockReturn:   jsonPlace,
 			mockError:    nil,
 			expectedCode: http.StatusCreated,
-			expectedBody: "\"place succesfully created\"\n",
+			expectedBody: "\"Place succesfully created\"\n",
 		},
 		{
 			name:         "ErrorINternal",

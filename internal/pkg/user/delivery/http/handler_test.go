@@ -15,9 +15,11 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -209,10 +211,9 @@ func TestUploadAvatar(t *testing.T) {
 	mockJWT := mocks.NewMockJWTInterface(ctrl)
 	handler := NewUserHandler(mockUsecase, mockJWT, logger)
 
-	// Тестовые данные
 	tests := []struct {
 		name           string
-		userID         string
+		userID         uint
 		authUserID     uint
 		usecaseErr     error
 		uploadSuccess  bool
@@ -221,57 +222,72 @@ func TestUploadAvatar(t *testing.T) {
 	}{
 		{
 			name:           "successful avatar upload",
-			userID:         "1",
-			authUserID:     1,
+			userID:         3,
+			authUserID:     3,
 			usecaseErr:     nil,
 			uploadSuccess:  true,
 			expectedStatus: http.StatusOK,
-			expectedBody:   httpresponse.ErrorResponse{}, // Пустой, так как успешный запрос
+			expectedBody:   httpresponse.ErrorResponse{}, // Empty body on success
+		},
+		{
+			name:           "unauthorized user",
+			userID:         1,
+			authUserID:     2,
+			usecaseErr:     nil,
+			uploadSuccess:  false,
+			expectedStatus: http.StatusUnauthorized,
+			expectedBody:   httpresponse.ErrorResponse{Message: "User is not authorized to upload avatar for this ID"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			if tt.uploadSuccess {
-				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("mocked/avatar/path", tt.usecaseErr).Times(1)
-			} else {
-				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("", tt.usecaseErr).Times(1)
+			// Настройка мока на основе условий теста
+			if tt.uploadSuccess && tt.userID == tt.authUserID {
+				// Ожидаем вызов только, если `uploadSuccess` и `userID` совпадают с `authUserID`
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).
+					Return("mocked/avatar/path", tt.usecaseErr).Times(1)
+			} else if tt.userID == tt.authUserID {
+				// Если userID совпадает с authUserID, но uploadSuccess не установлен
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).
+					Return("", tt.usecaseErr).Times(1)
 			}
 
-			if tt.uploadSuccess {
-				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("mocked/avatar/path", tt.usecaseErr).Times(1)
-			} else {
-				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("", tt.usecaseErr).Times(1)
-			}
-
-			// Создаем тело запроса с multipart-данными
+			// Создание тела запроса с изображением
 			body := new(bytes.Buffer)
 			writer := multipart.NewWriter(body)
 			part, _ := writer.CreateFormFile("avatar", "avatar.png")
-			part.Write([]byte("dummy avatar content")) // имитация содержания файла
+			part.Write([]byte("dummy avatar content"))
 			_ = writer.Close()
 
-			// Создаем запрос
-			req := httptest.NewRequest("POST", "/upload"+tt.userID, body)
+			req := httptest.NewRequest(http.MethodPut, "/users/"+strconv.Itoa(int(tt.userID))+"/avatars", body)
 			req.Header.Set("Content-Type", writer.FormDataContentType())
-			ctx := context.WithValue(req.Context(), middleware.IdKey, tt.authUserID)
+
+			// Подстановка в контекст ID авторизованного пользователя
+			ctx := context.WithValue(req.Context(), middleware.IdKey, uint(tt.authUserID))
 			req = req.WithContext(ctx)
 
-			// Ответ
+			// Настройка маршрутизатора
+			router := mux.NewRouter()
+			router.HandleFunc("/users/{userID}/avatars", handler.UploadAvatar).Methods(http.MethodPut)
+
+			// Запуск запроса
 			rec := httptest.NewRecorder()
+			router.ServeHTTP(rec, req)
 
-			// Выполняем запрос
-			handler.UploadAvatar(rec, req)
-
-			// Проверяем статус ответа
+			// Проверка статуса ответа
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-			// Если это не успешный ответ, проверяем тело ответа
+			// Обработка успешного или ошибочного ответа
 			if tt.expectedStatus != http.StatusOK {
 				var response httpresponse.ErrorResponse
 				_ = json.NewDecoder(rec.Body).Decode(&response)
 				assert.Equal(t, tt.expectedBody.Message, response.Message)
+			} else {
+				// Обработка успешного ответа, если статус 200
+				var response map[string]string
+				_ = json.NewDecoder(rec.Body).Decode(&response)
+				assert.Equal(t, "Avatar uploaded successfully", response["message"])
 			}
 		})
 	}

@@ -1,66 +1,75 @@
 package repo
 
-// import (
-// 	"2024_2_ThereWillBeName/internal/models"
-// 	"context"
-// 	"fmt"
-// 	"testing"
-// 	"time"
+import (
+	"2024_2_ThereWillBeName/internal/models"
+	"context"
+	"testing"
+	"time"
 
-// 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-// 	"github.com/stretchr/testify/assert"
-// )
+	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/stretchr/testify/assert"
+)
 
-// func TestCreateUser_Success(t *testing.T) {
-// 	db, mock, err := sqlmock.New()
-// 	if err != nil {
-// 		t.Fatalf("failed to open mock sql database: %v", err)
-// 	}
-// 	defer db.Close()
+func TestCreateUser_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
 
-// 	repository := NewAuthRepository(db)
+	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("INSERT INTO users").
-// 		WithArgs("testuser", "testpass").
-// 		WillReturnResult(sqlmock.NewResult(1, 1))
-// 	user := models.User{
-// 		Login:    "testuser",
-// 		Password: "testpass",
-// 	}
+	mock.ExpectQuery("^INSERT INTO users \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id$").
+		WithArgs("testuser", "test@example.com", "testpass").
+		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
-// 	err = repository.CreateUser(context.Background(), user)
+	user := models.User{
+		Login:    "testuser",
+		Email:    "test@example.com",
+		Password: "testpass",
+	}
 
-// 	assert.NoError(t, err)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Errorf("there were unfulfilled expectations: %s", err)
-// 	}
-// }
+	userID, err := repository.CreateUser(ctx, user)
 
-// func TestGetUserByLogin_Success(t *testing.T) {
-// 	db, mock, err := sqlmock.New()
-// 	if err != nil {
-// 		t.Fatalf("failed to open mock sql database: %v", err)
-// 	}
-// 	defer db.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, uint(1), userID)
 
-// 	repository := NewAuthRepository(db)
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
 
-// 	createdAt := time.Now()
-// 	mock.ExpectQuery("SELECT id, login, password, created_at").
-// 		WithArgs("testuser").
-// 		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "password", "created_at"}).
-// 			AddRow(1, "testuser", "testpass", createdAt))
+func TestGetUserByEmail_Success(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("failed to open mock sql database: %v", err)
+	}
+	defer db.Close()
 
-// 	user, err := repository.GetUserByLogin(context.Background(), "testuser")
+	repository := NewAuthRepository(db)
 
-// 	assert.NoError(t, err)
-// 	assert.Equal(t, user.Login, "testuser")
+	createdAt := time.Now()
+	mock.ExpectQuery(`SELECT id, login, email, password, created_at FROM users WHERE email = \$1`).
+		WithArgs("testuser@example.com").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "email", "password", "created_at"}).
+			AddRow(1, "testuser", "testuser@example.com", "testpass", createdAt))
 
-// 	if err := mock.ExpectationsWereMet(); err != nil {
-// 		t.Errorf("there were unfulfilled expectations: %s", err)
-// 	}
-// }
+	user, err := repository.GetUserByEmail(context.Background(), "testuser@example.com")
+
+	assert.NoError(t, err)
+	assert.Equal(t, user.Email, "testuser@example.com")
+	assert.Equal(t, user.Login, "testuser")
+	assert.Equal(t, user.Password, "testpass")
+	assert.Equal(t, user.ID, uint(1))
+	assert.WithinDuration(t, user.CreatedAt, createdAt, time.Second)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
 
 // func TestCreateUser_Error(t *testing.T) {
 // 	db, mock, err := sqlmock.New()
@@ -71,16 +80,17 @@ package repo
 
 // 	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("INSERT INTO users").
-// 		WithArgs("testuser", "testpass").
+// 	mock.ExpectExec("^INSERT INTO users \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id").
+// 		WithArgs("testuser", "testemail@example.com", "testpass").
 // 		WillReturnError(fmt.Errorf("database error"))
 
 // 	user := models.User{
 // 		Login:    "testuser",
+// 		Email:    "testemail@example.com",
 // 		Password: "testpass",
 // 	}
 
-// 	err = repository.CreateUser(context.Background(), user)
+// 	_, err = repository.CreateUser(context.Background(), user)
 
 // 	assert.Error(t, err)
 
