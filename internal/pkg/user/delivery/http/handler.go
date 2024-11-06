@@ -25,11 +25,11 @@ type Credentials struct {
 
 type Handler struct {
 	usecase user.UserUsecase
-	jwt     *jwt.JWT
+	jwt     jwt.JWTInterface
 	logger  *slog.Logger
 }
 
-func NewUserHandler(usecase user.UserUsecase, jwt *jwt.JWT, logger *slog.Logger) *Handler {
+func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
 	return &Handler{
 		usecase: usecase,
 		jwt:     jwt,

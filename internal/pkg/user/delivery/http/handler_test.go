@@ -1,304 +1,278 @@
 package http
 
-// import (
-// 	"2024_2_ThereWillBeName/internal/models"
-// 	"errors"
+import (
+	"2024_2_ThereWillBeName/internal/models"
+	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
+	"2024_2_ThereWillBeName/internal/pkg/jwt/mocks"
+	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	usermock "2024_2_ThereWillBeName/internal/pkg/user/mocks"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
 
-// 	// "go.uber.org/mock/gomock"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
+)
 
-// 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
-// 	mock "2024_2_ThereWillBeName/internal/pkg/user/mocks"
-// 	"bytes"
-// 	"encoding/json"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+func TestSignUpHandler(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	"github.com/stretchr/testify/assert"
-// )
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handl)
 
-// func TestSignUp(t *testing.T) {
-// 	// Create a mock for the user usecase
-// 	userUsecase := new(mock.MockUserUsecase)
-// 	jwtService := new(mock.MockJWT)
+	mockUsecase := usermock.NewMockUserUsecase(ctrl)
+	mockJWT := mocks.NewMockJWTInterface(ctrl)
+	handler := NewUserHandler(mockUsecase, mockJWT, logger)
 
-// 	handler := NewUserHandler(userUsecase, jwtService)
+	tests := []struct {
+		name             string
+		inputCredentials Credentials
+		usecaseErr       error
+		jwtErr           error
+		expectedStatus   int
+		expectedBody     httpresponse.ErrorResponse
+	}{
+		{
+			name: "token generation failed",
+			inputCredentials: Credentials{
+				Login:    "tokenuser",
+				Email:    "token@example.com",
+				Password: "password123",
+			},
+			usecaseErr:     nil,
+			jwtErr:         errors.New("token generation failed"),
+			expectedStatus: http.StatusInternalServerError,
+			expectedBody:   httpresponse.ErrorResponse{Message: "Token generation failed"},
+		},
+	}
 
-// 	tests := []struct {
-// 		name           string
-// 		credentials    Credentials
-// 		mockSignUpID   int64
-// 		mockSignUpErr  error
-// 		mockToken      string
-// 		expectedStatus int
-// 		expectedBody   interface{}
-// 	}{
-// 		{
-// 			name: "Successful signup",
-// 			credentials: Credentials{
-// 				Login:    "testuser",
-// 				Email:    "test@example.com",
-// 				Password: "securepassword",
-// 			},
-// 			mockSignUpID:   1,
-// 			mockSignUpErr:  nil,
-// 			mockToken:      "some.jwt.token",
-// 			expectedStatus: http.StatusOK,
-// 			expectedBody: models.User{
-// 				ID:    1,
-// 				Login: "testuser",
-// 				Email: "test@example.com",
-// 			},
-// 		},
-// 		{
-// 			name: "User already exists",
-// 			credentials: Credentials{
-// 				Login:    "existinguser",
-// 				Email:    "existing@example.com",
-// 				Password: "securepassword",
-// 			},
-// 			mockSignUpID:   0,
-// 			mockSignUpErr:  models.ErrAlreadyExists,
-// 			expectedStatus: http.StatusConflict,
-// 			expectedBody: httpresponse.ErrorResponse{
-// 				Message: "user already exists",
-// 			},
-// 		},
-// 		{
-// 			name: "Failed registration",
-// 			credentials: Credentials{
-// 				Login:    "failuser",
-// 				Email:    "fail@example.com",
-// 				Password: "securepassword",
-// 			},
-// 			mockSignUpID:   0,
-// 			mockSignUpErr:  errors.New("registration failed"),
-// 			expectedStatus: http.StatusInternalServerError,
-// 			expectedBody: httpresponse.ErrorResponse{
-// 				Message: "Registration failed",
-// 			},
-// 		},
-// 		{
-// 			name: "Token generation failed",
-// 			credentials: Credentials{
-// 				Login:    "tokenfailuser",
-// 				Email:    "tokenfail@example.com",
-// 				Password: "securepassword",
-// 			},
-// 			mockSignUpID:   1,
-// 			mockSignUpErr:  nil,
-// 			mockToken:      "",
-// 			expectedStatus: http.StatusInternalServerError,
-// 			expectedBody: httpresponse.ErrorResponse{
-// 				Message: "Token generation failed",
-// 			},
-// 		},
-// 	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockUsecase.EXPECT().SignUp(gomock.Any(), gomock.Any()).Return(uint(1), tt.usecaseErr)
 
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			// Prepare the mock responses
-// 			userUsecase.On("SignUp", mock.Anything, mock.AnythingOfType("models.User")).
-// 				Return(tt.mockSignUpID, tt.mockSignUpErr)
+			// Мокаем вызов GenerateToken
+			mockJWT.EXPECT().
+				GenerateToken(gomock.Any(), gomock.Any(), gomock.Any()).
+				Return("mocked_token", tt.jwtErr).
+				Times(1)
 
-// 			if tt.mockToken != "" {
-// 				jwtService.On("GenerateToken", tt.mockSignUpID, tt.credentials.Email, tt.credentials.Login).
-// 					Return(tt.mockToken, nil)
-// 			} else {
-// 				jwtService.On("GenerateToken", mock.Anything, mock.Anything, mock.Anything).
-// 					Return("", errors.New("token generation failed"))
-// 			}
+			reqBody, _ := json.Marshal(tt.inputCredentials)
+			req := httptest.NewRequest("POST", "/signup", bytes.NewReader(reqBody))
+			rec := httptest.NewRecorder()
 
-// 			// Prepare the request
-// 			body, _ := json.Marshal(tt.credentials)
-// 			req := httptest.NewRequest(http.MethodPost, "/signup", bytes.NewBuffer(body))
-// 			w := httptest.NewRecorder()
+			handler.SignUp(rec, req)
 
-// 			// Call the handler
-// 			handler.SignUp(w, req)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-// 			// Check the response
-// 			res := w.Result()
-// 			assert.Equal(t, tt.expectedStatus, res.StatusCode)
+			if tt.expectedStatus != http.StatusOK {
+				var response httpresponse.ErrorResponse
+				_ = json.NewDecoder(rec.Body).Decode(&response)
+				assert.Equal(t, tt.expectedBody.Message, response.Message)
+			}
+		})
+	}
+}
 
-// 			var responseBody interface{}
-// 			if tt.expectedStatus == http.StatusOK {
-// 				var userResponse models.User
-// 				json.NewDecoder(res.Body).Decode(&userResponse)
-// 				responseBody = userResponse
-// 			} else {
-// 				var errorResponse httpresponse.ErrorResponse
-// 				json.NewDecoder(res.Body).Decode(&errorResponse)
-// 				responseBody = errorResponse
-// 			}
+func TestLogoutHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 			assert.Equal(t, tt.expectedBody, responseBody)
-// 			// Assert that the mock expectations were met
-// 			userUsecase.AssertExpectations(t)
-// 			jwtService.AssertExpectations(t)
-// 		})
-// 	}
-// }
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handl)
+	// Мокаем необходимые зависимости (например, логгер)
+	handler := &Handler{
+		logger: logger,
+	}
 
-// // func TestSignUp_InvalidJSON(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
+	// Мокаем контекст запроса
+	req := httptest.NewRequest("POST", "/logout", nil)
+	rec := httptest.NewRecorder()
 
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
+	// Выполняем запрос
+	handler.Logout(rec, req)
 
-// // 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/signup", bytes.NewBuffer([]byte(`invalid json`)))
-// // 	req.Header.Set("Content-Type", "application/json")
+	// Проверяем, что статус ответа 200 OK
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-// // 	rr := httptest.NewRecorder()
+	// Проверяем, что cookie "token" имеет пустое значение и MaxAge = -1 (удаление cookie)
+	cookies := rec.Result().Cookies()
+	var tokenCookie *http.Cookie
+	for _, cookie := range cookies {
+		if cookie.Name == "token" {
+			tokenCookie = cookie
+			break
+		}
+	}
 
-// // 	handler.SignUp(rr, req)
+	assert.NotNil(t, tokenCookie, "Expected cookie 'token' to be set")
+	assert.Equal(t, "", tokenCookie.Value, "Expected token cookie to be empty")
+	assert.Equal(t, -1, tokenCookie.MaxAge, "Expected MaxAge to be -1 for token cookie removal")
+}
 
-// // 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-// // }
+func TestCurrentUserHandler_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// // func TestSignUp_CreateUserError(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handl)
 
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
-// // 	mockUsecase.EXPECT().SignUp(gomock.Any(), gomock.Any()).Return(errors.New("internal error"))
+	// Мокаем необходимые зависимости
+	handler := &Handler{
+		logger: logger,
+	}
 
-// // 	body, _ := json.Marshal(map[string]string{
-// // 		"login":    "testuser",
-// // 		"password": "testpass",
-// // 	})
-// // 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/signup", bytes.NewBuffer(body))
-// // 	rr := httptest.NewRecorder()
+	// Создаем контекст с нужными данными для успешного запроса
+	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
+	ctx = context.WithValue(ctx, middleware.LoginKey, "userlogin")
+	ctx = context.WithValue(ctx, middleware.EmailKey, "user@example.com")
 
-// // 	handler.SignUp(rr, req)
+	// Создаем запрос и записываем результат
+	req := httptest.NewRequest("GET", "/currentuser", nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
 
-// // 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-// // }
+	// Выполняем запрос
+	handler.CurrentUser(rec, req)
 
-// // func TestLogin_Success(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
+	// Проверяем, что статус ответа 200 OK
+	assert.Equal(t, http.StatusOK, rec.Code)
 
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+	// Проверяем, что в ответе возвращены правильные данные пользователя
+	var response models.User
+	_ = json.NewDecoder(rec.Body).Decode(&response)
+	assert.Equal(t, uint(1), response.ID)
+	assert.Equal(t, "userlogin", response.Login)
+	assert.Equal(t, "user@example.com", response.Email)
+}
 
-// // 	mockUsecase.EXPECT().Login(gomock.Any(), "testuser", "testpass").Return("jwt_token", nil)
+func TestCurrentUserHandler_Unauthorized(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// // 	handler := NewAuthHandler(mockUsecase, nil)
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handl)
 
-// // 	body, _ := json.Marshal(map[string]string{
-// // 		"login":    "testuser",
-// // 		"password": "testpass",
-// // 	})
-// // 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewBuffer(body))
-// // 	rr := httptest.NewRecorder()
+	// Мокаем необходимые зависимости
+	handler := &Handler{
+		logger: logger,
+	}
 
-// // 	handler.Login(rr, req)
+	// Создаем контекст без нужных данных
+	ctx := context.Background()
 
-// // 	assert.Equal(t, http.StatusOK, rr.Code)
+	// Создаем запрос и записываем результат
+	req := httptest.NewRequest("GET", "/currentuser", nil).WithContext(ctx)
+	rec := httptest.NewRecorder()
 
-// // 	response := rr.Result()
-// // 	defer response.Body.Close()
+	// Выполняем запрос
+	handler.CurrentUser(rec, req)
 
-// // 	cookie := response.Cookies()[0]
-// // 	assert.Equal(t, "token", cookie.Name)
-// // 	assert.Equal(t, "jwt_token", cookie.Value)
-// // }
+	// Проверяем, что статус ответа 401 Unauthorized
+	assert.Equal(t, http.StatusUnauthorized, rec.Code)
 
-// // func TestLogin_InvalidCredentials(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
+	// Проверяем, что в ответе сообщение об ошибке
+	var response httpresponse.ErrorResponse
+	_ = json.NewDecoder(rec.Body).Decode(&response)
+	assert.Equal(t, "User is not authorized", response.Message)
+}
 
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+func TestUploadAvatar(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// // 	mockUsecase.EXPECT().Login(gomock.Any(), "testuser", "wrongpass").Return("", errors.New("unauthorized"))
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+	logger := slog.New(handl)
 
-// // 	handler := NewAuthHandler(mockUsecase, nil)
+	mockUsecase := usermock.NewMockUserUsecase(ctrl)
+	mockJWT := mocks.NewMockJWTInterface(ctrl)
+	handler := NewUserHandler(mockUsecase, mockJWT, logger)
 
-// // 	body, _ := json.Marshal(map[string]string{
-// // 		"login":    "testuser",
-// // 		"password": "wrongpass",
-// // 	})
-// // 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/login", bytes.NewBuffer(body))
-// // 	rr := httptest.NewRecorder()
+	// Тестовые данные
+	tests := []struct {
+		name           string
+		userID         string
+		authUserID     uint
+		usecaseErr     error
+		uploadSuccess  bool
+		expectedStatus int
+		expectedBody   httpresponse.ErrorResponse
+	}{
+		{
+			name:           "successful avatar upload",
+			userID:         "1",
+			authUserID:     1,
+			usecaseErr:     nil,
+			uploadSuccess:  true,
+			expectedStatus: http.StatusOK,
+			expectedBody:   httpresponse.ErrorResponse{}, // Пустой, так как успешный запрос
+		},
+	}
 
-// // 	handler.Login(rr, req)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-// // 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// // }
+			if tt.uploadSuccess {
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("mocked/avatar/path", tt.usecaseErr).Times(1)
+			} else {
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("", tt.usecaseErr).Times(1)
+			}
 
-// // func TestCurrentUser_Success(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
+			if tt.uploadSuccess {
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("mocked/avatar/path", tt.usecaseErr).Times(1)
+			} else {
+				mockUsecase.EXPECT().UploadAvatar(gomock.Any(), tt.authUserID, gomock.Any(), gomock.Any()).Return("", tt.usecaseErr).Times(1)
+			}
 
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
+			// Создаем тело запроса с multipart-данными
+			body := new(bytes.Buffer)
+			writer := multipart.NewWriter(body)
+			part, _ := writer.CreateFormFile("avatar", "avatar.png")
+			part.Write([]byte("dummy avatar content")) // имитация содержания файла
+			_ = writer.Close()
 
-// // 	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
-// // 	ctx = context.WithValue(ctx, middleware.LoginKey, "testuser")
+			// Создаем запрос
+			req := httptest.NewRequest("POST", "/upload"+tt.userID, body)
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+			ctx := context.WithValue(req.Context(), middleware.IdKey, tt.authUserID)
+			req = req.WithContext(ctx)
 
-// // 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// // 	rr := httptest.NewRecorder()
+			// Ответ
+			rec := httptest.NewRecorder()
 
-// // 	handler.CurrentUser(rr, req)
+			// Выполняем запрос
+			handler.UploadAvatar(rec, req)
 
-// // 	assert.Equal(t, http.StatusOK, rr.Code)
+			// Проверяем статус ответа
+			assert.Equal(t, tt.expectedStatus, rec.Code)
 
-// // 	var user models.User
-// // 	if err := json.NewDecoder(rr.Body).Decode(&user); err != nil {
-// // 		t.Fatal(err)
-// // 	}
-
-// // 	assert.Equal(t, uint(1), user.ID)
-// // 	assert.Equal(t, "testuser", user.Login)
-// // }
-
-// // func TestCurrentUser_NoUserID(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
-
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
-
-// // 	ctx := context.WithValue(context.Background(), middleware.LoginKey, "testuser")
-// // 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// // 	rr := httptest.NewRecorder()
-
-// // 	handler.CurrentUser(rr, req)
-
-// // 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// // 	assert.Equal(t, "{\"message\":\"User is not authorized\"}\n", rr.Body.String())
-// // }
-
-// // func TestCurrentUser_NoLogin(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
-
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
-
-// // 	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
-// // 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// // 	rr := httptest.NewRecorder()
-
-// // 	handler.CurrentUser(rr, req)
-
-// // 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// // 	assert.Equal(t, "{\"message\":\"User is not authorized\"}\n", rr.Body.String())
-// // }
-
-// // func TestLogout_Success(t *testing.T) {
-// // 	ctrl := gomock.NewController(t)
-// // 	defer ctrl.Finish()
-
-// // 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// // 	handler := NewAuthHandler(mockUsecase, nil)
-
-// // 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/logout", nil)
-// // 	rr := httptest.NewRecorder()
-
-// // 	handler.Logout(rr, req)
-
-// // 	assert.Equal(t, http.StatusOK, rr.Code)
-// // }
+			// Если это не успешный ответ, проверяем тело ответа
+			if tt.expectedStatus != http.StatusOK {
+				var response httpresponse.ErrorResponse
+				_ = json.NewDecoder(rec.Body).Decode(&response)
+				assert.Equal(t, tt.expectedBody.Message, response.Message)
+			}
+		})
+	}
+}
