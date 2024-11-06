@@ -1,16 +1,16 @@
 package http
 
-// import (
-// 	"2024_2_ThereWillBeName/internal/models"
-// 	mock "2024_2_ThereWillBeName/internal/pkg/auth/mocks"
-// 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-// 	"bytes"
-// 	"context"
-// 	"encoding/json"
-// 	"errors"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"testing"
+import (
+	"2024_2_ThereWillBeName/internal/models"
+	mock "2024_2_ThereWillBeName/internal/pkg/auth/mocks"
+	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
 // 	gomock "github.com/golang/mock/gomock"
 // 	"github.com/stretchr/testify/assert"
@@ -131,80 +131,80 @@ package http
 
 // 	handler.Login(rr, req)
 
-// 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// }
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+}
 
-// func TestCurrentUser_Success(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestCurrentUser_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// 	handler := NewAuthHandler(mockUsecase, nil)
+	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+	handler := NewAuthHandler(mockUsecase, nil)
 
-// 	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
-// 	ctx = context.WithValue(ctx, middleware.LoginKey, "testuser")
+	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
+	ctx = context.WithValue(ctx, middleware.LoginKey, "testuser")
 
-// 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// 	rr := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
+	rr := httptest.NewRecorder()
 
-// 	handler.CurrentUser(rr, req)
+	handler.CurrentUser(rr, req)
 
-// 	assert.Equal(t, http.StatusOK, rr.Code)
+	assert.Equal(t, http.StatusOK, rr.Code)
 
-// 	var user models.User
-// 	if err := json.NewDecoder(rr.Body).Decode(&user); err != nil {
-// 		t.Fatal(err)
-// 	}
+	var user models.User
+	if err := json.NewDecoder(rr.Body).Decode(&user); err != nil {
+		t.Fatal(err)
+	}
 
-// 	assert.Equal(t, uint(1), user.ID)
-// 	assert.Equal(t, "testuser", user.Login)
-// }
+	assert.Equal(t, uint(1), user.ID)
+	assert.Equal(t, "testuser", user.Login)
+}
 
-// func TestCurrentUser_NoUserID(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestCurrentUser_NoUserID(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// 	handler := NewAuthHandler(mockUsecase, nil)
+	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+	handler := NewAuthHandler(mockUsecase, nil)
 
-// 	ctx := context.WithValue(context.Background(), middleware.LoginKey, "testuser")
-// 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// 	rr := httptest.NewRecorder()
+	ctx := context.WithValue(context.Background(), middleware.LoginKey, "testuser")
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
+	rr := httptest.NewRecorder()
 
-// 	handler.CurrentUser(rr, req)
+	handler.CurrentUser(rr, req)
 
-// 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// 	assert.Equal(t, "{\"message\":\"User is not authorized\"}\n", rr.Body.String())
-// }
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "Пользователь не авторизирован\n", rr.Body.String())
+}
 
-// func TestCurrentUser_NoLogin(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestCurrentUser_NoLogin(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// 	handler := NewAuthHandler(mockUsecase, nil)
+	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+	handler := NewAuthHandler(mockUsecase, nil)
 
-// 	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
-// 	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
-// 	rr := httptest.NewRecorder()
+	ctx := context.WithValue(context.Background(), middleware.IdKey, uint(1))
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "/users/me", nil)
+	rr := httptest.NewRecorder()
 
-// 	handler.CurrentUser(rr, req)
+	handler.CurrentUser(rr, req)
 
-// 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
-// 	assert.Equal(t, "{\"message\":\"User is not authorized\"}\n", rr.Body.String())
-// }
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "Пользователь не авторизирован\n", rr.Body.String())
+}
 
-// func TestLogout_Success(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
+func TestLogout_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-// 	mockUsecase := mock.NewMockAuthUsecase(ctrl)
-// 	handler := NewAuthHandler(mockUsecase, nil)
+	mockUsecase := mock.NewMockAuthUsecase(ctrl)
+	handler := NewAuthHandler(mockUsecase, nil)
 
-// 	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/logout", nil)
-// 	rr := httptest.NewRecorder()
+	req, _ := http.NewRequestWithContext(context.Background(), http.MethodPost, "/logout", nil)
+	rr := httptest.NewRecorder()
 
-// 	handler.Logout(rr, req)
+	handler.Logout(rr, req)
 
-// 	assert.Equal(t, http.StatusOK, rr.Code)
-// }
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
