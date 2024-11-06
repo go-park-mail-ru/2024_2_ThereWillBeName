@@ -26,7 +26,7 @@ type TripData struct {
 	Description string `json:"description"`
 	StartDate   string `json:"start_date"`
 	EndDate     string `json:"end_date"`
-	Private     bool   `json:"private"`
+	Private     bool   `json:"private_trip"`
 }
 
 type TripHandler struct {
