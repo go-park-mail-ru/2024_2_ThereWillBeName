@@ -46,7 +46,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 		login := claims["login"].(string)
 		email := claims["email"].(string)
 		if logger != nil {
-			logger.Info("Token parsed", slog.String("login", login), slog.String("email", email))
+			logger.Info("Token parsed", slog.Int("userID", int(userID)), slog.String("login", login), slog.String("email", email))
 		}
 		ctx := context.WithValue(r.Context(), IdKey, userID)
 		ctx = context.WithValue(ctx, LoginKey, login)
