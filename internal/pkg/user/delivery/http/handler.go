@@ -417,3 +417,84 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	httpresponse.SendJSONResponse(w, profile, http.StatusOK, h.logger)
 }
+
+func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	login, ok := r.Context().Value(middleware.LoginKey).(string)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	email, ok := r.Context().Value(middleware.EmailKey).(string)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	var credentials struct {
+		OldPassword string `json:"old_password"`
+		NewPassword string `json:"new_password"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	user := models.User{
+		ID:       userID,
+		Login:    login,
+		Email:    email,
+		Password: credentials.OldPassword,
+	}
+
+	err := h.usecase.UpdatePassword(r.Context(), user, credentials.NewPassword)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound, h.logger)
+			return
+		} else if errors.Is(err, models.ErrMismatch) {
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid old password",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			return
+		}
+
+		response := httpresponse.ErrorResponse{
+			Message: "Failed to update password",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
+		return
+	}
+
+	response := struct {
+		ID       uint   `json:"id"`
+		Password string `json:"password"`
+	}{
+		ID:       user.ID,
+		Password: credentials.NewPassword,
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
+}

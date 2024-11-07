@@ -110,3 +110,20 @@ func (a *UserUsecaseImpl) GetProfile(ctx context.Context, userID, requesterID ui
 		Email:      user.Email,
 	}, nil
 }
+
+func (a *UserUsecaseImpl) UpdatePassword(ctx context.Context, userData models.User, newPassword string) error {
+	user, err := a.repo.GetUserByEmail(ctx, userData.Email)
+	if err != nil {
+		log.Printf("UpdatePassword: Error retrieving user: %v\n", err)
+		return err
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(userData.Password)); err != nil {
+		log.Printf("UpdatePassword: Password mismatch: %v\n", err)
+		return models.ErrMismatch
+	}
+
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+
+	return a.repo.UpdatePassword(ctx, user.ID, string(hashedPassword))
+}

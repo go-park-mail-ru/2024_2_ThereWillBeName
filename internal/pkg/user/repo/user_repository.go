@@ -41,9 +41,7 @@ func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (
 	row := r.db.QueryRowContext(ctx, query, email)
 	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password, &user.CreatedAt)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found with email: %s", email)
-		}
+		return models.User{}, fmt.Errorf("user not found with email: %s, %s", email, models.ErrNotFound)
 		return models.User{}, err
 	}
 	return user, nil
@@ -139,4 +137,14 @@ func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (mode
 	}
 
 	return userProfile, nil
+}
+
+func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, newPassword string) error {
+	query := "UPDATE users SET password = $1 WHERE id = $2"
+
+	_, err := r.db.ExecContext(ctx, query, newPassword, userId)
+	if err != nil {
+		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
+	}
+	return nil
 }

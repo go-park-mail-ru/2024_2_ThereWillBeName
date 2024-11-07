@@ -101,6 +101,7 @@ func main() {
 
 	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.GetProfile), logger)).Methods(http.MethodGet)
+	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UpdatePassword), logger)).Methods(http.MethodPut)
 
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
