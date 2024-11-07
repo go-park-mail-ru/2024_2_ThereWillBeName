@@ -33,7 +33,7 @@ func TestCreateTrip(t *testing.T) {
 			name: "successful creation",
 			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
 			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trips`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
+				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			expectedErr: nil,
@@ -42,7 +42,7 @@ func TestCreateTrip(t *testing.T) {
 			name: "error on exec",
 			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
 			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trips`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
+				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
 					WillReturnError(errors.New("exec error"))
 			},
 			expectedErr: fmt.Errorf("failed to create a trip: %w", models.ErrInternal),
@@ -51,7 +51,7 @@ func TestCreateTrip(t *testing.T) {
 			name: "no rows created",
 			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
 			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trips`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
+				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
 					WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			expectedErr: fmt.Errorf("no rows were created: %w", models.ErrNotFound),
@@ -91,7 +91,7 @@ func TestUpdateTrip(t *testing.T) {
 			name: "successful update",
 			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
 			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trips`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
+				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			expectedErr: nil,
@@ -100,7 +100,7 @@ func TestUpdateTrip(t *testing.T) {
 			name: "error on exec",
 			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
 			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trips`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
+				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
 					WillReturnError(errors.New("exec error"))
 			},
 			expectedErr: fmt.Errorf("failed to execute update query: %w", models.ErrInternal),
@@ -109,7 +109,7 @@ func TestUpdateTrip(t *testing.T) {
 			name: "no rows updated",
 			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
 			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trips`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
+				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
 					WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			expectedErr: fmt.Errorf("no rows were updated: %w", models.ErrNotFound),
@@ -149,7 +149,7 @@ func TestDeleteTrip(t *testing.T) {
 			name:   "successful deletion",
 			tripID: 1,
 			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trips`).WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			expectedErr: nil,
 		},
@@ -157,7 +157,7 @@ func TestDeleteTrip(t *testing.T) {
 			name:   "error on exec",
 			tripID: 1,
 			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trips`).WithArgs(1).WillReturnError(errors.New("exec error"))
+				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnError(errors.New("exec error"))
 			},
 			expectedErr: fmt.Errorf("failed to delete trip: %w", models.ErrInternal),
 		},
@@ -165,7 +165,7 @@ func TestDeleteTrip(t *testing.T) {
 			name:   "no rows deleted",
 			tripID: 1,
 			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trips`).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
+				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
 			},
 			expectedErr: fmt.Errorf("no rows were deleted: %w", models.ErrNotFound),
 		},
@@ -210,7 +210,7 @@ func TestGetTripsByUserID(t *testing.T) {
 					AddRow(1, userID, "Test trip 1", "A trip for testing", 1, "2024-01-01", "2024-01-05", false, createdAt).
 					AddRow(2, userID, "Test trip 2", "A trip for testing", 2, "2024-02-01", "2024-02-10", true, createdAt)
 
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trips WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
+				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
 					WithArgs(userID, limit, offset).
 					WillReturnRows(rows)
 			},
@@ -223,7 +223,7 @@ func TestGetTripsByUserID(t *testing.T) {
 		{
 			name: "query execution error",
 			mockSetup: func() {
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trips WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
+				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
 					WithArgs(userID, limit, offset).
 					WillReturnError(models.ErrInternal)
 			},
@@ -234,7 +234,7 @@ func TestGetTripsByUserID(t *testing.T) {
 			name: "no trips found",
 			mockSetup: func() {
 				rows := sqlmock.NewRows([]string{"id", "user_id", "name", "description", "city_id", "start_date", "end_date", "private", "created_at"})
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trips WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
+				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
 					WithArgs(userID, limit, offset).
 					WillReturnRows(rows)
 			},
@@ -272,7 +272,7 @@ func TestGetTrip(t *testing.T) {
 			mockSetup: func(mock sqlmock.Sqlmock) {
 				rows := sqlmock.NewRows([]string{"id", "user_id", "name", "description", "city_id", "start_date", "end_date", "private", "created_at"}).
 					AddRow(1, 1, "Test trip", "A trip for testing", 1, "2024-01-01", "2024-01-05", false, time.Now())
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trips WHERE id = \$1`).
+				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = \$1`).
 					WithArgs(1).
 					WillReturnRows(rows)
 			},
@@ -292,7 +292,7 @@ func TestGetTrip(t *testing.T) {
 			name:   "trip not found",
 			tripID: 2,
 			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trips WHERE id = \$1`).
+				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = \$1`).
 					WithArgs(2).
 					WillReturnError(sql.ErrNoRows)
 			},

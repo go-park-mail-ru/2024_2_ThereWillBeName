@@ -18,7 +18,7 @@ func NewReviewRepository(db *sql.DB) *ReviewRepository {
 }
 
 func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Review) error {
-	query := `INSERT INTO reviews (user_id, place_id, rating, review_text, created_at) 
+	query := `INSERT INTO review (user_id, place_id, rating, review_text, created_at) 
               VALUES ($1, $2, $3, $4, NOW())`
 
 	result, err := r.db.ExecContext(ctx, query, review.UserID, review.PlaceID, review.Rating, review.ReviewText)
@@ -38,8 +38,8 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Revie
 }
 
 func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Review) error {
-	query := `UPDATE reviews 
-              SET rating = $1, review_text = $2 
+	query := `UPDATE review
+              SET rating = $1, review_text = $2, updated_at = NOW() 
               WHERE id = $3`
 
 	result, err := r.db.ExecContext(ctx, query, review.Rating, review.ReviewText, review.ID)
@@ -60,7 +60,7 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 }
 
 func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) error {
-	query := `DELETE FROM reviews WHERE id = $1`
+	query := `DELETE FROM review WHERE id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, reviewID)
 	if err != nil {
@@ -81,8 +81,8 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 
 func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.GetReview, error) {
 	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
-              FROM reviews r
-              JOIN users u ON r.user_id = u.id
+              FROM review r
+              JOIN "user" u ON r.user_id = u.id
               WHERE r.place_id = $1
               ORDER BY r.created_at DESC
               LIMIT $2 OFFSET $3`
@@ -111,8 +111,8 @@ func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint
 
 func (r *ReviewRepository) GetReview(ctx context.Context, reviewID uint) (models.GetReview, error) {
 	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
-              FROM reviews r
-              JOIN users u ON r.user_id = u.id
+              FROM review r
+              JOIN "user" u ON r.user_id = u.id
               WHERE r.id = $1`
 
 	row := r.db.QueryRowContext(ctx, query, reviewID)
