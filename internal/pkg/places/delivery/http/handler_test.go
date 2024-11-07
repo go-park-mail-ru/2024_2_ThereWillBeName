@@ -6,18 +6,25 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
-	"github.com/gorilla/mux"
 	"log"
+
+	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
+
+	"github.com/gorilla/mux"
+
 	"testing"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
+
+const errorParse = "ErrorParse"
 
 func TestGetPlacesHandler(t *testing.T) {
 	places := []models.GetPlace{
@@ -53,8 +60,12 @@ func TestGetPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
+
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -150,8 +161,12 @@ func TestPostPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
+
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -165,7 +180,7 @@ func TestPostPlacesHandler(t *testing.T) {
 			mockReturn:   jsonPlace,
 			mockError:    nil,
 			expectedCode: http.StatusCreated,
-			expectedBody: "\"place succesfully created\"\n",
+			expectedBody: "\"Place succesfully created\"\n",
 		},
 		{
 			name:         "ErrorINternal",
@@ -175,7 +190,7 @@ func TestPostPlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			mockReturn:   []byte(`{ "name": "Test Place", "imagePath": "/path/to/image", "description": "Test Description", "rating": 4.5, "numberOfReviews": 10, "address": "Test Address", "cityId": 1, "phoneNumber": "1234567890", "categoriesId": [1, 2, 3]`),
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -185,7 +200,7 @@ func TestPostPlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().CreatePlace(context.Background(), gomock.Any()).Return(testcase.mockError)
 			}
 
@@ -222,8 +237,11 @@ func TestPutPlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -247,7 +265,7 @@ func TestPutPlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			mockReturn:   []byte(`{ "name": "Test Place", "imagePath": "/path/to/image", "description": "Test Description", "rating": 4.5, "numberOfReviews": 10, "address": "Test Address", "cityId": 1, "phoneNumber": "1234567890", "categoriesId": [1, 2, 3]`),
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -257,7 +275,7 @@ func TestPutPlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().UpdatePlace(context.Background(), gomock.Any()).Return(testcase.mockError)
 			}
 
@@ -277,8 +295,11 @@ func TestDeletePlacesHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name         string
@@ -302,7 +323,7 @@ func TestDeletePlacesHandler(t *testing.T) {
 			expectedBody: "",
 		},
 		{
-			name:         "ErrorParse",
+			name:         errorParse,
 			id:           -1,
 			mockError:    nil,
 			expectedCode: http.StatusBadRequest,
@@ -312,7 +333,7 @@ func TestDeletePlacesHandler(t *testing.T) {
 
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
-			if testcase.name != "ErrorParse" {
+			if testcase.name != errorParse {
 				mockUsecase.EXPECT().DeletePlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockError)
 			}
 
@@ -334,8 +355,11 @@ func TestGetPlaceHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	place := models.GetPlace{
 		ID:              1,
@@ -419,8 +443,11 @@ func TestSearchPlaceHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
 	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
-	handler := NewPlacesHandler(mockUsecase)
+	handler := NewPlacesHandler(mockUsecase, logger)
 
 	places := []models.GetPlace{
 		{

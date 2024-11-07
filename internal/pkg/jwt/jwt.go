@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -9,9 +10,10 @@ import (
 
 type JWT struct {
 	secret []byte
+	logger *slog.Logger
 }
 
-func NewJWT(secret string) *JWT {
+func NewJWT(secret string, logger *slog.Logger) *JWT {
 	return &JWT{
 		secret: []byte(secret),
 	}

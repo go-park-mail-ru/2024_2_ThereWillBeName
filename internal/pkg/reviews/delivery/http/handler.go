@@ -3,12 +3,14 @@ package http
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
+	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
 	"context"
+	"log/slog"
+
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -16,22 +18,27 @@ import (
 )
 
 type ReviewHandler struct {
-	uc reviews.ReviewsUsecase
+	uc     reviews.ReviewsUsecase
+	logger *slog.Logger
 }
 
-func NewReviewHandler(uc reviews.ReviewsUsecase) *ReviewHandler {
-	return &ReviewHandler{uc}
+func NewReviewHandler(uc reviews.ReviewsUsecase, logger *slog.Logger) *ReviewHandler {
+	return &ReviewHandler{uc, logger}
 }
 
-func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
+func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
 	if errors.Is(err, models.ErrNotFound) {
-		log.Printf("%s error: %s", action, err)
+
+		logContext := log.AppendCtx(ctx, slog.String("action", action))
+		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action), slog.Any("error", err.Error()))
+
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
 		return response, http.StatusNotFound
 	}
-	log.Printf("%s error: %s", action, err)
+	logContext := log.AppendCtx(ctx, slog.String("action", action))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action), slog.Any("error", err.Error()))
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s review", action),
 	}
@@ -49,23 +56,31 @@ func ErrorCheck(err error, action string) (httpresponse.ErrorResponse, int) {
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for creating review")
+
 	var review models.Review
 	err := json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
-		log.Printf("create error: %s", err)
+		h.logger.Warn("Failed to decode review data",
+			slog.String("error", err.Error()),
+			slog.String("place_data", fmt.Sprintf("%+v", review)))
+
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	err = h.uc.CreateReview(context.Background(), review)
 	if err != nil {
-		response, status := ErrorCheck(err, "create")
-		httpresponse.SendJSONResponse(w, response, status)
+		response, status := ErrorCheck(err, "create", h.logger, context.Background())
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
+
+	h.logger.DebugContext(logCtx, "Successfully created a review")
 
 	w.WriteHeader(http.StatusCreated)
 }
@@ -83,6 +98,9 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update review"
 // @Router /reviews/{id} [put]
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for updating a review")
+
 	var review models.Review
 	vars := mux.Vars(r)
 	reviewID, err := strconv.Atoi(vars["id"])
@@ -90,26 +108,30 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		h.logger.Warn("Failed to parse place ID", slog.Int("reviewID", reviewID), slog.String("error", err.Error()))
+
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	err = json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
-		log.Printf("update error: %s", err)
+		h.logger.Warn("Failed to decode review data", slog.String("review_data", fmt.Sprintf("%+v", review)), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review data",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	review.ID = uint(reviewID)
 	err = h.uc.UpdateReview(context.Background(), review)
 	if err != nil {
-		response, status := ErrorCheck(err, "update")
-		httpresponse.SendJSONResponse(w, response, status)
+		logCtx := log.AppendCtx(context.Background(), slog.Int("reviewID", reviewID))
+		response, status := ErrorCheck(err, "update", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
+	h.logger.DebugContext(logCtx, "Successfully updated a review")
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -127,22 +149,28 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
+
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for deleting a review", slog.String("reviewID", idStr))
+
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		log.Printf("delete error: %s", err)
+		h.logger.Warn("Failed to parse review ID", slog.String("reviewID", idStr), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	err = h.uc.DeleteReview(context.Background(), uint(id))
 	if err != nil {
-		response, status := ErrorCheck(err, "delete")
-		httpresponse.SendJSONResponse(w, response, status)
+		logCtx := log.AppendCtx(context.Background(), slog.String("reviewID", idStr))
+		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
+	h.logger.DebugContext(logCtx, "Successfully deleted a review")
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -160,13 +188,17 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	placeIDStr := vars["placeID"]
+
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for getting reviews by place ID", slog.String("placeID", placeIDStr))
+
 	placeID, err := strconv.ParseUint(placeIDStr, 10, 64)
 	if err != nil {
-		log.Printf("retrieve error: %s", err)
+		h.logger.Warn("Failed to parse place ID", slog.String("placeID", placeIDStr), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid place ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	pageStr := r.URL.Query().Get("page")
@@ -174,11 +206,10 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
-			log.Printf("retrieve error: %s", err)
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 			return
 		}
 	}
@@ -186,12 +217,14 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	offset := limit * (page - 1)
 	reviews, err := h.uc.GetReviewsByPlaceID(context.Background(), uint(placeID), limit, offset)
 	if err != nil {
-		response, status := ErrorCheck(err, "retrieve")
-		httpresponse.SendJSONResponse(w, response, status)
+		logCtx := log.AppendCtx(context.Background(), slog.String("placeID", placeIDStr))
+		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
+	h.logger.DebugContext(logCtx, "Successfully got reviews by place ID")
 
-	httpresponse.SendJSONResponse(w, reviews, http.StatusOK)
+	httpresponse.SendJSONResponse(w, reviews, http.StatusOK, h.logger)
 }
 
 // GetReviewHandler godoc
@@ -207,22 +240,29 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	reviewIDStr := vars["reviewID"]
+
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for getting review by ID", slog.String("reviewID", reviewIDStr))
+
 	reviewID, err := strconv.ParseUint(reviewIDStr, 10, 64)
 	if err != nil {
-		log.Printf("retrieve error: %s", err)
+		h.logger.Warn("Failed to parse review ID", slog.String("reviewID", reviewIDStr), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest)
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	review, err := h.uc.GetReview(context.Background(), uint(reviewID))
 	if err != nil {
-		response, status := ErrorCheck(err, "retrieve")
-		httpresponse.SendJSONResponse(w, response, status)
+		logCtx := log.AppendCtx(context.Background(), slog.String("reviewID", reviewIDStr))
+		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
 	}
 
-	httpresponse.SendJSONResponse(w, review, http.StatusOK)
+	h.logger.DebugContext(logCtx, "Successfully got review by ID")
+
+	httpresponse.SendJSONResponse(w, review, http.StatusOK, h.logger)
 }

@@ -44,6 +44,7 @@ func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (
 		if err == sql.ErrNoRows {
 			return models.User{}, fmt.Errorf("user not found with email: %s, %s", email, models.ErrNotFound)
 		}
+
 		return models.User{}, err
 	}
 	return user, nil

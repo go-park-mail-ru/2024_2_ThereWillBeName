@@ -40,6 +40,7 @@ func (m *MockTripsUsecase) EXPECT() *MockTripsUsecaseMockRecorder {
 	return m.recorder
 }
 
+
 // AddPlaceToTrip mocks base method.
 func (m *MockTripsUsecase) AddPlaceToTrip(ctx context.Context, tripID, placeID uint) error {
 	m.ctrl.T.Helper()
@@ -53,6 +54,7 @@ func (mr *MockTripsUsecaseMockRecorder) AddPlaceToTrip(ctx, tripID, placeID any)
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlaceToTrip", reflect.TypeOf((*MockTripsUsecase)(nil).AddPlaceToTrip), ctx, tripID, placeID)
 }
+
 
 // CreateTrip mocks base method.
 func (m *MockTripsUsecase) CreateTrip(ctx context.Context, trip models.Trip) error {
@@ -149,6 +151,7 @@ func (m *MockTripsRepo) EXPECT() *MockTripsRepoMockRecorder {
 	return m.recorder
 }
 
+
 // AddPlaceToTrip mocks base method.
 func (m *MockTripsRepo) AddPlaceToTrip(ctx context.Context, tripID, placeID uint) error {
 	m.ctrl.T.Helper()
@@ -233,4 +236,6 @@ func (m *MockTripsRepo) UpdateTrip(ctx context.Context, user models.Trip) error 
 func (mr *MockTripsRepoMockRecorder) UpdateTrip(ctx, user any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateTrip", reflect.TypeOf((*MockTripsRepo)(nil).UpdateTrip), ctx, user)
+
 }
+

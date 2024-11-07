@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
+
 	"strconv"
 	"testing"
 
@@ -23,8 +26,16 @@ func TestCreateTripHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+	logger := slog.New(handl)
+
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-	handler := NewTripHandler(mockUsecase)
+	handler := NewTripHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name           string
@@ -36,6 +47,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "successful creation",
 			inputTrip: models.Trip{
+
 				ID:          0,
 				UserID:      100,
 				Name:        "Test Trip",
@@ -51,6 +63,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "invalid input data",
 			inputTrip: models.Trip{
+
 				ID:        0,
 				UserID:    101,
 				StartDate: "invalid-date",
@@ -63,6 +76,7 @@ func TestCreateTripHandler(t *testing.T) {
 		{
 			name: "internal server error",
 			inputTrip: models.Trip{
+
 				ID:          0,
 				UserID:      102,
 				Name:        "Error Trip",
@@ -103,8 +117,15 @@ func TestUpdateTripHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+	logger := slog.New(handl)
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-	handler := NewTripHandler(mockUsecase)
+	handler := NewTripHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name           string
@@ -140,7 +161,7 @@ func TestUpdateTripHandler(t *testing.T) {
 			mockUsecase.EXPECT().UpdateTrip(gomock.Any(), tt.inputTrip).Return(tt.usecaseErr)
 
 			reqBody, _ := json.Marshal(tt.inputTrip)
-			req := httptest.NewRequest("PUT", "/trips/"+strconv.Itoa(int(tt.inputTrip.ID)), bytes.NewReader(reqBody))
+			req := httptest.NewRequest("PUT", "/trips/"+strconv.FormatUint(uint64(tt.inputTrip.ID), 10), bytes.NewReader(reqBody))
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()
@@ -160,9 +181,16 @@ func TestUpdateTripHandler(t *testing.T) {
 func TestDeleteTripHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+	logger := slog.New(handl)
 
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-	handler := NewTripHandler(mockUsecase)
+	handler := NewTripHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name           string
@@ -190,7 +218,7 @@ func TestDeleteTripHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsecase.EXPECT().DeleteTrip(gomock.Any(), tt.tripID).Return(tt.usecaseErr)
 
-			req := httptest.NewRequest("DELETE", "/trips/"+strconv.Itoa(int(tt.tripID)), nil)
+			req := httptest.NewRequest("DELETE", "/trips/"+strconv.FormatUint(uint64(tt.tripID), 10), nil)
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()
@@ -211,8 +239,15 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
+
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+	logger := slog.New(handl)
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-	handler := NewTripHandler(mockUsecase)
+	handler := NewTripHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name           string
@@ -247,7 +282,7 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockUsecase.EXPECT().GetTripsByUserID(gomock.Any(), tt.userID, gomock.Any(), gomock.Any()).Return(tt.expectedTrips, tt.usecaseErr)
 
-			req := httptest.NewRequest("GET", "/users/"+strconv.Itoa(int(tt.userID))+"/trips", nil)
+			req := httptest.NewRequest("GET", "/users/"+strconv.FormatUint(uint64(tt.userID), 10)+"/trips", nil)
 			rec := httptest.NewRecorder()
 
 			r := mux.NewRouter()
@@ -271,9 +306,15 @@ func TestGetTripsByUserIDHandler(t *testing.T) {
 func TestGetTripHandler(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}
 
+	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+	logger := slog.New(handl)
 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-	handler := NewTripHandler(mockUsecase)
+	handler := NewTripHandler(mockUsecase, logger)
 
 	tests := []struct {
 		name           string
@@ -331,9 +372,20 @@ func TestGetTripHandler(t *testing.T) {
 // func TestAddPlaceToTripHandler(t *testing.T) {
 // 	ctrl := gomock.NewController(t)
 // 	defer ctrl.Finish()
+// opts := &slog.HandlerOptions{
+// 	Level: slog.LevelDebug,
+// }
+
+// 	opts := &slog.HandlerOptions{
+// 		Level: slog.LevelDebug,
+// 	}
+
+// 	handl := slog.NewJSONHandler(os.Stdout, opts)
+
+// 	logger := slog.New(handl)
 
 // 	mockUsecase := mocks.NewMockTripsUsecase(ctrl)
-// 	handler := NewTripHandler(mockUsecase)
+// 	handler := NewTripHandler(mockUsecase, logger)
 
 // 	tests := []struct {
 // 		name           string
