@@ -21,10 +21,10 @@ func NewJWT(secret string, logger *slog.Logger) *JWT {
 
 func (j *JWT) GenerateToken(userID uint, email, login string) (string, error) {
 	claims := jwt.MapClaims{
-		"id":    userID,
-		"email": email,
-		"login": login,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"userID": userID,
+		"email":  email,
+		"login":  login,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -40,7 +40,9 @@ func (j *JWT) ParseToken(token string) (map[string]interface{}, error) {
 	})
 
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
+		j.logger.Debug("from Generate token", "JWT_claims", claims)
 		return claims, nil
 	}
+
 	return nil, err
 }

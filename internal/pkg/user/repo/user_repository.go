@@ -41,7 +41,10 @@ func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (
 	row := r.db.QueryRowContext(ctx, query, email)
 	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password, &user.CreatedAt)
 	if err != nil {
-		return models.User{}, fmt.Errorf("user not found with email: %s, %s", email, models.ErrNotFound)
+		if err == sql.ErrNoRows {
+			return models.User{}, fmt.Errorf("user not found with email: %s, %s", email, models.ErrNotFound)
+		}
+
 		return models.User{}, err
 	}
 	return user, nil
