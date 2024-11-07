@@ -93,7 +93,7 @@ func main() {
 	auth := r.PathPrefix("/auth").Subrouter()
 	auth.HandleFunc("/signup", h.SignUp).Methods(http.MethodPost)
 	auth.HandleFunc("/login", h.Login).Methods(http.MethodPost)
-	auth.HandleFunc("/logout", h.Logout).Methods(http.MethodPost)
+	auth.Handle("/logout", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.Logout), logger)).Methods(http.MethodPost)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.CurrentUser), logger)).Methods(http.MethodGet)
 
@@ -120,7 +120,11 @@ func main() {
 	reviews.HandleFunc("/{reviewID}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
+	user.HandleFunc("/reviews", reviewHandler.GetReviewsByUserIDHandler).Methods(http.MethodGet)
+
 	trips := r.PathPrefix("/trips").Subrouter()
+	trips.Handle("/", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
+
 	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
 	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
 	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)

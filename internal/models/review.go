@@ -16,5 +16,12 @@ type GetReview struct {
 	UserLogin  string `json:"user_login"`
 	AvatarPath string `json:"avatar_path"`
 	Rating     int    `json:"rating"`
-	ReviewText string `json:"review_text"`
+	ReviewText string `json:"text"`
+}
+
+type GetReviewByUserID struct {
+	ID         uint   `json:"id"`
+	PlaceName  string `json:"place_name"`
+	Rating     int    `json:"rating"`
+	ReviewText string `json:"text"`
 }
