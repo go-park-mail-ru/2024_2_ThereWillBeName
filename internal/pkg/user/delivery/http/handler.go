@@ -419,6 +419,8 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Starting user password updating")
 	userID, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 		response := httpresponse.ErrorResponse{
@@ -465,6 +467,8 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.OldPassword,
 	}
 
+	h.logger.Debug("updating password", "userID", userID, "oldPassword", credentials.OldPassword, "newPassword", credentials.NewPassword)
+
 	err := h.usecase.UpdatePassword(r.Context(), user, credentials.NewPassword)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -496,5 +500,62 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		Password: credentials.NewPassword,
 	}
 
+	h.logger.Debug("User password updated successfully")
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
+}
+
+func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Starting user profile updating")
+
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	var userData struct {
+		Login string `json:"username"`
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	h.logger.Debug("updating profile", "userID", userID, "username", userData.Login, "email", userData.Email)
+
+	err := h.usecase.UpdateProfile(r.Context(), userID, userData.Login, userData.Email)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound, h.logger)
+			return
+		}
+		response := httpresponse.ErrorResponse{
+			Message: "Failed to update profile",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
+		return
+	}
+
+	h.logger.Debug("User profile updated successfully")
+
+	response := struct {
+		Username string `json:"username"`
+		Email    string `json:"email"`
+	}{
+		Username: userData.Login,
+		Email:    userData.Email,
+	}
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }

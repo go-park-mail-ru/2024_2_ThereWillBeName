@@ -3,11 +3,10 @@ package logger
 import (
 	"context"
 	"encoding/json"
+	"github.com/fatih/color"
 	"io"
 	"log"
 	"log/slog"
-
-	"github.com/fatih/color"
 )
 
 type ctxKey string
