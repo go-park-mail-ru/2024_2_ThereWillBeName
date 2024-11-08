@@ -53,6 +53,7 @@ func main() {
 	db, err := openDB(cfg.ConnStr)
 	if err != nil {
 		logger.Error("Failed to open database", slog.Any("error", err))
+		panic(err)
 	}
 	logger.Info("Connected to database successfully")
 	defer db.Close()
@@ -102,6 +103,7 @@ func main() {
 	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UploadAvatar), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.GetProfile), logger)).Methods(http.MethodGet)
 	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UpdatePassword), logger)).Methods(http.MethodPut)
+	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(h.UpdateProfile), logger)).Methods(http.MethodPut)
 
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
