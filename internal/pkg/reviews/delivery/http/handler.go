@@ -73,6 +73,17 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if review.Rating < 1 || review.Rating > 5 {
+		h.logger.Warn("Invalid rating",
+			slog.String("rating", strconv.Itoa(review.Rating)))
+
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid rating",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
 	createdReview, err := h.uc.CreateReview(context.Background(), review)
 	if err != nil {
 		response, status := ErrorCheck(err, "create", h.logger, context.Background())
