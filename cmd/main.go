@@ -116,13 +116,13 @@ func main() {
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
-	reviews.HandleFunc("", reviewHandler.CreateReviewHandler).Methods(http.MethodPost)
-	reviews.HandleFunc("/{reviewID}", reviewHandler.UpdateReviewHandler).Methods(http.MethodPut)
-	reviews.HandleFunc("/{reviewID}", reviewHandler.DeleteReviewHandler).Methods(http.MethodDelete)
+	reviews.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.CreateReviewHandler), logger)).Methods(http.MethodPost)
+	reviews.Handle("/reviewID", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.UpdateReviewHandler), logger)).Methods(http.MethodPut)
+	reviews.Handle("/reviewID", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.DeleteReviewHandler), logger)).Methods(http.MethodDelete)
 	reviews.HandleFunc("/{reviewID}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
-	user.HandleFunc("/reviews", reviewHandler.GetReviewsByUserIDHandler).Methods(http.MethodGet)
+	reviews.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	trips := r.PathPrefix("/trips").Subrouter()
 	trips.Handle("/", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTripHandler), logger)).Methods(http.MethodPost)

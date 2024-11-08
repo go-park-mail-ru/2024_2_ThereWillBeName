@@ -4,6 +4,7 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
+	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
 	"context"
 	"log/slog"
@@ -59,6 +60,18 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating review")
 
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.Warn("Failed to retrieve user ID from context")
+
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
 	var review models.Review
 	err := json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
@@ -83,6 +96,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+
+	review.UserID = uint(userID)
 
 	createdReview, err := h.uc.CreateReview(context.Background(), review)
 	if err != nil {
@@ -111,6 +126,18 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for updating a review")
+
+	_, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.Warn("Failed to retrieve user ID from context")
+
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
 
 	var review models.Review
 	vars := mux.Vars(r)
@@ -160,6 +187,18 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	idStr := vars["id"]
+
+	_, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.Warn("Failed to retrieve user ID from context")
+
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
 
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for deleting a review", slog.String("reviewID", idStr))
@@ -249,23 +288,25 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve reviews"
 // @Router /users/{userID}/reviews [get]
 func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	userIDStr := vars["userID"]
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for getting reviews by user ID", slog.String("userID", userIDStr))
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
 
-	userID, err := strconv.ParseUint(userIDStr, 10, 64)
-	if err != nil {
-		h.logger.Warn("Failed to parse user ID", slog.String("userID", userIDStr), slog.String("error", err.Error()))
+		h.logger.Warn("Failed to retrieve user ID from context")
+
 		response := httpresponse.ErrorResponse{
-			Message: "Invalid user ID",
+			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
+
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for getting reviews by user ID", slog.Int("userID", int(userID)))
+
 	pageStr := r.URL.Query().Get("page")
 	page := 1
+	var err error
 	if pageStr != "" {
 		page, err = strconv.Atoi(pageStr)
 		if err != nil {
@@ -280,7 +321,7 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 	offset := limit * (page - 1)
 	reviews, err := h.uc.GetReviewsByUserID(context.Background(), uint(userID), limit, offset)
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.String("userID", userIDStr))
+		logCtx := log.AppendCtx(context.Background(), slog.Int("userID", int(userID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
 		httpresponse.SendJSONResponse(w, response, status, h.logger)
 		return
