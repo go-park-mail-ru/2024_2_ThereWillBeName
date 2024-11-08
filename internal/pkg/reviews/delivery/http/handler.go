@@ -6,6 +6,7 @@ import (
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
 	"context"
+	"html/template"
 	"log/slog"
 
 	"encoding/json"
@@ -56,6 +57,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating review")
 
@@ -72,6 +74,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
 	createdReview, err := h.uc.CreateReview(context.Background(), review)
 	if err != nil {
@@ -98,6 +102,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update review"
 // @Router /reviews/{id} [put]
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
+
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for updating a review")
 
@@ -124,6 +130,9 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	review.ID = uint(reviewID)
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
+
 	err = h.uc.UpdateReview(context.Background(), review)
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("reviewID", reviewID))

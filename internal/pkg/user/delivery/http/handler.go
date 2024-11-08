@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -48,6 +49,7 @@ func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /signup [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for sign up")
 
@@ -61,6 +63,10 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+
+	credentials.Login = template.HTMLEscapeString(credentials.Login)
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
 
 	user := models.User{
 		Login:    credentials.Login,
@@ -132,6 +138,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for log in")
 
@@ -147,6 +154,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
 
 	user, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -70,7 +71,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating a trip")
 
@@ -99,6 +100,10 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		EndDate:     tripData.EndDate,
 		Private:     tripData.Private,
 	}
+
+	trip.Name = template.HTMLEscapeString(trip.Name)
+	trip.Description = template.HTMLEscapeString(trip.Description)
+
 	err = h.uc.CreateTrip(context.Background(), trip)
 	if err != nil {
 		response, status := ErrorCheck(err, "create", h.logger, context.Background())
@@ -125,7 +130,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update trip"
 // @Router /trips/{id} [put]
 func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) {
-
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for updating a trip")
 
@@ -162,6 +167,10 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		EndDate:     tripData.EndDate,
 		Private:     tripData.Private,
 	}
+
+	trip.Name = template.HTMLEscapeString(trip.Name)
+	trip.Description = template.HTMLEscapeString(trip.Description)
+
 	err = h.uc.UpdateTrip(context.Background(), trip)
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("tripID", tripID))

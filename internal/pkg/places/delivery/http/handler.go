@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -74,6 +75,7 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places [post]
 func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating a place")
 
@@ -85,6 +87,13 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 			slog.String("place_data", fmt.Sprintf("%+v", place)))
 		return
 	}
+
+	place.Name = template.HTMLEscapeString(place.Name)
+	place.ImagePath = template.HTMLEscapeString(place.ImagePath)
+	place.Description = template.HTMLEscapeString(place.Description)
+	place.Address = template.HTMLEscapeString(place.Address)
+	place.PhoneNumber = template.HTMLEscapeString(place.PhoneNumber)
+
 	if err := h.uc.CreatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.Error("Failed to create place",
@@ -109,6 +118,7 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [put]
 func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for updating a place")
 
@@ -121,6 +131,13 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 			slog.String("place_data", fmt.Sprintf("%+v", place)))
 		return
 	}
+
+	place.Name = template.HTMLEscapeString(place.Name)
+	place.ImagePath = template.HTMLEscapeString(place.ImagePath)
+	place.Description = template.HTMLEscapeString(place.Description)
+	place.Address = template.HTMLEscapeString(place.Address)
+	place.PhoneNumber = template.HTMLEscapeString(place.PhoneNumber)
+
 	if err := h.uc.UpdatePlace(r.Context(), place); err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.Error("Failed to update place",
@@ -221,6 +238,7 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/search/{placeName} [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	placeName := mux.Vars(r)["placeName"]
 
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
@@ -238,6 +256,9 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		h.logger.Warn("Invalid limit parameter", slog.String("error", err.Error()))
 		return
 	}
+
+	placeName = template.HTMLEscapeString(placeName)
+
 	places, err := h.uc.SearchPlaces(r.Context(), placeName, limit, offset)
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
