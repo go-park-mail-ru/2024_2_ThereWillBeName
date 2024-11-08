@@ -127,3 +127,7 @@ func (a *UserUsecaseImpl) UpdatePassword(ctx context.Context, userData models.Us
 
 	return a.repo.UpdatePassword(ctx, user.ID, string(hashedPassword))
 }
+
+func (a *UserUsecaseImpl) UpdateProfile(ctx context.Context, userID uint, login, email string) error {
+	return a.repo.UpdateProfile(ctx, userID, login, email)
+}
