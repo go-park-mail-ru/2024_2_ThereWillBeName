@@ -7,6 +7,8 @@ import (
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/user"
+	"2024_2_ThereWillBeName/internal/validator"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -72,6 +74,12 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		Login:    credentials.Login,
 		Email:    credentials.Email,
 		Password: credentials.Password,
+	}
+
+	v := validator.New()
+	if models.ValidateUser(v, &user); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
 	}
 
 	var err error
@@ -168,7 +176,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
-
+	v := validator.New()
+	if models.ValidateUser(v, &user); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
 	h.logger.Debug("User logged in successfully", slog.Int("userID", int(user.ID)), slog.String("email", user.Email))
 
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)

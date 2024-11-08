@@ -5,6 +5,8 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/trips"
+	"2024_2_ThereWillBeName/internal/validator"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -101,6 +103,12 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		Private:     tripData.Private,
 	}
 
+	v := validator.New()
+	if models.ValidateTrip(v, &trip); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
+
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
@@ -166,6 +174,12 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		StartDate:   tripData.StartDate,
 		EndDate:     tripData.EndDate,
 		Private:     tripData.Private,
+	}
+
+	v := validator.New()
+	if models.ValidateTrip(v, &trip); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
 	}
 
 	trip.Name = template.HTMLEscapeString(trip.Name)

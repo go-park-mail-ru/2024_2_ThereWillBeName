@@ -5,6 +5,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/places"
+	"2024_2_ThereWillBeName/internal/validator"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -87,6 +88,11 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 			slog.String("place_data", fmt.Sprintf("%+v", place)))
 		return
 	}
+	v := validator.New()
+	if models.ValidateCreatePlace(v, &place); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
 
 	place.Name = template.HTMLEscapeString(place.Name)
 	place.ImagePath = template.HTMLEscapeString(place.ImagePath)
@@ -129,6 +135,12 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 		h.logger.Warn("Failed to decode place data",
 			slog.String("error", err.Error()),
 			slog.String("place_data", fmt.Sprintf("%+v", place)))
+		return
+	}
+
+	v := validator.New()
+	if models.ValidateUpdatePlace(v, &place); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
 		return
 	}
 

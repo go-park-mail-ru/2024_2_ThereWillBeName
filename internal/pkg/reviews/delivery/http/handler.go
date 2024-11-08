@@ -5,6 +5,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
+	"2024_2_ThereWillBeName/internal/validator"
 	"context"
 	"html/template"
 	"log/slog"
@@ -57,7 +58,6 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating review")
 
@@ -66,10 +66,28 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	if err != nil {
 		h.logger.Warn("Failed to decode review data",
 			slog.String("error", err.Error()),
-			slog.String("place_data", fmt.Sprintf("%+v", review)))
+			slog.String("review_data", fmt.Sprintf("%+v", review)))
 
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	v := validator.New()
+	if models.ValidateReview(v, &review); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
+
+	if review.Rating < 1 || review.Rating > 5 {
+		h.logger.Warn("Invalid rating",
+			slog.String("rating", strconv.Itoa(review.Rating)))
+
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid rating",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
@@ -100,8 +118,6 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update review"
 // @Router /reviews/{id} [put]
 func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
-
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for updating a review")
 
@@ -127,10 +143,15 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	review.ID = uint(reviewID)
+	v := validator.New()
+	if models.ValidateReview(v, &review); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
 
 	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
+	review.ID = uint(reviewID)
 	err = h.uc.UpdateReview(context.Background(), review)
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("reviewID", reviewID))
@@ -230,6 +251,58 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 		return
 	}
 	h.logger.DebugContext(logCtx, "Successfully got reviews by place ID")
+
+	httpresponse.SendJSONResponse(w, reviews, http.StatusOK, h.logger)
+}
+
+// GetReviewsByUserIDHandler godoc
+// @Summary Retrieve reviews by user ID
+// @Description Get all reviews for an user
+// @Produce json
+// @Param userID path int true "User ID"
+// @Success 200 {array} models.GetReviewByUserId "List of reviews"
+// @Failure 400 {object} httpresponses.ErrorResponse "Invalid user ID"
+// @Failure 404 {object} httpresponses.ErrorResponse "No reviews found for the user"
+// @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve reviews"
+// @Router /users/{userID}/reviews [get]
+func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userIDStr := vars["userID"]
+
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for getting reviews by user ID", slog.String("userID", userIDStr))
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	if err != nil {
+		h.logger.Warn("Failed to parse user ID", slog.String("userID", userIDStr), slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid user ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	pageStr := r.URL.Query().Get("page")
+	page := 1
+	if pageStr != "" {
+		page, err = strconv.Atoi(pageStr)
+		if err != nil {
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid page number",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+	limit := 10
+	offset := limit * (page - 1)
+	reviews, err := h.uc.GetReviewsByUserID(context.Background(), uint(userID), limit, offset)
+	if err != nil {
+		logCtx := log.AppendCtx(context.Background(), slog.String("userID", userIDStr))
+		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		return
+	}
+	h.logger.DebugContext(logCtx, "Successfully got reviews by user ID")
 
 	httpresponse.SendJSONResponse(w, reviews, http.StatusOK, h.logger)
 }
