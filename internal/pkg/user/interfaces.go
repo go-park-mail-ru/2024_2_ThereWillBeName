@@ -13,6 +13,7 @@ type UserUsecase interface {
 	UploadAvatar(ctx context.Context, userID uint, avatarFile multipart.File, header *multipart.FileHeader) (string, error)
 	GetProfile(ctx context.Context, userID, requesterID uint) (models.UserProfile, error)
 	UpdatePassword(ctx context.Context, userData models.User, newPassword string) error
+	UpdateProfile(ctx context.Context, userID uint, login, email string) error
 }
 
 type UserRepo interface {
@@ -25,4 +26,5 @@ type UserRepo interface {
 	GetAvatarPathByUserId(ctx context.Context, userID uint) (string, error)
 	GetUserByID(ctx context.Context, userID uint) (models.UserProfile, error)
 	UpdatePassword(ctx context.Context, userID uint, newPassword string) error
+	UpdateProfile(ctx context.Context, userID uint, login, email string) error
 }
