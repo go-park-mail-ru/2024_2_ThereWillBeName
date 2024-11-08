@@ -122,17 +122,15 @@ func main() {
 	reviews.HandleFunc("/{reviewID}", reviewHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("", reviewHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
-	reviews.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
+	user.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	trips := r.PathPrefix("/trips").Subrouter()
-	trips.Handle("/", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
-
-	trips.HandleFunc("", tripHandler.CreateTripHandler).Methods(http.MethodPost)
-	trips.HandleFunc("/{id}", tripHandler.UpdateTripHandler).Methods(http.MethodPut)
-	trips.HandleFunc("/{id}", tripHandler.DeleteTripHandler).Methods(http.MethodDelete)
-	trips.HandleFunc("/{id}", tripHandler.GetTripHandler).Methods(http.MethodGet)
-	trips.HandleFunc("/{id}", tripHandler.AddPlaceToTripHandler).Methods(http.MethodPost)
-	user.HandleFunc("/trips", tripHandler.GetTripsByUserIDHandler).Methods(http.MethodGet)
+	trips.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
+	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.UpdateTripHandler), logger)).Methods(http.MethodPut)
+	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.DeleteTripHandler), logger)).Methods(http.MethodDelete)
+	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.GetTripHandler), logger)).Methods(http.MethodGet)
+	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.AddPlaceToTripHandler), logger)).Methods(http.MethodPost)
+	user.Handle("/trips", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.GetTripsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	cities := r.PathPrefix("/cities").Subrouter()
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)

@@ -202,6 +202,18 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling logout request")
 
+	_, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.Warn("Failed to retrieve user ID from context")
+
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",
 		Value:    "",
