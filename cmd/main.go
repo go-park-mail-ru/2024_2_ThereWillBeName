@@ -61,6 +61,8 @@ func main() {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
+	logger.Debug("avatar_storage_path", "path", storagePath)
+
 	userRepo := userRepo.NewAuthRepository(db)
 	jwtHandler := jwt.NewJWT(string(jwtSecret), logger)
 	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)

@@ -3,14 +3,13 @@ package user
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
-	"mime/multipart"
 )
 
 //go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
 type UserUsecase interface {
 	SignUp(ctx context.Context, user models.User) (uint, error)
 	Login(ctx context.Context, login, password string) (models.User, error)
-	UploadAvatar(ctx context.Context, userID uint, avatarFile multipart.File, header *multipart.FileHeader) (string, error)
+	UploadAvatar(ctx context.Context, userID uint, avatarData []byte, avatarFileName string) (string, error)
 	GetProfile(ctx context.Context, userID, requesterID uint) (models.UserProfile, error)
 	UpdatePassword(ctx context.Context, userData models.User, newPassword string) error
 	UpdateProfile(ctx context.Context, userID uint, login, email string) error

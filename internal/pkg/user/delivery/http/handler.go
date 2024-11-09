@@ -8,11 +8,15 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/user"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"mime"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -322,38 +326,77 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		h.logger.Error("File size exceeds limit", "error", err)
+	var requestData struct {
+		Avatar string `json:"avatar"`
+	}
 
+	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
+		h.logger.Error("Invalid JSON format", "error", err)
 		response := httpresponse.ErrorResponse{
-			Message: "File is too large",
+			Message: "Invalid request format",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
-	file, header, err := r.FormFile("avatar")
+	if strings.HasPrefix(requestData.Avatar, "data:image/") {
+		index := strings.Index(requestData.Avatar, ",")
+		if index != -1 {
+			requestData.Avatar = requestData.Avatar[index+1:]
+		} else {
+			h.logger.Error("Invalid base64 image format", "error", "missing ',' separator")
+			response := httpresponse.ErrorResponse{
+				Message: "Invalid base64 image format",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+
+	avatarData, err := base64.StdEncoding.DecodeString(requestData.Avatar)
 	if err != nil {
-		h.logger.Error("Error reading avatar file", "error", err)
-
+		h.logger.Error("Failed to decode base64 image", "error", err)
 		response := httpresponse.ErrorResponse{
-			Message: "Invalid file upload",
+			Message: "Invalid base64 image data",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
-	defer file.Close()
 
-	h.logger.Debug("Uploading avatar", "userID", userID, "fileName", header.Filename)
+	fileType := http.DetectContentType(avatarData)
+	h.logger.Debug("Detected file type", "fileType", fileType)
+
+	if !strings.HasPrefix(fileType, "image/") {
+		h.logger.Error("Invalid file type", "fileType", fileType)
+		response := httpresponse.ErrorResponse{
+			Message: "Only image files are allowed",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	ext, err := mime.ExtensionsByType(fileType)
+	if err != nil || len(ext) == 0 {
+		h.logger.Error("Unable to determine file extension", "mimeType", fileType)
+		response := httpresponse.ErrorResponse{
+			Message: "Unable to determine file extension",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	avatarFileName := fmt.Sprintf("user_%d_avatar%s", userID, ext[0])
+
+	h.logger.Debug("Uploading avatar", "userID", userID, "avatarFileName", avatarFileName)
 
 	var avatarPath string
-	if avatarPath, err = h.usecase.UploadAvatar(context.Background(), uint(userID), file, header); err != nil {
+	if avatarPath, err = h.usecase.UploadAvatar(context.Background(), uint(userID), avatarData, avatarFileName); err != nil {
 		h.logger.Error("Failed to upload avatar", "userID", userID, "error", err)
-
 		response := httpresponse.ErrorResponse{
 			Message: "Failed to upload avatar",
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
+		return
 	}
 
 	response := map[string]string{
