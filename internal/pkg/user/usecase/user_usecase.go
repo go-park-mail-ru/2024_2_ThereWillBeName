@@ -6,9 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
 	"os"
 	"path/filepath"
 
@@ -22,18 +20,19 @@ type UserUsecaseImpl struct {
 
 func NewUserUsecase(repo user.UserRepo, storagePath string) *UserUsecaseImpl {
 	return &UserUsecaseImpl{
-		repo: repo,
+		repo:        repo,
+		storagePath: storagePath,
 	}
 }
 
-func saveAvatarFile(avatarFile multipart.File, path string) error {
+func saveAvatarData(avatarData []byte, path string) error {
 	outFile, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("failed to create avatar file: %w", models.ErrInternal)
 	}
 	defer outFile.Close()
 
-	if _, err := io.Copy(outFile, avatarFile); err != nil {
+	if _, err := outFile.Write(avatarData); err != nil {
 		return fmt.Errorf("failed to write avatar content: %w", models.ErrInternal)
 	}
 
@@ -64,7 +63,7 @@ func (a *UserUsecaseImpl) Login(ctx context.Context, email, password string) (mo
 	return user, nil
 }
 
-func (a *UserUsecaseImpl) UploadAvatar(ctx context.Context, userID uint, avatarFile multipart.File, header *multipart.FileHeader) (string, error) {
+func (a *UserUsecaseImpl) UploadAvatar(ctx context.Context, userID uint, avatarData []byte, avatarFileName string) (string, error) {
 	avatarPath, err := a.repo.GetAvatarPathByUserId(ctx, userID)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -73,16 +72,20 @@ func (a *UserUsecaseImpl) UploadAvatar(ctx context.Context, userID uint, avatarF
 		return "", fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 
-	fileExt := filepath.Ext(header.Filename)
-
-	avatarFileName := fmt.Sprintf("user_%d_avatar%s", userID, fileExt)
 	realAvatarPath := filepath.Join(a.storagePath, avatarFileName)
 
-	if err := saveAvatarFile(avatarFile, realAvatarPath); err != nil {
-		return err.Error(), err
+	if avatarPath != "" && avatarPath != avatarFileName {
+		oldAvatarPath := filepath.Join(a.storagePath, avatarPath)
+		if err := os.Remove(oldAvatarPath); err != nil {
+			return "", fmt.Errorf("failed to delete old avatar file: %w", err)
+		}
 	}
 
-	if avatarPath == "" {
+	if err := saveAvatarData(avatarData, realAvatarPath); err != nil {
+		return "", fmt.Errorf("failed to save avatar file: %w", err)
+	}
+
+	if avatarPath == "" || avatarPath != avatarFileName {
 		if err := a.repo.UpdateAvatarPathByUserId(ctx, userID, avatarFileName); err != nil {
 			return "", fmt.Errorf("failed to update avatar path in database: %w", models.ErrInternal)
 		}
