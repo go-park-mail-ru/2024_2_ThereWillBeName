@@ -70,6 +70,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Success 201 {object} models.Trip "Trip created successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid request"
 // @Failure 404 {object} httpresponses.ErrorResponse "Invalid request"
+// @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,6 +136,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip ID"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip data"
 // @Failure 404 {object} httpresponses.ErrorResponse "Trip not found"
+// @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update trip"
 // @Router /trips/{id} [put]
 func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) {
