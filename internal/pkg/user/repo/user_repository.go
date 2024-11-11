@@ -22,7 +22,7 @@ func NewAuthRepository(db *sql.DB) *UserRepositoryImpl {
 
 func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user models.User) (uint, error) {
 	var userID uint
-	query := `INSERT INTO "user" (login, email, password, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id`
+	query := `INSERT INTO "user" (login, email, password_hash, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id`
 	err := r.db.QueryRowContext(ctx, query, user.Login, user.Email, user.Password).Scan(&userID)
 	if err != nil {
 		var pqErr *pq.Error
@@ -37,7 +37,7 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user models.User) (
 
 func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var user models.User
-	query := `SELECT id, login, email, password, created_at FROM "user" WHERE email = $1`
+	query := `SELECT id, login, email, password_hash, created_at FROM "user" WHERE email = $1`
 	row := r.db.QueryRowContext(ctx, query, email)
 	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password, &user.CreatedAt)
 	if err != nil {
@@ -50,7 +50,7 @@ func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (
 }
 
 func (r *UserRepositoryImpl) UpdateUser(ctx context.Context, user models.User) error {
-	query := `UPDATE "user" SET login = $1, email=$2, password = $3, updated_at = NOW() WHERE id = $4`
+	query := `UPDATE "user" SET login = $1, email=$2, password_hash = $3, updated_at = NOW() WHERE id = $4`
 	_, err := r.db.ExecContext(ctx, query, user.Login, user.Email, user.Password, user.ID)
 	return err
 }
@@ -81,7 +81,7 @@ func (r *UserRepositoryImpl) GetUsers(ctx context.Context, count, offset int64) 
 }
 
 func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID uint) (string, error) {
-	query := `SELECT avatarPath FROM "user" WHERE id=$1`
+	query := `SELECT avatar_path FROM "user" WHERE id=$1`
 
 	row := r.db.QueryRowContext(ctx, query, userID)
 
@@ -98,7 +98,7 @@ func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID u
 }
 
 func (r *UserRepositoryImpl) UpdateAvatarPathByUserId(ctx context.Context, userID uint, avatarPath string) error {
-	query := `UPDATE "user" SET avatarPath = $1 WHERE id = $2`
+	query := `UPDATE "user" SET avatar_path = $1 WHERE id = $2`
 
 	result, err := r.db.ExecContext(ctx, query, avatarPath, userID)
 	if err != nil {
@@ -117,7 +117,7 @@ func (r *UserRepositoryImpl) UpdateAvatarPathByUserId(ctx context.Context, userI
 }
 
 func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (models.UserProfile, error) {
-	queryBuilder := squirrel.Select("login, email, avatarPath").
+	queryBuilder := squirrel.Select("login, email, avatar_path").
 		From(`"user"`).
 		Where(squirrel.Eq{"id": userID}).
 		PlaceholderFormat(squirrel.Dollar)

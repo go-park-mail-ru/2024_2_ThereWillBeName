@@ -19,7 +19,7 @@ func TestCreateUser_Success(t *testing.T) {
 
 	repository := NewAuthRepository(db)
 
-	mock.ExpectQuery(`^INSERT INTO "user" \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id$").
+	mock.ExpectQuery(`^INSERT INTO "user" \\(login, email, password_hash, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id$").
 		WithArgs("testuser", "test@example.com", "testpass`).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
@@ -52,9 +52,9 @@ func TestGetUserByEmail_Success(t *testing.T) {
 	repository := NewAuthRepository(db)
 
 	createdAt := time.Now()
-	mock.ExpectQuery(`SELECT id, login, email, password, created_at FROM "user" WHERE email = \$1`).
+	mock.ExpectQuery(`SELECT id, login, email, password_hash, created_at FROM "user" WHERE email = \$1`).
 		WithArgs("testuser@example.com").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "email", "password", "created_at"}).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "email", "password_hash", "created_at"}).
 			AddRow(1, "testuser", "testuser@example.com", "testpass", createdAt))
 
 	user, err := repository.GetUserByEmail(context.Background(), "testuser@example.com")
