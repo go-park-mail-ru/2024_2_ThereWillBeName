@@ -68,12 +68,6 @@ func main() {
 	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)
 	h := httpHandler.NewUserHandler(userUseCase, jwtHandler, logger)
 
-	csrfSecret := os.Getenv("CSRF_SECRET")
-	tokenHandler, err := middleware.NewHMACHashToken(csrfSecret)
-	if err != nil {
-		logger.Error("failed to create token handler: %v", err)
-	}
-
 	reviewsRepo := reviewrepo.NewReviewRepository(db)
 	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
 	reviewHandler := reviewhandler.NewReviewHandler(reviewUsecase, logger)
@@ -115,12 +109,11 @@ func main() {
 
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
-	places.Handle("", middleware.CSRFMiddleware(tokenHandler, http.HandlerFunc(placeHandler.PostPlaceHandler), logger)).Methods(http.MethodPost)
+	places.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.PostPlaceHandler), logger)).Methods(http.MethodPost)
 	places.HandleFunc("/search/{placeName}", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
-	places.Handle("/{id}", middleware.CSRFMiddleware(tokenHandler, http.HandlerFunc(placeHandler.PutPlaceHandler), logger)).Methods(http.MethodPut)
-	places.Handle("{id}", middleware.CSRFMiddleware(tokenHandler, http.HandlerFunc(placeHandler.DeletePlaceHandler), logger)).Methods(http.MethodDelete)
-
+	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.PutPlaceHandler), logger)).Methods(http.MethodPut)
+	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.DeletePlaceHandler), logger)).Methods(http.MethodDelete)
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()

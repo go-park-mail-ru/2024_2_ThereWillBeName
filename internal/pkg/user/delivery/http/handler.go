@@ -8,8 +8,6 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/user"
 	"2024_2_ThereWillBeName/internal/validator"
-	"os"
-	"time"
 
 	"context"
 	"encoding/base64"
@@ -22,8 +20,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/google/uuid"
 
 	"github.com/gorilla/mux"
 )
@@ -40,10 +36,9 @@ type Handler struct {
 	logger  *slog.Logger
 }
 
-type UserResponseWithCSRF struct {
-	User      models.User `json:"user"`
-	CSRFToken string      `json:"csrf_token"`
-	Uuid      string      `json:"uuid"`
+type UserResponseWithToken struct {
+	User  models.User `json:"user"`
+	Token string      `json:"csrf_token"`
 }
 
 func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
@@ -129,40 +124,15 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-	})
-
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	tokenExpTime := time.Now().Unix() + 3600
-	secretKey := os.Getenv("CSRF_SECRET")
-	hashToken, err := middleware.NewHMACHashToken(secretKey)
-	if err != nil {
-		response := httpresponse.ErrorResponse{
-			Message: "CSRF token generation failed",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
-		return
-	}
-	csrfID := uuid.New()
-	csrfToken, err := hashToken.Create(csrfID, tokenExpTime)
-	if err != nil {
-		response := httpresponse.ErrorResponse{
-			Message: "CSRF token generation failed",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
-		return
-	}
-
-	response := UserResponseWithCSRF{
-		User:      user,
-		CSRFToken: csrfToken,
-		Uuid:      csrfID.String(),
+	response := UserResponseWithToken{
+		User: models.User{
+			ID:    user.ID,
+			Login: user.Login,
+			Email: user.Email,
+		},
+		Token: token,
 	}
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
 
@@ -226,48 +196,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-	})
-
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	tokenExpTime := time.Now().Unix() + 3600
-	secretKey := os.Getenv("CSRF_SECRET")
-	hashToken, err := middleware.NewHMACHashToken(secretKey)
-	if err != nil {
-		response := httpresponse.ErrorResponse{
-			Message: "CSRF token generation failed",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
-		return
-	}
-	csrfID := uuid.New()
-	csrfToken, err := hashToken.Create(csrfID, tokenExpTime)
-	if err != nil {
-		response := httpresponse.ErrorResponse{
-			Message: "CSRF token generation failed",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
-		return
+	response := UserResponseWithToken{
+		User: models.User{
+			ID:    user.ID,
+			Login: user.Login,
+			Email: user.Email,
+		},
+		Token: token,
 	}
 
-	response := UserResponseWithCSRF{
-		User:      user,
-		CSRFToken: csrfToken,
-		Uuid:      csrfID.String(),
-	}
-
-	// response := models.User{
-	// 	ID:    user.ID,
-	// 	Login: user.Login,
-	// 	Email: user.Email,
-	// }
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
