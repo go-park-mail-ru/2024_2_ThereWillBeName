@@ -4,10 +4,11 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
 	"fmt"
-	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/lib/pq"
 	"regexp"
 	"testing"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -22,9 +23,9 @@ func TestPlaceRepository_GetPlaces(t *testing.T) {
 	categories := []string{"Park", "Recreation", "Nature"}
 	//categoriesStr := strings.Join(categories, ",")
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id, p.name, p.imagePath, p.description, p.rating, p.numberOfReviews, p.address, p.phoneNumber, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM places p JOIN cities c ON p.cityId = c.id JOIN places_categories pc ON p.id = pc.place_id JOIN categories ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id, p.name, p.image_path, p.description, p.rating, p.numberOfReviews, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2")).
 		WithArgs(10, 0).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "imagePath", "description", "rating", "numberOfReviews", "address", "city", "phoneNumber", "categories"}).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "image_path", "description", "rating", "numberOfReviews", "address", "city", "phone_number", "categories"}).
 			AddRow(1, "Central Park", "/images/central_park.jpg", "A large public park in New York City, offering a variety of recreational activities.", 5, 2500, "59th St to 110th St, New York, NY 10022", "+1 212-310-6600", "New York", pq.Array(categories)))
 
 	expectedCode := []models.GetPlace{{
@@ -55,7 +56,7 @@ func TestPlaceRepository_GetPlaces_DbError(t *testing.T) {
 	}
 	defer db.Close()
 
-	mock.ExpectQuery("SELECT id, name, image, description FROM places").
+	mock.ExpectQuery("SELECT id, name, image, description FROM place").
 		WillReturnError(fmt.Errorf("couldn't get places: %w", err))
 
 	r := NewPLaceRepository(db)
@@ -73,7 +74,7 @@ func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
 	defer db.Close()
 	rows := sqlmock.NewRows([]string{"id", "name", "image", "description", "fail"}).
 		AddRow(0, "name", "image", "description", "fail")
-	mock.ExpectQuery("SELECT id, name, image, description FROM places").
+	mock.ExpectQuery("SELECT id, name, image, description FROM place").
 		WillReturnRows(rows)
 	r := NewPLaceRepository(db)
 	places, err := r.GetPlaces(context.Background(), 10, 0)
@@ -110,7 +111,7 @@ func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
 //				CategoriesId:    []int{1, 2, 3},
 //			},
 //			mockSetup: func() {
-//				mock.ExpectQueryRow("INSERT INTO places (name, imagePath, description, rating, numberOfReviews, address, cityId, phoneNumber) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id").WithArgs("Test Place", "/path/to/image", "Test Description", 4, 10, "Test Address", 1, "1234567890").
+//				mock.ExpectQueryRow("INSERT INTO place (name, imagePath, description, rating, numberOfReviews, address, cityId, phoneNumber) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id").WithArgs("Test Place", "/path/to/image", "Test Description", 4, 10, "Test Address", 1, "1234567890").
 //					WillReturnResult(sqlmock.NewResult(1, 1))
 //			},
 //			expectedErr: nil,
@@ -190,7 +191,7 @@ func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
 //		assert.EqualError(t, err, "coldn't create place: database error")
 //	})
 //
-//	t.Run("error on create place_categories", func(t *testing.T) {
+//	t.Run("error on create place_category", func(t *testing.T) {
 //		// Ожидаем вызов QueryRowContext
 //		mockPlaceRepo.EXPECT().QueryRowContext(ctx, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 //			DoAndReturn(func(ctx context.Context, query string, args ...interface{}) *sql.Row {
@@ -210,6 +211,6 @@ func TestPlaceRepository_GetPlaces_ParseError(t *testing.T) {
 //
 //		err := mockPlaceRepo.CreatePlace(ctx, place)
 //		assert.Error(t, err)
-//		assert.EqualError(t, err, "coldn't create place_categories: database error")
+//		assert.EqualError(t, err, "coldn't create place_category: database error")
 //	})
 //}
