@@ -18,7 +18,7 @@ const (
 
 func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token := r.Header.Get("X-CSRF-Token")
+		token := r.Header.Get("X-Access-Token")
 
 		if token == "" {
 			response := httpresponse.ErrorResponse{

@@ -38,7 +38,7 @@ type Handler struct {
 
 type UserResponseWithToken struct {
 	User  models.User `json:"user"`
-	Token string      `json:"csrf_token"`
+	Token string      `json:"token"`
 }
 
 func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {

@@ -73,6 +73,8 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Param place body models.CreatePlace true "Place data"
 // @Success 201 {object} httpresponses.ErrorResponse "Place successfully created"
 // @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places [post]
@@ -122,6 +124,8 @@ func (h *PlacesHandler) PostPlaceHandler(w http.ResponseWriter, r *http.Request)
 // @Param place body models.UpdatePlace true "Updated place data"
 // @Success 200 {object} httpresponses.ErrorResponse "Place successfully updated"
 // @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [put]
@@ -172,6 +176,8 @@ func (h *PlacesHandler) PutPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Param name body string true "Name of the place to be deleted"
 // @Success 200 {object} httpresponses.ErrorResponse "Place successfully deleted"
 // @Failure 400 {object} httpresponses.ErrorResponse
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /places/{id} [delete]
 func (h *PlacesHandler) DeletePlaceHandler(w http.ResponseWriter, r *http.Request) {

@@ -70,6 +70,8 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Param tripData body TripData true "Trip details"
 // @Success 201 {object} models.Trip "Trip created successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid request"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Invalid request"
 // @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create trip"
@@ -145,6 +147,8 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Success 200 {object} models.Trip "Trip updated successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip ID"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip data"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Trip not found"
 // @Failure 422 {object} httpresponses.ErrorResponse
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update trip"
@@ -226,6 +230,8 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Param id path int true "Trip ID"
 // @Success 204 "Trip deleted successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid trip ID"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Trip not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to delete trip"
 // @Router /trips/{id} [delete]
@@ -277,6 +283,8 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Param userID path int true "User ID"
 // @Success 200 {array} models.Trip "List of trips"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid user ID"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Invalid user ID"
 // @Failure 404 {object} httpresponses.ErrorResponse "Trips not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve trips"
