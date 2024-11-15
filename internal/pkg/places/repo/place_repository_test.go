@@ -23,9 +23,9 @@ func TestPlaceRepository_GetPlaces(t *testing.T) {
 	categories := []string{"Park", "Recreation", "Nature"}
 	//categoriesStr := strings.Join(categories, ",")
 
-	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id, p.name, p.image_path, p.description, p.rating, p.numberOfReviews, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2")).
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2")).
 		WithArgs(10, 0).
-		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "image_path", "description", "rating", "numberOfReviews", "address", "city", "phone_number", "categories"}).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "image_path", "description", "rating", "address", "city", "phone_number", "categories"}).
 			AddRow(1, "Central Park", "/images/central_park.jpg", "A large public park in New York City, offering a variety of recreational activities.", 5, 2500, "59th St to 110th St, New York, NY 10022", "+1 212-310-6600", "New York", pq.Array(categories)))
 
 	expectedCode := []models.GetPlace{{
