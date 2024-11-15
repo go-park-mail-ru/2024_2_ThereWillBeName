@@ -19,8 +19,8 @@ func TestCreateUser_Success(t *testing.T) {
 
 	repository := NewAuthRepository(db)
 
-	mock.ExpectQuery("^INSERT INTO users \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id$").
-		WithArgs("testuser", "test@example.com", "testpass").
+	mock.ExpectQuery(`^INSERT INTO "user" \\(login, email, password_hash, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id$").
+		WithArgs("testuser", "test@example.com", "testpass`).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 	user := models.User{
@@ -52,9 +52,9 @@ func TestGetUserByEmail_Success(t *testing.T) {
 	repository := NewAuthRepository(db)
 
 	createdAt := time.Now()
-	mock.ExpectQuery(`SELECT id, login, email, password, created_at FROM users WHERE email = \$1`).
+	mock.ExpectQuery(`SELECT id, login, email, password_hash, created_at FROM "user" WHERE email = \$1`).
 		WithArgs("testuser@example.com").
-		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "email", "password", "created_at"}).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "login", "email", "password_hash", "created_at"}).
 			AddRow(1, "testuser", "testuser@example.com", "testpass", createdAt))
 
 	user, err := repository.GetUserByEmail(context.Background(), "testuser@example.com")
@@ -80,7 +80,7 @@ func TestGetUserByEmail_Success(t *testing.T) {
 
 // 	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("^INSERT INTO users \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id").
+// 	mock.ExpectExec("^INSERT INTO "user" \\(login, email, password, created_at\\) VALUES \\(\\$1, \\$2, \\$3, NOW\\(\\)\\) RETURNING id").
 // 		WithArgs("testuser", "testemail@example.com", "testpass").
 // 		WillReturnError(fmt.Errorf("database error"))
 
@@ -108,7 +108,7 @@ func TestGetUserByEmail_Success(t *testing.T) {
 
 // 	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("UPDATE users").
+// 	mock.ExpectExec("UPDATE "user"").
 // 		WithArgs("updateduser", "newpassword", 1).
 // 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -136,7 +136,7 @@ func TestGetUserByEmail_Success(t *testing.T) {
 
 // 	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("DELETE FROM users").
+// 	mock.ExpectExec("DELETE FROM "user"").
 // 		WithArgs("1").
 // 		WillReturnResult(sqlmock.NewResult(0, 1))
 
@@ -206,7 +206,7 @@ func TestGetUserByEmail_Success(t *testing.T) {
 
 // 	repository := NewAuthRepository(db)
 
-// 	mock.ExpectExec("INSERT INTO users").
+// 	mock.ExpectExec("INSERT INTO "user"").
 // 		WithArgs("existinguser", "testpass").
 // 		WillReturnError(fmt.Errorf("duplicate entry error"))
 

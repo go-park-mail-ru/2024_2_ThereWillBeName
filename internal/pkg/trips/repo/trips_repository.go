@@ -18,7 +18,7 @@ func NewTripRepository(db *sql.DB) *TripRepository {
 }
 
 func (r *TripRepository) CreateTrip(ctx context.Context, trip models.Trip) error {
-	query := `INSERT INTO trips (user_id, name, description, city_id, start_date, end_date, private, created_at) 
+	query := `INSERT INTO trip (user_id, name, description, city_id, start_date, end_date, private, created_at) 
               VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`
 
 	result, err := r.db.ExecContext(ctx, query, trip.UserID, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private)
@@ -38,8 +38,8 @@ func (r *TripRepository) CreateTrip(ctx context.Context, trip models.Trip) error
 }
 
 func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error {
-	query := `UPDATE trips 
-              SET name = $1, description = $2, city_id = $3, start_date = $4, end_date = $5, private = $6 
+	query := `UPDATE trip 
+              SET name = $1, description = $2, city_id = $3, start_date = $4, end_date = $5, private = $6, updated_at = NOW() 
               WHERE id = $7`
 
 	result, err := r.db.ExecContext(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
@@ -58,7 +58,7 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
 }
 
 func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
-	query := `DELETE FROM trips WHERE id = $1`
+	query := `DELETE FROM trip WHERE id = $1`
 	result, err := r.db.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete trip: %w", models.ErrInternal)
@@ -76,7 +76,7 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 
 func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
 	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at 
-              FROM trips 
+              FROM trip 
               WHERE user_id = $1
               ORDER BY created_at DESC
 			  LIMIT $2 OFFSET $3`
@@ -106,7 +106,7 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 
 func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
 	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at 
-              FROM trips 
+              FROM trip 
               WHERE id = $1`
 
 	row := r.db.QueryRowContext(ctx, query, tripID)
@@ -124,7 +124,7 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 }
 
 func (r *TripRepository) AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error {
-	query := `INSERT INTO trips_places (trip_id, place_id, created_at) 
+	query := `INSERT INTO trip_place (trip_id, place_id, created_at) 
               VALUES ($1, $2, NOW())`
 
 	result, err := r.db.ExecContext(ctx, query, tripID, placeID)
