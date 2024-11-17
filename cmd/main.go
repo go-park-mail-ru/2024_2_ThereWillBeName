@@ -116,16 +116,15 @@ func main() {
 
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placeHandler.GetPlacesHandler).Methods(http.MethodGet)
-	places.HandleFunc("", placeHandler.PostPlaceHandler).Methods(http.MethodPost)
+	places.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.PostPlaceHandler), logger)).Methods(http.MethodPost)
 	places.HandleFunc("/search/{placeName}", placeHandler.SearchPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
-	places.HandleFunc("/{id}", placeHandler.PutPlaceHandler).Methods(http.MethodPut)
-	places.HandleFunc("/{id}", placeHandler.DeletePlaceHandler).Methods(http.MethodDelete)
+	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.PutPlaceHandler), logger)).Methods(http.MethodPut)
+	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.DeletePlaceHandler), logger)).Methods(http.MethodDelete)
 	places.HandleFunc("/category/{categoryName}", placeHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 
 	categories := r.PathPrefix("/categories").Subrouter()
 	categories.HandleFunc("", categoriesHandler.GetCategoriesHandler).Methods(http.MethodGet)
-
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()

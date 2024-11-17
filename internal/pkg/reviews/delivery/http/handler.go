@@ -6,7 +6,9 @@ import (
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/reviews"
+	"2024_2_ThereWillBeName/internal/validator"
 	"context"
+	"html/template"
 	"log/slog"
 
 	"encoding/json"
@@ -54,6 +56,8 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Param review body models.Review true "Review details"
 // @Success 201 {object} models.Review "Review created successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid request"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to create review"
 // @Router /reviews [post]
 func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Request) {
@@ -85,6 +89,13 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+	v := validator.New()
+	if models.ValidateReview(v, &review); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
 	if review.Rating < 1 || review.Rating > 5 {
 		h.logger.Warn("Invalid rating",
@@ -120,6 +131,8 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Param review body models.Review true "Updated review details"
 // @Success 200 {object} models.Review "Review updated successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid review ID"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Review not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to update review"
 // @Router /reviews/{id} [put]
@@ -161,6 +174,14 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	v := validator.New()
+	if models.ValidateReview(v, &review); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
+
+	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
+
 	review.ID = uint(reviewID)
 	err = h.uc.UpdateReview(context.Background(), review)
 	if err != nil {
@@ -181,6 +202,8 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Param id path int true "Review ID"
 // @Success 204 "Review deleted successfully"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid review ID"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Review not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to delete review"
 // @Router /reviews/{id} [delete]
@@ -282,7 +305,7 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 // @Description Get all reviews for an user
 // @Produce json
 // @Param userID path int true "User ID"
-// @Success 200 {array} models.GetReviewByUserId "List of reviews"
+// @Success 200 {array} models.GetReviewByUserID "List of reviews"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid user ID"
 // @Failure 404 {object} httpresponses.ErrorResponse "No reviews found for the user"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve reviews"

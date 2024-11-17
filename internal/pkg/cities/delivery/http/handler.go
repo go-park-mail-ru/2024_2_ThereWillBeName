@@ -49,8 +49,8 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Produce json
 // @Success 200 {array} models.City "Cities details"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid query"
-// @Failure 403 {object} httpresponses.ErrorResponse "CSRF token missing"
-// @Failure 403 {object} httpresponses.ErrorResponse "Invalid CSRF token"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Cities not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
 // @Router /cities/search [get]

@@ -1,5 +1,7 @@
 package models
 
+import "2024_2_ThereWillBeName/internal/validator"
+
 type CreatePlace struct {
 	Name            string `json:"name"`
 	ImagePath       string `json:"imagePath"`
@@ -36,4 +38,28 @@ type UpdatePlace struct {
 	CityId          int    `json:"cityId"`
 	PhoneNumber     string `json:"phoneNumber"`
 	CategoriesId    []int  `json:"categoriesId"`
+}
+
+func ValidateCreatePlace(v *validator.Validator, place *CreatePlace) {
+	v.Check(place.Name != "", "name", "must be provided")
+	v.Check(len(place.Name) <= 255, "name", "must not be more than 255 symbols")
+	v.Check(place.Description != "", "descriprion", "must be provided")
+	v.Check(len(place.Description) <= 255, "description", "must not be more than 255 symbols")
+	v.Check(place.ImagePath != "", "image path", "must be provided")
+	v.Check(len(place.ImagePath) <= 255, "image path", "must not be more than 255 symbols")
+	v.Check(place.Address != "", "address", "must be provided")
+	v.Check(len(place.Address) <= 255, "address", "must not be more than 255 symbols")
+	v.Check(place.CityId != 0, "city id", "must be provided")
+}
+
+func ValidateUpdatePlace(v *validator.Validator, place *UpdatePlace) {
+	v.Check(place.Name != "", "name", "must be provided")
+	v.Check(len(place.Name) <= 255, "name", "must not be more than 255 symbols")
+	v.Check(place.Description != "", "descriprion", "must be provided")
+	v.Check(len(place.Description) <= 255, "description", "must not be more than 255 symbols")
+	v.Check(place.ImagePath != "", "image path", "must be provided")
+	v.Check(len(place.ImagePath) <= 255, "image path", "must not be more than 255 symbols")
+	v.Check(place.Address != "", "address", "must be provided")
+	v.Check(len(place.Address) <= 255, "address", "must not be more than 255 symbols")
+	v.Check(place.CityId != 0, "city id", "must be provided")
 }

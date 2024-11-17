@@ -7,11 +7,14 @@ import (
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/user"
+	"2024_2_ThereWillBeName/internal/validator"
+
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"mime"
 	"net/http"
@@ -33,6 +36,11 @@ type Handler struct {
 	logger  *slog.Logger
 }
 
+type UserResponseWithToken struct {
+	User  models.User `json:"user"`
+	Token string      `json:"token"`
+}
+
 func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
 	return &Handler{
 		usecase: usecase,
@@ -52,6 +60,7 @@ func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /signup [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for sign up")
 
@@ -66,10 +75,20 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	credentials.Login = template.HTMLEscapeString(credentials.Login)
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
+
 	user := models.User{
 		Login:    credentials.Login,
 		Email:    credentials.Email,
 		Password: credentials.Password,
+	}
+
+	v := validator.New()
+	if models.ValidateUser(v, &user); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
 	}
 
 	var err error
@@ -105,20 +124,15 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-	})
-
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	response := models.User{
-		ID:    user.ID,
-		Login: user.Login,
-		Email: user.Email,
+	response := UserResponseWithToken{
+		User: models.User{
+			ID:    user.ID,
+			Login: user.Login,
+			Email: user.Email,
+		},
+		Token: token,
 	}
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
 
@@ -136,6 +150,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for log in")
 
@@ -152,6 +167,9 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	credentials.Email = template.HTMLEscapeString(credentials.Email)
+	credentials.Password = template.HTMLEscapeString(credentials.Password)
+
 	user, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
 	if err != nil {
 		h.logger.Warn("Login failed: invalid email or password", slog.String("email", credentials.Email))
@@ -162,7 +180,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
-
+	v := validator.New()
+	if models.ValidateUser(v, &user); !v.Valid() {
+		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		return
+	}
 	h.logger.Debug("User logged in successfully", slog.Int("userID", int(user.ID)), slog.String("email", user.Email))
 
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
@@ -174,22 +196,17 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    token,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-	})
-
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	response := models.User{
-		ID:    user.ID,
-		Login: user.Login,
-		Email: user.Email,
+	response := UserResponseWithToken{
+		User: models.User{
+			ID:    user.ID,
+			Login: user.Login,
+			Email: user.Email,
+		},
+		Token: token,
 	}
+
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
