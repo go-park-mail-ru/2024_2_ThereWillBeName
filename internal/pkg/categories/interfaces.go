@@ -5,6 +5,8 @@ import (
 	"context"
 )
 
+//go:generate mockgen -source=interfaces.go -destination=mocks/mock.go
+
 type CategoriesUsecase interface {
 	GetCategories(ctx context.Context, limit, offset int) ([]models.Category, error)
 }

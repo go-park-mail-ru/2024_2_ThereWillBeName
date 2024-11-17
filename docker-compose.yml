@@ -6,6 +6,8 @@ services:
     build:
       context: .
       dockerfile: ./build/main.Dockerfile
+    env_file:
+      - .env
     environment:
       - AVATAR_STORAGE_PATH=/assets/avatars
       - LOG_LEVEL=Debug

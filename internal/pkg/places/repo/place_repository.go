@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-
 	"github.com/lib/pq"
 )
 
