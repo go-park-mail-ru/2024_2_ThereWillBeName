@@ -21,6 +21,7 @@ import (
 	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
+	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
@@ -76,7 +77,9 @@ func main() {
 	placeHandler := delivery.NewPlacesHandler(placeUsecase, logger)
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
-	tripHandler := triphandler.NewTripHandler(tripUsecase, logger)
+	tripHandler := grpcTrip.NewGrpcAuthHandler(tripUsecase)
+	tripsGen.RegisterTripsServer(gRPCServer, authHandler)
+	// tripHandler := triphandler.NewTripHandler(tripUsecase, logger)
 	citiesRepo := citiesrepo.NewCitiesRepository(db)
 	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
 	citiesHandler := citieshandler.NewCitiesHandler(citiesUsecase, logger)
