@@ -2,6 +2,7 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
@@ -12,6 +13,9 @@ import (
 	"log/slog"
 	"strconv"
 
+	categorieshandler "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
+	categoriesrepo "2024_2_ThereWillBeName/internal/pkg/categories/repo"
+	categoriesusecase "2024_2_ThereWillBeName/internal/pkg/categories/usecase"
 	citieshandler "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
 	citiesrepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesusecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
@@ -80,6 +84,9 @@ func main() {
 	citiesRepo := citiesrepo.NewCitiesRepository(db)
 	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
 	citiesHandler := citieshandler.NewCitiesHandler(citiesUsecase, logger)
+	categoriesRepo := categoriesrepo.NewCategoriesRepo(db)
+	categoriesUsecase := categoriesusecase.NewCategoriesUsecase(categoriesRepo)
+	categoriesHandler := categorieshandler.NewCategoriesHandler(categoriesUsecase, logger)
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -114,6 +121,10 @@ func main() {
 	places.HandleFunc("/{id}", placeHandler.GetPlaceHandler).Methods(http.MethodGet)
 	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.PutPlaceHandler), logger)).Methods(http.MethodPut)
 	places.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(placeHandler.DeletePlaceHandler), logger)).Methods(http.MethodDelete)
+	places.HandleFunc("/category/{categoryName}", placeHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
+
+	categories := r.PathPrefix("/categories").Subrouter()
+	categories.HandleFunc("", categoriesHandler.GetCategoriesHandler).Methods(http.MethodGet)
 	r.PathPrefix("/swagger").Handler(httpSwagger.WrapHandler)
 
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()

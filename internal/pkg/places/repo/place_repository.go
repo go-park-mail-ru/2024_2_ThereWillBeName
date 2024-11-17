@@ -7,7 +7,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-
 	"github.com/lib/pq"
 )
 
@@ -20,7 +19,7 @@ func NewPLaceRepository(db *sql.DB) *PlaceRepository {
 }
 
 func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]models.GetPlace, error) {
-	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2"
+	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2"
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get places: %w", err)
@@ -39,7 +38,7 @@ func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]m
 }
 
 func (r *PlaceRepository) CreatePlace(ctx context.Context, place models.CreatePlace) error {
-	query := "INSERT INTO place (name, image_path, description, rating, address, city_id, phone_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id"
+	query := "INSERT INTO place (name, image_path, description, rating, address, city_id, phone_number) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
 	var id int
 	err := r.db.QueryRowContext(ctx, query, place.Name, place.ImagePath, place.Description, place.Rating, place.Address, place.CityId, place.PhoneNumber).Scan(&id)
 	if err != nil {
@@ -142,6 +141,47 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, 
 	}
 	defer rows.Close()
 
+	for rows.Next() {
+		var place models.GetPlace
+		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, pq.Array(&place.Categories))
+		if err != nil {
+			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
+		}
+		places = append(places, place)
+	}
+	return places, nil
+}
+
+func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error) {
+	query := `SELECT 
+    		p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number,
+    		c.name AS city_name,
+    		ARRAY_AGG(ca.name) AS categories
+			FROM place p 
+			JOIN city c 
+			ON p.city_id = c.id 
+			JOIN place_category pc
+			ON p.id = pc.place_id
+			JOIN category ca 
+			ON pc.category_id = ca.id 
+			WHERE p.id IN (
+			               	SELECT p.id 
+            				FROM place p 
+            				JOIN place_category pc 
+            				ON p.id = pc.place_id 
+            				JOIN category ca 
+            				ON pc.category_id = ca.id 
+            				WHERE ca.name = $1)
+			GROUP BY p.id, c.name
+			ORDER BY p.id 
+			LIMIT $2 
+			OFFSET $3`
+	rows, err := r.db.QueryContext(ctx, query, category, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get places by category: %w", err)
+	}
+	defer rows.Close()
+	var places []models.GetPlace
 	for rows.Next() {
 		var place models.GetPlace
 		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, pq.Array(&place.Categories))

@@ -42,3 +42,7 @@ func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, id uint) (models.GetPla
 func (i *PlaceUsecaseImpl) SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error) {
 	return i.repo.SearchPlaces(ctx, name, limit, offset)
 }
+
+func (i *PlaceUsecaseImpl) GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error) {
+	return i.repo.GetPlacesByCategory(ctx, category, limit, offset)
+}
