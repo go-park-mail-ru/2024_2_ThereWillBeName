@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS place
     address TEXT NOT NULL DEFAULT '', -- адрес места
     city_id INT NOT NULL, -- город, где находится место
     phone_number TEXT DEFAULT '', -- номер телефона
+    latitude DECIMAL(7,4),
+    longitude DECIMAL(7,4), 
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     FOREIGN KEY (city_id) REFERENCES city(id) ON DELETE CASCADE,
@@ -99,7 +101,7 @@ COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);
 
-COPY place(name, image_path, description, rating, address, city_id, phone_number)
+COPY place(name, image_path, description, rating, address, city_id, phone_number, latitude, longitude)
     FROM '/docker-entrypoint-initdb.d/places.csv'
     WITH (FORMAT csv, HEADER true,  DELIMITER ';');
 
