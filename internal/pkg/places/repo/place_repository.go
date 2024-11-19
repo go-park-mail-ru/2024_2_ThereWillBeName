@@ -29,7 +29,7 @@ func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]m
 	var places []models.GetPlace
 	for rows.Next() {
 		var place models.GetPlace
-		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, &place.Latitude, &place.Longitude, pq.Array(&place.Categories))
+		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
 		}
@@ -62,7 +62,7 @@ func (r *PlaceRepository) GetPlace(ctx context.Context, id uint) (models.GetPlac
 	var place models.GetPlace
 	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, p.latitude, p.longitude, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id WHERE p.id = $1 GROUP BY p.id, c.name ORDER BY p.id"
 	row := r.db.QueryRowContext(ctx, query, id)
-	err := row.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, &place.Latitude, &place.Longitude, pq.Array(&place.Categories))
+	err := row.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.GetPlace{}, fmt.Errorf("place not found")
@@ -144,7 +144,7 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, 
 
 	for rows.Next() {
 		var place models.GetPlace
-		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, &place.Latitude, &place.Longitude, pq.Array(&place.Categories))
+		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
 		}
@@ -185,7 +185,7 @@ func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category stri
 	var places []models.GetPlace
 	for rows.Next() {
 		var place models.GetPlace
-		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.City, &place.Latitude, &place.Longitude, pq.Array(&place.Categories))
+		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
 			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
 		}
