@@ -58,3 +58,32 @@ func (r *CitiesRepository) SearchCityByID(ctx context.Context, id uint) (models.
 
 	return city, nil
 }
+
+// func (r *CitiesRepository) SearchCitiesBySubString(ctx context.Context, query string) ([]models.SearchItem, error) {
+// 	queryStr := `
+//         SELECT id, name
+//         FROM city
+//         WHERE name ILIKE '%' || $1 || '%'
+//     `
+
+// 	rows, err := r.db.QueryContext(ctx, queryStr, query)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to execute search query: %w", models.ErrInternal)
+// 	}
+// 	defer rows.Close()
+
+// 	var cities []models.SearchItem
+// 	for rows.Next() {
+// 		var city models.SearchItem
+// 		if err := rows.Scan(&city.ID, &city.Name); err != nil {
+// 			return nil, fmt.Errorf("failed to scan city row: %w", models.ErrInternal)
+// 		}
+// 		cities = append(cities, city)
+// 	}
+
+// 	if len(cities) == 0 {
+// 		return nil, fmt.Errorf("no cities found matching query %q: %w", query, models.ErrNotFound)
+// 	}
+
+// 	return cities, nil
+// }

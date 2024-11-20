@@ -25,6 +25,9 @@ import (
 	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
+	searchhandler "2024_2_ThereWillBeName/internal/pkg/search/delivery/http"
+	searchrepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
+	searchusecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
@@ -87,6 +90,9 @@ func main() {
 	categoriesRepo := categoriesrepo.NewCategoriesRepo(db)
 	categoriesUsecase := categoriesusecase.NewCategoriesUsecase(categoriesRepo)
 	categoriesHandler := categorieshandler.NewCategoriesHandler(categoriesUsecase, logger)
+	searchRepo := searchrepo.NewSearchRepository(db)
+	searchUsecase := searchusecase.NewSearchUsecase(searchRepo)
+	searchHandler := searchhandler.NewSearchHandler(searchUsecase, logger)
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 
@@ -147,6 +153,9 @@ func main() {
 	cities := r.PathPrefix("/cities").Subrouter()
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
 	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
+
+	search := r.PathPrefix("/search").Subrouter()
+	search.HandleFunc("", searchHandler.SearchHandler).Methods(http.MethodGet)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Port),

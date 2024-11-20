@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+
 	"github.com/lib/pq"
 )
 
@@ -192,3 +193,32 @@ func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category stri
 	}
 	return places, nil
 }
+
+// func (r *PlaceRepository) SearchPlacesBySubString(ctx context.Context, query string) ([]models.SearchItem, error) {
+// 	queryStr := `
+//         SELECT id, name
+//         FROM place
+//         WHERE name ILIKE '%' || $1 || '%'
+//     `
+
+// 	rows, err := r.db.QueryContext(ctx, queryStr, query)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to execute search query: %w", models.ErrInternal)
+// 	}
+// 	defer rows.Close()
+
+// 	var places []models.SearchItem
+// 	for rows.Next() {
+// 		var place models.SearchItem
+// 		if err := rows.Scan(&place.ID, &place.Name); err != nil {
+// 			return nil, fmt.Errorf("failed to scan place row: %w", models.ErrInternal)
+// 		}
+// 		places = append(places, place)
+// 	}
+
+// 	if len(places) == 0 {
+// 		return nil, fmt.Errorf("no places found matching query %q: %w", query, models.ErrNotFound)
+// 	}
+
+// 	return places, nil
+// }

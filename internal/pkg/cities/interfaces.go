@@ -13,4 +13,5 @@ type CitiesUsecase interface {
 type CitiesRepo interface {
 	SearchCitiesByName(ctx context.Context, query string) ([]models.City, error)
 	SearchCityByID(ctx context.Context, id uint) (models.City, error)
+	// SearchCitiesBySubString(ctx context.Context, query string) ([]models.SearchItem, error)
 }
