@@ -10,6 +10,7 @@ import (
 	userRepo "2024_2_ThereWillBeName/internal/pkg/user/repo"
 	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 	"log/slog"
+	"net"
 	"strconv"
 
 	citieshandler "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
@@ -21,8 +22,8 @@ import (
 	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
+	grpcTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc"
 	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
-	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	triprepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripusecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 
@@ -38,6 +39,7 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	httpSwagger "github.com/swaggo/http-swagger"
+	"google.golang.org/grpc"
 )
 
 func main() {
@@ -46,6 +48,7 @@ func main() {
 	flag.StringVar(&cfg.Env, "env", "production", "Environment")
 	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
 	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
+	flag.IntVar(&cfg.GRPCPort, "grpc port", 50051, "GRPC server port")
 	flag.Parse()
 
 	logger := setupLogger()
@@ -77,8 +80,9 @@ func main() {
 	placeHandler := delivery.NewPlacesHandler(placeUsecase, logger)
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
-	tripHandler := grpcTrip.NewGrpcAuthHandler(tripUsecase)
-	tripsGen.RegisterTripsServer(gRPCServer, authHandler)
+	tripHandler := grpcTrips.NewGrpcTripHandler(tripUsecase, logger)
+	gRPCServer := grpc.NewServer()
+	tripsGen.RegisterTripsServer(gRPCServer, tripHandler)
 	// tripHandler := triphandler.NewTripHandler(tripUsecase, logger)
 	citiesRepo := citiesrepo.NewCitiesRepository(db)
 	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
@@ -130,7 +134,7 @@ func main() {
 	user.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	trips := r.PathPrefix("/trips").Subrouter()
-	trips.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
+	trips.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.CreateTrip()), logger)).Methods(http.MethodPost)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.UpdateTripHandler), logger)).Methods(http.MethodPut)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.DeleteTripHandler), logger)).Methods(http.MethodDelete)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripHandler.GetTripHandler), logger)).Methods(http.MethodGet)
@@ -148,13 +152,25 @@ func main() {
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
+	go func() {
+		logger.Info("starting server", "environment", cfg.Env, "address", srv.Addr)
+		err = srv.ListenAndServe()
+		if err != nil {
+			logger.Error("Failed to start server", slog.Any("error", err))
+			os.Exit(1)
+		}
+	}()
 
-	logger.Info("starting server", "environment", cfg.Env, "address", srv.Addr)
-	err = srv.ListenAndServe()
-	if err != nil {
-		logger.Error("Failed to start server", slog.Any("error", err))
-		os.Exit(1)
-	}
+	go func() {
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
+		if err != nil {
+			logger.Error("Failed to start grpc server", slog.Any("error", err))
+		}
+		if err := gRPCServer.Serve(listener); err != nil {
+			logger.Error("Failed to start grpc server", slog.Any("error", err))
+		}
+	}()
+
 }
 
 // healthcheckHandler godoc

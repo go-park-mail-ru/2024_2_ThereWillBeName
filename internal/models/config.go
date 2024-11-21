@@ -5,4 +5,5 @@ type Config struct {
 	Env           string
 	AllowedOrigin string
 	ConnStr       string
+	GRPCPort      int
 }
