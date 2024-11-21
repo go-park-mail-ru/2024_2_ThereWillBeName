@@ -1,4 +1,4 @@
-package places
+package attractions
 
 import (
 	"2024_2_ThereWillBeName/internal/models"

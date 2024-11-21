@@ -315,12 +315,12 @@ paths:
       summary: Logout a user
   /places:
     get:
-      description: Retrieve a list of places from the database
+      description: Retrieve a list of attractions from the database
       produces:
       - application/json
       responses:
         "200":
-          description: List of places
+          description: List of attractions
           schema:
             items:
               $ref: '#/definitions/models.GetPlace'
@@ -333,7 +333,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
-      summary: Get a list of places
+      summary: Get a list of attractions
     post:
       consumes:
       - application/json
@@ -492,10 +492,10 @@ paths:
       summary: Retrieve reviews by place ID
   /places/search/{placeName}:
     get:
-      description: Get a list of places from the database that match the provided
+      description: Get a list of attractions from the database that match the provided
         search string
       parameters:
-      - description: Name of the places to retrieve
+      - description: Name of the attractions to retrieve
         in: body
         name: searchString
         required: true
@@ -505,7 +505,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of places matching the provided searchString
+          description: List of attractions matching the provided searchString
           schema:
             $ref: '#/definitions/models.GetPlace'
         "400":
@@ -516,7 +516,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
-      summary: Retrieve places by search string
+      summary: Retrieve attractions by search string
   /reviews:
     post:
       consumes:

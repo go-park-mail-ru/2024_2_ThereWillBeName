@@ -1,7 +1,7 @@
 package http
 
 import (
-	"2024_2_ThereWillBeName/internal/pkg/categories"
+	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"log/slog"
@@ -10,12 +10,12 @@ import (
 )
 
 type CategoriesHandler struct {
-	uc     categories.CategoriesUsecase
+	client gen.AttractionsClient
 	logger *slog.Logger
 }
 
-func NewCategoriesHandler(uc categories.CategoriesUsecase, logger *slog.Logger) *CategoriesHandler {
-	return &CategoriesHandler{uc: uc, logger: logger}
+func NewCategoriesHandler(client gen.AttractionsClient, logger *slog.Logger) *CategoriesHandler {
+	return &CategoriesHandler{client, logger}
 }
 
 func (h *CategoriesHandler) GetCategoriesHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,7 +35,7 @@ func (h *CategoriesHandler) GetCategoriesHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	categories, err := h.uc.GetCategories(logCtx, limit, offset)
+	categories, err := h.client.GetCategories(logCtx, &gen.GetCategoriesRequest{Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.Error("Error getting categories",
@@ -47,5 +47,5 @@ func (h *CategoriesHandler) GetCategoriesHandler(w http.ResponseWriter, r *http.
 	h.logger.DebugContext(logCtx, "Successfully retrieved categories", slog.Any("categories", categories),
 		slog.Int("limit", limit),
 		slog.Int("offset", offset))
-	httpresponse.SendJSONResponse(w, categories, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, categories.Categories, http.StatusOK, h.logger)
 }

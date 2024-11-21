@@ -2,7 +2,7 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	mockplaces "2024_2_ThereWillBeName/internal/pkg/attractions/mocks"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -132,7 +132,7 @@ func TestGetPlacesHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places", handler.GetPlacesHandler)
+			router.HandleFunc("/attractions", handler.GetPlacesHandler)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedCode, rr.Code)
@@ -337,12 +337,12 @@ func TestDeletePlacesHandler(t *testing.T) {
 				mockUsecase.EXPECT().DeletePlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockError)
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, "/places/"+strconv.Itoa(int(testcase.id)), nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, "/attractions/"+strconv.Itoa(int(testcase.id)), nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
+			router.HandleFunc("/attractions/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
@@ -425,12 +425,12 @@ func TestGetPlaceHandler(t *testing.T) {
 				mockUsecase.EXPECT().GetPlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockPlace, testcase.mockError)
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places/"+strconv.Itoa(int(testcase.id)), nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/attractions/"+strconv.Itoa(int(testcase.id)), nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
+			router.HandleFunc("/attractions/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
@@ -536,7 +536,7 @@ func TestSearchPlaceHandler(t *testing.T) {
 			if testcase.name != "InvalidOffset" && testcase.name != "InvalidLimit" && testcase.name != "MissingPlaceName" {
 				mockUsecase.EXPECT().SearchPlaces(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(testcase.mockPlaces, testcase.mockError)
 			}
-			urlStr := "/places/search/" + testcase.search
+			urlStr := "/attractions/search/" + testcase.search
 			log.Println(urlStr)
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, urlStr, nil)
 			assert.NoError(t, err)
@@ -548,7 +548,7 @@ func TestSearchPlaceHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/search/{search}", handler.SearchPlacesHandler).Methods(http.MethodGet)
+			router.HandleFunc("/attractions/search/{search}", handler.SearchPlacesHandler).Methods(http.MethodGet)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
@@ -661,7 +661,7 @@ func TestGetPlacesByCategoryHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/category/{categoryName}", handler.GetPlacesByCategoryHandler)
+			router.HandleFunc("/attractions/category/{categoryName}", handler.GetPlacesByCategoryHandler)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedCode, rr.Code)

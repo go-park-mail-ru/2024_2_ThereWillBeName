@@ -6,3 +6,8 @@ type Config struct {
 	AllowedOrigin string
 	ConnStr       string
 }
+
+type ConfigGrpc struct {
+	Port    int
+	ConnStr string
+}

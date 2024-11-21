@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	mock_places "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	mock_places "2024_2_ThereWillBeName/internal/pkg/attractions/mocks"
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"

@@ -23,7 +23,7 @@ func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]m
 	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, p.latitude, p.longitude, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2"
 	rows, err := r.db.QueryContext(ctx, query, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get places: %w", err)
+		return nil, fmt.Errorf("couldn't get attractions: %w", err)
 	}
 	defer rows.Close()
 	var places []models.GetPlace
@@ -31,7 +31,7 @@ func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]m
 		var place models.GetPlace
 		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
-			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
+			return nil, fmt.Errorf("couldn't unmarshal list of attractions: %w", err)
 		}
 		places = append(places, place)
 	}
@@ -138,7 +138,7 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, 
 	defer stmt.Close()
 	rows, err := stmt.QueryContext(ctx, name, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get places: %w", err)
+		return nil, fmt.Errorf("couldn't get attractions: %w", err)
 	}
 	defer rows.Close()
 
@@ -146,7 +146,7 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, 
 		var place models.GetPlace
 		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
-			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
+			return nil, fmt.Errorf("couldn't unmarshal list of attractions: %w", err)
 		}
 		places = append(places, place)
 	}
@@ -179,7 +179,7 @@ func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category stri
 			OFFSET $3`
 	rows, err := r.db.QueryContext(ctx, query, category, limit, offset)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't get places by category: %w", err)
+		return nil, fmt.Errorf("couldn't get attractions by category: %w", err)
 	}
 	defer rows.Close()
 	var places []models.GetPlace
@@ -187,7 +187,7 @@ func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category stri
 		var place models.GetPlace
 		err := rows.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 		if err != nil {
-			return nil, fmt.Errorf("couldn't unmarshal list of places: %w", err)
+			return nil, fmt.Errorf("couldn't unmarshal list of attractions: %w", err)
 		}
 		places = append(places, place)
 	}

@@ -2,15 +2,15 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/places"
+	"2024_2_ThereWillBeName/internal/pkg/attractions"
 	"context"
 )
 
 type PlaceUsecaseImpl struct {
-	repo places.PlaceRepo
+	repo attractions.PlaceRepo
 }
 
-func NewPlaceUsecase(repo places.PlaceRepo) *PlaceUsecaseImpl {
+func NewPlaceUsecase(repo attractions.PlaceRepo) *PlaceUsecaseImpl {
 	return &PlaceUsecaseImpl{repo: repo}
 }
 

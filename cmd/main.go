@@ -2,6 +2,13 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	grpcAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc"
+	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
+	"google.golang.org/grpc"
+	"log"
+	"net"
+	"os/signal"
+	"syscall"
 
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
@@ -13,16 +20,12 @@ import (
 	"log/slog"
 	"strconv"
 
-	categorieshandler "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
+	placeRepo "2024_2_ThereWillBeName/internal/pkg/attractions/repo"
+	placeUsecase "2024_2_ThereWillBeName/internal/pkg/attractions/usecase"
 	categoriesrepo "2024_2_ThereWillBeName/internal/pkg/categories/repo"
 	categoriesusecase "2024_2_ThereWillBeName/internal/pkg/categories/usecase"
-	citieshandler "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
 	citiesrepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesusecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
-	delivery "2024_2_ThereWillBeName/internal/pkg/places/delivery/http"
-	placeRepo "2024_2_ThereWillBeName/internal/pkg/places/repo"
-	placeUsecase "2024_2_ThereWillBeName/internal/pkg/places/usecase"
-	reviewhandler "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	reviewrepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewusecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	triphandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
@@ -42,6 +45,8 @@ import (
 	_ "github.com/lib/pq"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+//go:generate protoc -I proto proto/*.proto --go_out=./ --go-grpc_out=./
 
 func main() {
 	var cfg models.Config
@@ -68,25 +73,41 @@ func main() {
 	logger.Debug("avatar_storage_path", "path", storagePath)
 
 	userRepo := userRepo.NewAuthRepository(db)
-	jwtHandler := jwt.NewJWT(string(jwtSecret), logger)
+	jwtHandler := jwt.NewJWT(jwtSecret, logger)
 	userUseCase := userUsecase.NewUserUsecase(userRepo, storagePath)
 	h := httpHandler.NewUserHandler(userUseCase, jwtHandler, logger)
 
 	reviewsRepo := reviewrepo.NewReviewRepository(db)
 	reviewUsecase := reviewusecase.NewReviewsUsecase(reviewsRepo)
-	reviewHandler := reviewhandler.NewReviewHandler(reviewUsecase, logger)
 	placeRepo := placeRepo.NewPLaceRepository(db)
 	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
-	placeHandler := delivery.NewPlacesHandler(placeUsecase, logger)
 	tripsRepo := triprepo.NewTripRepository(db)
 	tripUsecase := tripusecase.NewTripsUsecase(tripsRepo)
 	tripHandler := triphandler.NewTripHandler(tripUsecase, logger)
 	citiesRepo := citiesrepo.NewCitiesRepository(db)
 	citiesUsecase := citiesusecase.NewCitiesUsecase(citiesRepo)
-	citiesHandler := citieshandler.NewCitiesHandler(citiesUsecase, logger)
 	categoriesRepo := categoriesrepo.NewCategoriesRepo(db)
 	categoriesUsecase := categoriesusecase.NewCategoriesUsecase(categoriesRepo)
-	categoriesHandler := categorieshandler.NewCategoriesHandler(categoriesUsecase, logger)
+
+	grpcAttractionsServer := grpc.NewServer()
+	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase, citiesUsecase, reviewUsecase, categoriesUsecase)
+	gen.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
+
+	go func() {
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPC.AuthPort))
+		if err != nil {
+			log.Fatalf("failed to listen: %v", err)
+		}
+		log.Printf("grpcAttractionsServer server listening on :%d", cfg.GRPC.AuthPort)
+		if err := grpcAttractionsServer.Serve(listener); err != nil {
+			log.Fatalf("failed to serve gRPC: %v", err)
+		}
+	}()
+
+	// Ожидание сигнала об остановке
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
 
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 

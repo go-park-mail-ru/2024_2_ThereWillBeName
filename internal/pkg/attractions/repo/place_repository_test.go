@@ -56,7 +56,7 @@ func TestPlaceRepository_GetPlaces_DbError(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectQuery("SELECT id, name, image, description FROM place").
-		WillReturnError(fmt.Errorf("couldn't get places: %w", err))
+		WillReturnError(fmt.Errorf("couldn't get attractions: %w", err))
 
 	r := NewPLaceRepository(db)
 	places, err := r.GetPlaces(context.Background(), 10, 0)
@@ -147,7 +147,7 @@ func TestPlaceRepository_GetPlacesByCategory_DbError(t *testing.T) {
 	defer db.Close()
 
 	mock.ExpectQuery("SELECT id, name, image, description FROM place").
-		WillReturnError(fmt.Errorf("couldn't get places: %w", err))
+		WillReturnError(fmt.Errorf("couldn't get attractions: %w", err))
 
 	r := NewPLaceRepository(db)
 	places, err := r.GetPlacesByCategory(context.Background(), "Park", 10, 0)

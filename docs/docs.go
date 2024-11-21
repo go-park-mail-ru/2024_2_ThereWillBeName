@@ -192,16 +192,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/places": {
+        "/attractions": {
             "get": {
-                "description": "Retrieve a list of places from the database",
+                "description": "Retrieve a list of attractions from the database",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Get a list of places",
+                "summary": "Get a list of attractions",
                 "responses": {
                     "200": {
-                        "description": "List of places",
+                        "description": "List of attractions",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -277,16 +277,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/search/{placeName}": {
+        "/attractions/search/{placeName}": {
             "get": {
-                "description": "Get a list of places from the database that match the provided search string",
+                "description": "Get a list of attractions from the database that match the provided search string",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Retrieve places by search string",
+                "summary": "Retrieve attractions by search string",
                 "parameters": [
                     {
-                        "description": "Name of the places to retrieve",
+                        "description": "Name of the attractions to retrieve",
                         "name": "searchString",
                         "in": "body",
                         "required": true,
@@ -297,7 +297,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of places matching the provided searchString",
+                        "description": "List of attractions matching the provided searchString",
                         "schema": {
                             "$ref": "#/definitions/models.GetPlace"
                         }
@@ -317,7 +317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/{id}": {
+        "/attractions/{id}": {
             "get": {
                 "description": "Get details of a place from the database by its id",
                 "produces": [
@@ -454,7 +454,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/{placeID}/reviews": {
+        "/attractions/{placeID}/reviews": {
             "get": {
                 "description": "Get all reviews for a specific place",
                 "produces": [
