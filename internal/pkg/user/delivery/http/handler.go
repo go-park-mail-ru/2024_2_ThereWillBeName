@@ -207,7 +207,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		Token: token,
 	}
 
-	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
+	h.logger.DebugContext(logCtx, "Login request completed successfully")
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 
@@ -565,11 +565,11 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := struct {
-		ID       uint   `json:"id"`
-		Password string `json:"password"`
+		ID      uint   `json:"id"`
+		Message string `json:"message"`
 	}{
-		ID:       user.ID,
-		Password: credentials.NewPassword,
+		ID:      user.ID,
+		Message: "User's password updated successfully",
 	}
 
 	h.logger.Debug("User password updated successfully")
