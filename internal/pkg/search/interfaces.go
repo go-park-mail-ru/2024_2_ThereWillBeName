@@ -9,6 +9,6 @@ type SearchUsecase interface {
 	Search(ctx context.Context, query string) ([]models.SearchResult, error)
 }
 
-type SearchRepository interface {
+type SearchRepo interface {
 	SearchCitiesAndPlacesBySubString(ctx context.Context, query string) ([]models.SearchResult, error)
 }

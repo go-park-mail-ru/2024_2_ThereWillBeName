@@ -12,7 +12,7 @@ type SearchRepository struct {
 }
 
 func NewSearchRepository(db *sql.DB) *SearchRepository {
-	return &SearchRepository{db: db}
+	return &SearchRepository{db}
 }
 
 func (r *SearchRepository) SearchCitiesAndPlacesBySubString(ctx context.Context, query string) ([]models.SearchResult, error) {

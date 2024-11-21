@@ -2,15 +2,15 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	search "2024_2_ThereWillBeName/internal/pkg/search/repo"
+	search "2024_2_ThereWillBeName/internal/pkg/search"
 	"context"
 )
 
 type SearchUsecaseImpl struct {
-	repo search.SearchRepository
+	repo search.SearchRepo
 }
 
-func NewSearchUsecase(repo search.SearchRepository) *SearchUsecaseImpl {
+func NewSearchUsecase(repo search.SearchRepo) *SearchUsecaseImpl {
 	return &SearchUsecaseImpl{repo: repo}
 }
 
