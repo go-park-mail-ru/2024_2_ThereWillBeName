@@ -18,7 +18,7 @@ definitions:
         type: string
       name:
         type: string
-      private:
+      private_trip:
         type: boolean
       start_date:
         type: string
@@ -100,6 +100,17 @@ definitions:
       user_login:
         type: string
     type: object
+  models.GetReviewByUserID:
+    properties:
+      id:
+        type: integer
+      place_name:
+        type: string
+      rating:
+        type: integer
+      review_text:
+        type: string
+    type: object
   models.Review:
     properties:
       created_at:
@@ -129,7 +140,7 @@ definitions:
         type: integer
       name:
         type: string
-      private:
+      private_trip:
         type: boolean
       start_date:
         type: string
@@ -236,7 +247,7 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "403":
-          description: Invalid CSRF token
+          description: Invalid token
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
@@ -304,12 +315,12 @@ paths:
       summary: Logout a user
   /places:
     get:
-      description: Retrieve a list of places from the database
+      description: Retrieve a list of attractions from the database
       produces:
       - application/json
       responses:
         "200":
-          description: List of places
+          description: List of attractions
           schema:
             items:
               $ref: '#/definitions/models.GetPlace'
@@ -322,7 +333,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
-      summary: Get a list of places
+      summary: Get a list of attractions
     post:
       consumes:
       - application/json
@@ -343,6 +354,14 @@ paths:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
@@ -369,6 +388,10 @@ paths:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "400":
           description: Bad Request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
@@ -423,6 +446,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
@@ -461,10 +492,10 @@ paths:
       summary: Retrieve reviews by place ID
   /places/search/{placeName}:
     get:
-      description: Get a list of places from the database that match the provided
+      description: Get a list of attractions from the database that match the provided
         search string
       parameters:
-      - description: Name of the places to retrieve
+      - description: Name of the attractions to retrieve
         in: body
         name: searchString
         required: true
@@ -474,7 +505,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: List of places matching the provided searchString
+          description: List of attractions matching the provided searchString
           schema:
             $ref: '#/definitions/models.GetPlace'
         "400":
@@ -485,7 +516,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
-      summary: Retrieve places by search string
+      summary: Retrieve attractions by search string
   /reviews:
     post:
       consumes:
@@ -509,6 +540,10 @@ paths:
           description: Invalid request
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
           description: Failed to create review
           schema:
@@ -530,6 +565,10 @@ paths:
           description: Review deleted successfully
         "400":
           description: Invalid review ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
@@ -596,6 +635,10 @@ paths:
           description: Invalid review ID
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
           description: Review not found
           schema:
@@ -656,8 +699,16 @@ paths:
           description: Invalid request
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
           description: Invalid request
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
@@ -681,6 +732,10 @@ paths:
           description: Trip deleted successfully
         "400":
           description: Invalid trip ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
@@ -779,8 +834,16 @@ paths:
           description: Invalid trip data
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":
           description: Trip not found
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "500":
@@ -848,6 +911,37 @@ paths:
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
       summary: Get user profile
+  /users/{userID}/reviews:
+    get:
+      description: Get all reviews for an user
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of reviews
+          schema:
+            items:
+              $ref: '#/definitions/models.GetReviewByUserID'
+            type: array
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "404":
+          description: No reviews found for the user
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "500":
+          description: Failed to retrieve reviews
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+      summary: Retrieve reviews by user ID
   /users/{userID}/trips:
     get:
       description: Get all trips for a specific user
@@ -868,6 +962,10 @@ paths:
             type: array
         "400":
           description: Invalid user ID
+          schema:
+            $ref: '#/definitions/httpresponses.ErrorResponse'
+        "403":
+          description: Invalid token
           schema:
             $ref: '#/definitions/httpresponses.ErrorResponse'
         "404":

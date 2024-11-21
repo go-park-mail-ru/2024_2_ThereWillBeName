@@ -2,7 +2,7 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	mockplaces "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	mockplaces "2024_2_ThereWillBeName/internal/pkg/attractions/mocks"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -132,7 +132,7 @@ func TestGetPlacesHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places", handler.GetPlacesHandler)
+			router.HandleFunc("/attractions", handler.GetPlacesHandler)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, tt.expectedCode, rr.Code)
@@ -337,12 +337,12 @@ func TestDeletePlacesHandler(t *testing.T) {
 				mockUsecase.EXPECT().DeletePlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockError)
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, "/places/"+strconv.Itoa(int(testcase.id)), nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodDelete, "/attractions/"+strconv.Itoa(int(testcase.id)), nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
+			router.HandleFunc("/attractions/{id}", handler.DeletePlaceHandler).Methods(http.MethodDelete)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
@@ -425,12 +425,12 @@ func TestGetPlaceHandler(t *testing.T) {
 				mockUsecase.EXPECT().GetPlace(gomock.Any(), uint(testcase.id)).Return(testcase.mockPlace, testcase.mockError)
 			}
 
-			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places/"+strconv.Itoa(int(testcase.id)), nil)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/attractions/"+strconv.Itoa(int(testcase.id)), nil)
 			assert.NoError(t, err)
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
+			router.HandleFunc("/attractions/{id}", handler.GetPlaceHandler).Methods(http.MethodGet)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
@@ -536,7 +536,7 @@ func TestSearchPlaceHandler(t *testing.T) {
 			if testcase.name != "InvalidOffset" && testcase.name != "InvalidLimit" && testcase.name != "MissingPlaceName" {
 				mockUsecase.EXPECT().SearchPlaces(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Return(testcase.mockPlaces, testcase.mockError)
 			}
-			urlStr := "/places/search/" + testcase.search
+			urlStr := "/attractions/search/" + testcase.search
 			log.Println(urlStr)
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, urlStr, nil)
 			assert.NoError(t, err)
@@ -548,11 +548,124 @@ func TestSearchPlaceHandler(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 			router := mux.NewRouter()
-			router.HandleFunc("/places/search/{search}", handler.SearchPlacesHandler).Methods(http.MethodGet)
+			router.HandleFunc("/attractions/search/{search}", handler.SearchPlacesHandler).Methods(http.MethodGet)
 			router.ServeHTTP(rr, req)
 
 			assert.Equal(t, testcase.expectedCode, rr.Code)
 			assert.Equal(t, testcase.expectedBody, rr.Body.String())
+		})
+	}
+}
+
+func TestGetPlacesByCategoryHandler(t *testing.T) {
+	places := []models.GetPlace{
+		{
+			ID:          1,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
+		},
+		{
+			ID:          2,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
+		},
+	}
+
+	jsonPlaces, _ := json.Marshal(places)
+	stringPlaces := string(jsonPlaces)
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	h := slog.NewJSONHandler(os.Stdout, nil)
+
+	logger := slog.New(h)
+
+	mockUsecase := mockplaces.NewMockPlaceUsecase(ctrl)
+	handler := NewPlacesHandler(mockUsecase, logger)
+
+	tests := []struct {
+		name         string
+		offset       string
+		limit        string
+		mockPlaces   []models.GetPlace
+		mockError    error
+		expectedCode int
+		expectedBody string
+	}{
+		{
+			name:         "Valid request",
+			offset:       "0",
+			limit:        "10",
+			mockPlaces:   places,
+			mockError:    nil,
+			expectedCode: http.StatusOK,
+			expectedBody: stringPlaces + "\n",
+		},
+		{
+			name:         "Invalid offset",
+			offset:       "invalid",
+			limit:        "10",
+			mockPlaces:   nil,
+			mockError:    nil,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: ``,
+		},
+		{
+			name:         "Invalid limit",
+			offset:       "0",
+			limit:        "invalid",
+			mockPlaces:   nil,
+			mockError:    nil,
+			expectedCode: http.StatusBadRequest,
+			expectedBody: ``,
+		},
+		{
+			name:         "Internal server error",
+			offset:       "0",
+			limit:        "10",
+			mockPlaces:   nil,
+			mockError:    errors.New("internal server error"),
+			expectedCode: http.StatusInternalServerError,
+			expectedBody: ``,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.name != "Invalid offset" && tt.name != "Invalid limit" {
+				offset, _ := strconv.Atoi(tt.offset)
+				limit, _ := strconv.Atoi(tt.limit)
+				mockUsecase.EXPECT().GetPlacesByCategory(gomock.Any(), gomock.Any(), limit, offset).Return(tt.mockPlaces, tt.mockError)
+			}
+
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "/places/category/{categoryName}", nil)
+			assert.NoError(t, err)
+
+			query := url.Values{}
+			query.Add("offset", tt.offset)
+			query.Add("limit", tt.limit)
+			req.URL.RawQuery = query.Encode()
+
+			rr := httptest.NewRecorder()
+			router := mux.NewRouter()
+			router.HandleFunc("/attractions/category/{categoryName}", handler.GetPlacesByCategoryHandler)
+			router.ServeHTTP(rr, req)
+
+			assert.Equal(t, tt.expectedCode, rr.Code)
+			assert.Equal(t, tt.expectedBody, rr.Body.String())
 		})
 	}
 }

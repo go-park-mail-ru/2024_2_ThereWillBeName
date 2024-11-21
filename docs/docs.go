@@ -39,7 +39,7 @@ const docTemplate = `{
                         }
                     },
                     "403": {
-                        "description": "Invalid CSRF token",
+                        "description": "Invalid token",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -192,16 +192,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/places": {
+        "/attractions": {
             "get": {
-                "description": "Retrieve a list of places from the database",
+                "description": "Retrieve a list of attractions from the database",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Get a list of places",
+                "summary": "Get a list of attractions",
                 "responses": {
                     "200": {
-                        "description": "List of places",
+                        "description": "List of attractions",
                         "schema": {
                             "type": "array",
                             "items": {
@@ -256,6 +256,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -265,16 +277,16 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/search/{placeName}": {
+        "/attractions/search/{placeName}": {
             "get": {
-                "description": "Get a list of places from the database that match the provided search string",
+                "description": "Get a list of attractions from the database that match the provided search string",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Retrieve places by search string",
+                "summary": "Retrieve attractions by search string",
                 "parameters": [
                     {
-                        "description": "Name of the places to retrieve",
+                        "description": "Name of the attractions to retrieve",
                         "name": "searchString",
                         "in": "body",
                         "required": true,
@@ -285,7 +297,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of places matching the provided searchString",
+                        "description": "List of attractions matching the provided searchString",
                         "schema": {
                             "$ref": "#/definitions/models.GetPlace"
                         }
@@ -305,7 +317,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/{id}": {
+        "/attractions/{id}": {
             "get": {
                 "description": "Get details of a place from the database by its id",
                 "produces": [
@@ -377,6 +389,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -415,6 +439,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
@@ -424,7 +454,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/places/{placeID}/reviews": {
+        "/attractions/{placeID}/reviews": {
             "get": {
                 "description": "Get all reviews for a specific place",
                 "produces": [
@@ -501,6 +531,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid token",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -597,6 +633,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Review not found",
                         "schema": {
@@ -632,6 +674,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid review ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid token",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -728,8 +776,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -826,8 +886,20 @@ const docTemplate = `{
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
                     },
+                    "403": {
+                        "description": "Invalid token",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Trip not found",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -909,6 +981,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid trip ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid token",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -1048,6 +1126,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{userID}/reviews": {
+            "get": {
+                "description": "Get all reviews for an user",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Retrieve reviews by user ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of reviews",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.GetReviewByUserID"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "No reviews found for the user",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to retrieve reviews",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/users/{userID}/trips": {
             "get": {
                 "description": "Get all trips for a specific user",
@@ -1076,6 +1201,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Invalid user ID",
+                        "schema": {
+                            "$ref": "#/definitions/httpresponses.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Invalid token",
                         "schema": {
                             "$ref": "#/definitions/httpresponses.ErrorResponse"
                         }
@@ -1126,7 +1257,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "private": {
+                "private_trip": {
                     "type": "boolean"
                 },
                 "start_date": {
@@ -1252,6 +1383,23 @@ const docTemplate = `{
                 }
             }
         },
+        "models.GetReviewByUserID": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "place_name": {
+                    "type": "string"
+                },
+                "rating": {
+                    "type": "integer"
+                },
+                "review_text": {
+                    "type": "string"
+                }
+            }
+        },
         "models.Review": {
             "type": "object",
             "properties": {
@@ -1296,7 +1444,7 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
-                "private": {
+                "private_trip": {
                     "type": "boolean"
                 },
                 "start_date": {

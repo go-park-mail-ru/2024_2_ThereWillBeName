@@ -2,7 +2,7 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	mock_places "2024_2_ThereWillBeName/internal/pkg/places/mocks"
+	mock_places "2024_2_ThereWillBeName/internal/pkg/attractions/mocks"
 	"context"
 	"errors"
 	"github.com/golang/mock/gomock"
@@ -17,28 +17,26 @@ func TestPlaceUsecase_GetPlaces(t *testing.T) {
 
 	places := []models.GetPlace{
 		{
-			ID:              1,
-			Name:            "Central Park",
-			ImagePath:       "/images/central_park.jpg",
-			Description:     "A large public park in New York City, offering a variety of recreational activities.",
-			Rating:          5,
-			NumberOfReviews: 2500,
-			Address:         "59th St to 110th St, New York, NY 10022",
-			City:            "New York",
-			PhoneNumber:     "+1 212-310-6600",
-			Categories:      []string{"Park", "Recreation", "Nature"},
+			ID:          1,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
 		},
 		{
-			ID:              2,
-			Name:            "Central Park",
-			ImagePath:       "/images/central_park.jpg",
-			Description:     "A large public park in New York City, offering a variety of recreational activities.",
-			Rating:          5,
-			NumberOfReviews: 2500,
-			Address:         "59th St to 110th St, New York, NY 10022",
-			City:            "New York",
-			PhoneNumber:     "+1 212-310-6600",
-			Categories:      []string{"Park", "Recreation", "Nature"},
+			ID:          2,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
 		},
 	}
 
@@ -80,15 +78,14 @@ func TestPlaceUsecase_CreatePlace(t *testing.T) {
 	repo := mock_places.NewMockPlaceRepo(ctrl)
 
 	place := models.CreatePlace{
-		Name:            "Central Park",
-		ImagePath:       "/images/central_park.jpg",
-		Description:     "A large public park in New York City, offering a variety of recreational activities.",
-		Rating:          5,
-		NumberOfReviews: 2500,
-		Address:         "59th St to 110th St, New York, NY 10022",
-		CityId:          1,
-		PhoneNumber:     "+1 212-310-6600",
-		CategoriesId:    []int{1, 2},
+		Name:         "Central Park",
+		ImagePath:    "/images/central_park.jpg",
+		Description:  "A large public park in New York City, offering a variety of recreational activities.",
+		Rating:       5,
+		Address:      "59th St to 110th St, New York, NY 10022",
+		CityId:       1,
+		PhoneNumber:  "+1 212-310-6600",
+		CategoriesId: []int{1, 2},
 	}
 	tests := []struct {
 		name          string
@@ -157,15 +154,14 @@ func TestPlaceUsecase_UpdatePlace(t *testing.T) {
 	repo := mock_places.NewMockPlaceRepo(ctrl)
 
 	place := models.UpdatePlace{
-		Name:            "Central Park",
-		ImagePath:       "/images/central_park.jpg",
-		Description:     "A large public park in New York City, offering a variety of recreational activities.",
-		Rating:          5,
-		NumberOfReviews: 2500,
-		Address:         "59th St to 110th St, New York, NY 10022",
-		CityId:          1,
-		PhoneNumber:     "+1 212-310-6600",
-		CategoriesId:    []int{1, 2},
+		Name:         "Central Park",
+		ImagePath:    "/images/central_park.jpg",
+		Description:  "A large public park in New York City, offering a variety of recreational activities.",
+		Rating:       5,
+		Address:      "59th St to 110th St, New York, NY 10022",
+		CityId:       1,
+		PhoneNumber:  "+1 212-310-6600",
+		CategoriesId: []int{1, 2},
 	}
 	tests := []struct {
 		name          string
@@ -201,16 +197,15 @@ func TestPlaceUsecase_GetPlace(t *testing.T) {
 	repo := mock_places.NewMockPlaceRepo(ctrl)
 
 	place := models.GetPlace{
-		ID:              1,
-		Name:            "Central Park",
-		ImagePath:       "/images/central_park.jpg",
-		Description:     "A large public park in New York City, offering a variety of recreational activities.",
-		Rating:          5,
-		NumberOfReviews: 2500,
-		Address:         "59th St to 110th St, New York, NY 10022",
-		City:            "New York",
-		PhoneNumber:     "+1 212-310-6600",
-		Categories:      []string{"Park", "Recreation", "Nature"},
+		ID:          1,
+		Name:        "Central Park",
+		ImagePath:   "/images/central_park.jpg",
+		Description: "A large public park in New York City, offering a variety of recreational activities.",
+		Rating:      5,
+		Address:     "59th St to 110th St, New York, NY 10022",
+		City:        "New York",
+		PhoneNumber: "+1 212-310-6600",
+		Categories:  []string{"Park", "Recreation", "Nature"},
 	}
 	tests := []struct {
 		name          string
@@ -251,28 +246,26 @@ func TestPlaceUsecase_SearchPlaces(t *testing.T) {
 
 	places := []models.GetPlace{
 		{
-			ID:              1,
-			Name:            "Central Park",
-			ImagePath:       "/images/central_park.jpg",
-			Description:     "A large public park in New York City, offering a variety of recreational activities.",
-			Rating:          5,
-			NumberOfReviews: 2500,
-			Address:         "59th St to 110th St, New York, NY 10022",
-			City:            "New York",
-			PhoneNumber:     "+1 212-310-6600",
-			Categories:      []string{"Park", "Recreation", "Nature"},
+			ID:          1,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
 		},
 		{
-			ID:              2,
-			Name:            "Central Park",
-			ImagePath:       "/images/central_park.jpg",
-			Description:     "A large public park in New York City, offering a variety of recreational activities.",
-			Rating:          5,
-			NumberOfReviews: 2500,
-			Address:         "59th St to 110th St, New York, NY 10022",
-			City:            "New York",
-			PhoneNumber:     "+1 212-310-6600",
-			Categories:      []string{"Park", "Recreation", "Nature"},
+			ID:          2,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
 		},
 	}
 	tests := []struct {
@@ -304,6 +297,69 @@ func TestPlaceUsecase_SearchPlaces(t *testing.T) {
 			got, err := u.SearchPlaces(context.Background(), testCase.mockinput, 10, 0)
 			assert.Equal(t, testCase.expectedError, err)
 			assert.Equal(t, testCase.mockOutput, got)
+		})
+	}
+}
+
+func TestPlaceUsecase_GetPlacesByCategory(t *testing.T) {
+
+	ctrl := gomock.NewController(t)
+	repo := mock_places.NewMockPlaceRepo(ctrl)
+
+	places := []models.GetPlace{
+		{
+			ID:          1,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
+		},
+		{
+			ID:          2,
+			Name:        "Central Park",
+			ImagePath:   "/images/central_park.jpg",
+			Description: "A large public park in New York City, offering a variety of recreational activities.",
+			Rating:      5,
+			Address:     "59th St to 110th St, New York, NY 10022",
+			City:        "New York",
+			PhoneNumber: "+1 212-310-6600",
+			Categories:  []string{"Park", "Recreation", "Nature"},
+		},
+	}
+
+	tests := []struct {
+		name          string
+		mockReturn    []models.GetPlace
+		mockError     error
+		expectedCode  []models.GetPlace
+		expectedError error
+	}{
+		{
+			name:          "Success",
+			mockReturn:    places,
+			mockError:     nil,
+			expectedCode:  places,
+			expectedError: nil,
+		},
+		{
+			name:          "Error",
+			mockReturn:    nil,
+			mockError:     errors.New("error"),
+			expectedCode:  []models.GetPlace(nil),
+			expectedError: errors.New("error"),
+		},
+	}
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
+			repo.EXPECT().GetPlacesByCategory(context.Background(), gomock.Any(), gomock.Any(), gomock.Any()).Return(testCase.mockReturn, testCase.mockError)
+			u := NewPlaceUsecase(repo)
+			got, err := u.GetPlacesByCategory(context.Background(), "Park", 10, 0)
+			assert.Equal(t, testCase.expectedError, err)
+			assert.Equal(t, testCase.expectedCode, got)
 		})
 	}
 }

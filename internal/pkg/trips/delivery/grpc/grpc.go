@@ -111,9 +111,13 @@ func (h *GrpcTripsHandler) GetTrip(ctx context.Context, in *tripsGen.GetTripRequ
 }
 
 func (h *GrpcTripsHandler) AddPlaceToTrip(ctx context.Context, in *tripsGen.AddPlaceToTripRequest) (*tripsGen.EmptyResponse, error) {
-	err := h.uc.AddPlaceToTrip(context.Background(), uint(in.TripId), uint(in.PlaceId))
+	tripID := uint(in.TripId)
+	placeID := uint(in.PlaceId)
+	err := h.uc.AddPlaceToTrip(ctx, tripID, placeID)
 	if err != nil {
+		h.logger.Error("Failed to add place to trip", slog.Any("error", err))
 		return nil, err
 	}
+
 	return &tripsGen.EmptyResponse{}, nil
 }

@@ -2,7 +2,7 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/cities"
+	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"context"
@@ -16,12 +16,12 @@ import (
 )
 
 type CitiesHandler struct {
-	uc     cities.CitiesUsecase
+	client gen.AttractionsClient
 	logger *slog.Logger
 }
 
-func NewCitiesHandler(uc cities.CitiesUsecase, logger *slog.Logger) *CitiesHandler {
-	return &CitiesHandler{uc, logger}
+func NewCitiesHandler(client gen.AttractionsClient, logger *slog.Logger) *CitiesHandler {
+	return &CitiesHandler{client, logger}
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
@@ -49,8 +49,8 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Produce json
 // @Success 200 {array} models.City "Cities details"
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid query"
-// @Failure 403 {object} httpresponses.ErrorResponse "CSRF token missing"
-// @Failure 403 {object} httpresponses.ErrorResponse "Invalid CSRF token"
+// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
+// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
 // @Failure 404 {object} httpresponses.ErrorResponse "Cities not found"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
 // @Router /cities/search [get]
@@ -58,7 +58,7 @@ func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http
 	query := r.URL.Query().Get("q")
 
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for searching places by name", slog.String("name", query))
+	h.logger.DebugContext(logCtx, "Handling request for searching attractions by name", slog.String("name", query))
 
 	if query == "" {
 		h.logger.Error("Search query parameter is empty")
@@ -69,7 +69,7 @@ func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http
 		return
 	}
 
-	cities, err := h.uc.SearchCitiesByName(context.Background(), query)
+	cities, err := h.client.SearchCitiesByName(context.Background(), &gen.SearchCitiesByNameRequest{Query: query})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("name", query))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -78,7 +78,7 @@ func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved cities")
-	httpresponse.SendJSONResponse(w, cities, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, cities.Cities, http.StatusOK, h.logger)
 }
 
 // SearchCityByIDHandler godoc
@@ -120,7 +120,7 @@ func (h *CitiesHandler) SearchCityByIDHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	city, err := h.uc.SearchCityByID(context.Background(), uint(cityID))
+	city, err := h.client.SearchCityByID(context.Background(), &gen.SearchCityByIDRequest{Id: uint32(cityID)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Uint64("ID", (cityID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -130,5 +130,5 @@ func (h *CitiesHandler) SearchCityByIDHandler(w http.ResponseWriter, r *http.Req
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved cities")
 
-	httpresponse.SendJSONResponse(w, city, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, city.City, http.StatusOK, h.logger)
 }

@@ -7,3 +7,8 @@ type Config struct {
 	ConnStr       string
 	GRPCPort      int
 }
+
+type ConfigGrpc struct {
+	Port    int
+	ConnStr string
+}

@@ -1,4 +1,4 @@
-package places
+package attractions
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
@@ -14,6 +14,7 @@ type PlaceRepo interface {
 	UpdatePlace(ctx context.Context, place models.UpdatePlace) error
 	DeletePlace(ctx context.Context, id uint) error
 	SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error)
+	GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error)
 }
 
 type PlaceUsecase interface {
@@ -23,4 +24,5 @@ type PlaceUsecase interface {
 	UpdatePlace(ctx context.Context, place models.UpdatePlace) error
 	DeletePlace(ctx context.Context, id uint) error
 	SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error)
+	GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error)
 }
