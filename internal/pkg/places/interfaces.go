@@ -15,6 +15,7 @@ type PlaceRepo interface {
 	DeletePlace(ctx context.Context, id uint) error
 	SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error)
 	GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error)
+	// SearchPlacesBySubString(ctx context.Context, query string) ([]models.SearchItem, error)
 }
 
 type PlaceUsecase interface {
