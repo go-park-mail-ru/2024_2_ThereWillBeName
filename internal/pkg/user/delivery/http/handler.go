@@ -123,16 +123,27 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
-
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	response := UserResponseWithToken{
-		User: models.User{
-			ID:    user.ID,
-			Login: user.Login,
-			Email: user.Email,
-		},
-		Token: token,
+	// response := UserResponseWithToken{
+	// 	User: models.User{
+	// 		ID:    user.ID,
+	// 		Login: user.Login,
+	// 		Email: user.Email,
+	// 	},
+	// 	Token: token,
+	// }
+	response := models.User{
+		ID:    user.ID,
+		Login: user.Login,
+		Email: user.Email,
 	}
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
 
@@ -196,15 +207,27 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
-	response := UserResponseWithToken{
-		User: models.User{
-			ID:    user.ID,
-			Login: user.Login,
-			Email: user.Email,
-		},
-		Token: token,
+	// response := UserResponseWithToken{
+	// 	User: models.User{
+	// 		ID:    user.ID,
+	// 		Login: user.Login,
+	// 		Email: user.Email,
+	// 	},
+	// 	Token: token,
+	// }
+	response := models.User{
+		ID:    user.ID,
+		Login: user.Login,
+		Email: user.Email,
 	}
 
 	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")

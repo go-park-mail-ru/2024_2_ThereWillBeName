@@ -128,15 +128,52 @@ func (r *PlaceRepository) DeletePlace(ctx context.Context, id uint) error {
 	return nil
 }
 
-func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error) {
+func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, category, city, limit, offset int) ([]models.GetPlace, error) {
 	var places []models.GetPlace
-	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id WHERE p.name LIKE '%' || $1 || '%' GROUP BY p.id, c.name ORDER BY p.id LIMIT $2 OFFSET $3"
+
+	query := `
+		SELECT 
+			p.id, p.name, p.image_path, p.description, p.rating, 
+			p.address, p.phone_number, c.name AS city_name, 
+			ARRAY_AGG(ca.name) AS categories 
+		FROM 
+			place p 
+		JOIN 
+			city c ON p.city_id = c.id 
+		JOIN 
+			place_category pc ON p.id = pc.place_id 
+		JOIN 
+			category ca ON pc.category_id = ca.id 
+		WHERE 
+			p.name LIKE '%' || $1 || '%'`
+
+	args := []interface{}{name}
+
+	if category > 0 {
+		query += " AND pc.category_id = $2"
+		args = append(args, category)
+	}
+
+	if city > 0 {
+		query += " AND p.city_id = $" + fmt.Sprint(len(args)+1)
+		args = append(args, city)
+	}
+
+	query += `
+		GROUP BY 
+			p.id, c.name 
+		ORDER BY 
+			p.id 
+		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
+	args = append(args, limit, offset)
+
 	stmt, err := r.db.PrepareContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't prepare query: %w", err)
 	}
 	defer stmt.Close()
-	rows, err := stmt.QueryContext(ctx, name, limit, offset)
+
+	rows, err := stmt.QueryContext(ctx, args...)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get places: %w", err)
 	}
@@ -150,6 +187,7 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, limit, 
 		}
 		places = append(places, place)
 	}
+
 	return places, nil
 }
 

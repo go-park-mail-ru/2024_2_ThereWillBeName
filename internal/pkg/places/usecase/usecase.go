@@ -4,6 +4,7 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/places"
 	"context"
+	"log"
 )
 
 type PlaceUsecaseImpl struct {
@@ -39,8 +40,9 @@ func (i *PlaceUsecaseImpl) GetPlace(ctx context.Context, id uint) (models.GetPla
 	return i.repo.GetPlace(ctx, id)
 }
 
-func (i *PlaceUsecaseImpl) SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error) {
-	return i.repo.SearchPlaces(ctx, name, limit, offset)
+func (i *PlaceUsecaseImpl) SearchPlaces(ctx context.Context, name string, category, city, limit, offset int) ([]models.GetPlace, error) {
+	log.Println("usecase place name, category, city", name, category, city)
+	return i.repo.SearchPlaces(ctx, name, category, city, limit, offset)
 }
 
 func (i *PlaceUsecaseImpl) GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error) {
