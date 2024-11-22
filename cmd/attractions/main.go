@@ -20,7 +20,7 @@ import (
 	reviewUsecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	"database/sql"
 	"flag"
-	"fmt"
+	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"log"
@@ -68,7 +68,7 @@ func main() {
 	reflection.Register(grpcAttractionsServer)
 
 	go func() {
-		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+		listener, err := net.Listen("tcp", ":8081")
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}

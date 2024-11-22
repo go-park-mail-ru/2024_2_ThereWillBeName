@@ -28,7 +28,7 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 50051:50051
+      - 8081:8081
     depends_on:
       - tripdb
   trips:

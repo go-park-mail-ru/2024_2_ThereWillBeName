@@ -102,7 +102,7 @@ COPY city(name)
     WITH (FORMAT csv, HEADER true);
 
 COPY place(name, image_path, description, rating, address, city_id, phone_number, latitude, longitude)
-    FROM '/docker-entrypoint-initdb.d/attractions.csv'
+    FROM '/docker-entrypoint-initdb.d/places.csv'
     WITH (FORMAT csv, HEADER true,  DELIMITER ';');
 
 COPY category(name)

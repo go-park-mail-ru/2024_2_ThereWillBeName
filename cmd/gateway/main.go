@@ -23,6 +23,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	_ "github.com/lib/pq"
 	"log"
 	"log/slog"
 	"net/http"
@@ -48,7 +49,7 @@ func main() {
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)
 
-	attractionsConn, err := grpc.NewClient("localhost:50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	attractionsConn, err := grpc.Dial("attractions:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to attractions service: %v", err)
 	}
@@ -59,14 +60,14 @@ func main() {
 	citiesClient := genCities.NewCitiesClient(attractionsConn)
 	reviewsClient := genReviews.NewReviewsClient(attractionsConn)
 
-	usersConn, err := grpc.NewClient("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	usersConn, err := grpc.NewClient("users:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to users service: %v", err)
 	}
 	defer usersConn.Close()
 	usersClient := genUsers.NewUserServiceClient(usersConn)
 
-	tripsConn, err := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	tripsConn, err := grpc.NewClient("trips:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to trips service: %v", err)
 	}
@@ -104,8 +105,8 @@ func main() {
 	reviewsHandler := httpReviews.NewReviewHandler(reviewsClient, logger)
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
 	reviews.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.CreateReviewHandler), logger)).Methods(http.MethodPost)
-	reviews.Handle("/reviewID", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.UpdateReviewHandler), logger)).Methods(http.MethodPut)
-	reviews.Handle("/reviewID", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.DeleteReviewHandler), logger)).Methods(http.MethodDelete)
+	reviews.Handle("/{reviewID}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.UpdateReviewHandler), logger)).Methods(http.MethodPut)
+	reviews.Handle("/{reviewID}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.DeleteReviewHandler), logger)).Methods(http.MethodDelete)
 	reviews.HandleFunc("/{reviewID}", reviewsHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("", reviewsHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
@@ -143,7 +144,7 @@ func main() {
 	go func() {
 		logger.Info("HTTP server listening on :%d", cfg.Port)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("failed to serve HTTP: %v", err)
+			logger.Error("failed to serve HTTP: %d", err)
 			os.Exit(1)
 		}
 	}()
