@@ -3,14 +3,12 @@ package gateway
 import (
 	"2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	tripshandler "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
 	"log"
 	"net/http"
-	"strconv"
+
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 )
 
 func main() {

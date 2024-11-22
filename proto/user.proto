@@ -8,15 +8,10 @@ service UserService {
     rpc Login(LoginRequest) returns (LoginResponse) {}
     rpc UploadAvatar(UploadAvatarRequest) returns (UploadAvatarResponse) {}
     rpc GetProfile(GetProfileRequest) returns (GetProfileResponse) {}
-    rpc UpdatePassword(UpdatePasswordRequest) returns (UpdatePasswordResponse) {}
-    rpc UpdateProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {}
+    rpc UpdatePassword(UpdatePasswordRequest) returns (EmptyResponse) {}
+    rpc UpdateProfile(UpdateProfileRequest) returns (EmptyResponse) {}
 }
 
-message User {
-    uint32 id = 1;
-    string login = 2;
-    string email = 3;
-}
 
 message SignUpRequest {
     string login = 1;
@@ -25,8 +20,7 @@ message SignUpRequest {
 }
 
 message SignUpResponse {
-    User user = 1;
-    string token = 2;
+    uint32 id = 1;
 }
 
 message LoginRequest {
@@ -35,8 +29,10 @@ message LoginRequest {
 }
 
 message LoginResponse {
-    User user = 1;
-    string token = 2;
+    uint32 id = 1;
+    string login = 2;
+    string email = 3;
+    string avatar_path = 4;
 }
 
 message UploadAvatarRequest {
@@ -46,7 +42,6 @@ message UploadAvatarRequest {
 }
 
 message UploadAvatarResponse {
-    string message = 1;
     string avatar_path = 2;
 }
 
@@ -69,18 +64,10 @@ message UpdatePasswordRequest {
     string new_password = 5;
 }
 
-message UpdatePasswordResponse {
-    uint32 id = 1;
-    string message = 2;
-}
-
 message UpdateProfileRequest {
   uint32 user_id = 1;
   string username = 2;
   string email = 3;
 }
 
-message UpdateProfileResponse {
-  string username = 1;
-  string email = 2;
-}
+message EmptyResponse {}
