@@ -7,6 +7,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"net/url"
 )
 
 type SearchHandler struct {
@@ -26,7 +27,13 @@ func (h *SearchHandler) SearchHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	results, err := h.uc.Search(r.Context(), query)
+	decodedQuery, err := url.QueryUnescape(query)
+	if err != nil {
+		httpresponses.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	results, err := h.uc.Search(r.Context(), decodedQuery)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			httpresponses.SendJSONResponse(w, nil, http.StatusNotFound, h.logger)
