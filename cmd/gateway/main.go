@@ -114,7 +114,12 @@ func main() {
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
 	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
 
-	usersHandler := httpUsers.NewUserHandler(usersClient, logger)
+	usersHandler := httpUsers.NewUserHandler(usersClient, jwtHandler, logger)
+	auth := r.PathPrefix("/auth").Subrouter()
+	auth.HandleFunc("/signup", usersHandler.SignUp).Methods(http.MethodPost)
+	auth.HandleFunc("/login", usersHandler.Login).Methods(http.MethodPost)
+	auth.Handle("/logout", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.Logout), logger)).Methods(http.MethodPost)
+
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.CurrentUser), logger)).Methods(http.MethodGet)
 
