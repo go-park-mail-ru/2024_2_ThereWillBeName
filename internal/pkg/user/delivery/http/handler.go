@@ -133,6 +133,14 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
+
 	response := UserResponseWithToken{
 		User: models.User{
 			ID:    user.ID,
@@ -217,6 +225,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
+
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   false,
+	})
 
 	response := UserResponseWithToken{
 		User:  user,
