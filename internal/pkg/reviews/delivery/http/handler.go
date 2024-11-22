@@ -2,10 +2,10 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	"2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 	"context"
 	"html/template"
@@ -21,11 +21,11 @@ import (
 )
 
 type ReviewHandler struct {
-	client gen.AttractionsClient
+	client gen.ReviewsClient
 	logger *slog.Logger
 }
 
-func NewReviewHandler(client gen.AttractionsClient, logger *slog.Logger) *ReviewHandler {
+func NewReviewHandler(client gen.ReviewsClient, logger *slog.Logger) *ReviewHandler {
 	return &ReviewHandler{client, logger}
 }
 

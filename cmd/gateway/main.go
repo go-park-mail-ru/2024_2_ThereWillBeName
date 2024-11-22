@@ -4,13 +4,16 @@ import (
 	"2024_2_ThereWillBeName/internal/models"
 	genAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpPlaces "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/http"
+	genCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	httpCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
+	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	httpCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
 	"2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
+	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	genTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	httpTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
@@ -48,7 +51,11 @@ func main() {
 		log.Fatalf("did not connect to attractions service: %v", err)
 	}
 	defer attractionsConn.Close()
+
 	attractionsClient := genAttractions.NewAttractionsClient(attractionsConn)
+	categoriesClient := genCategories.NewCategoriesClient(attractionsConn)
+	citiesClient := genCities.NewCitiesClient(attractionsConn)
+	reviewsClient := genReviews.NewReviewsClient(attractionsConn)
 
 	usersConn, err := grpc.NewClient("localhost:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -88,11 +95,11 @@ func main() {
 	places.HandleFunc("/{id}", placesHandler.GetPlaceHandler).Methods(http.MethodGet)
 	places.HandleFunc("/category/{categoryName}", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 
-	categoriesHandler := httpCategories.NewCategoriesHandler(attractionsClient, logger)
+	categoriesHandler := httpCategories.NewCategoriesHandler(categoriesClient, logger)
 	categories := r.PathPrefix("/categories").Subrouter()
 	categories.HandleFunc("", categoriesHandler.GetCategoriesHandler).Methods(http.MethodGet)
 
-	reviewsHandler := httpReviews.NewReviewHandler(attractionsClient, logger)
+	reviewsHandler := httpReviews.NewReviewHandler(reviewsClient, logger)
 	reviews := places.PathPrefix("/{placeID}/reviews").Subrouter()
 	reviews.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.CreateReviewHandler), logger)).Methods(http.MethodPost)
 	reviews.Handle("/reviewID", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.UpdateReviewHandler), logger)).Methods(http.MethodPut)
@@ -100,15 +107,21 @@ func main() {
 	reviews.HandleFunc("/{reviewID}", reviewsHandler.GetReviewHandler).Methods(http.MethodGet)
 	reviews.HandleFunc("", reviewsHandler.GetReviewsByPlaceIDHandler).Methods(http.MethodGet)
 
-	citiesHandler := httpCities.NewCitiesHandler(attractionsClient, logger)
+	citiesHandler := httpCities.NewCitiesHandler(citiesClient, logger)
 	cities := r.PathPrefix("/cities").Subrouter()
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
 	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
 
 	usersHandler := httpUsers.NewUsersHandler(usersClient, logger)
 	users := r.PathPrefix("/users").Subrouter()
-	users.HandleFunc("", usersHandler.GetUsersHandler).Methods(http.MethodGet)
-	users.HandleFunc("/{id}", usersHandler.GetUserHandler).Methods(http.MethodGet)
+	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.CurrentUser), logger)).Methods(http.MethodGet)
+
+	user := users.PathPrefix("/{userID}").Subrouter()
+
+	user.Handle("/avatars", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UploadAvatar), logger)).Methods(http.MethodPut)
+	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetProfile), logger)).Methods(http.MethodGet)
+	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdatePassword), logger)).Methods(http.MethodPut)
+	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdateProfile), logger)).Methods(http.MethodPut)
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()

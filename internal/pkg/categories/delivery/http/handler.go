@@ -1,7 +1,7 @@
 package http
 
 import (
-	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
+	"2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"log/slog"
@@ -10,11 +10,11 @@ import (
 )
 
 type CategoriesHandler struct {
-	client gen.AttractionsClient
+	client gen.CategoriesClient
 	logger *slog.Logger
 }
 
-func NewCategoriesHandler(client gen.AttractionsClient, logger *slog.Logger) *CategoriesHandler {
+func NewCategoriesHandler(client gen.CategoriesClient, logger *slog.Logger) *CategoriesHandler {
 	return &CategoriesHandler{client, logger}
 }
 

@@ -3,13 +3,19 @@ package main
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	grpcAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc"
-	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
+	genPlaces "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/attractions/repo"
 	placeUsecase "2024_2_ThereWillBeName/internal/pkg/attractions/usecase"
+	grpcCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc"
+	genCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	categoriesRepo "2024_2_ThereWillBeName/internal/pkg/categories/repo"
 	categoriesUsecase "2024_2_ThereWillBeName/internal/pkg/categories/usecase"
+	grpcCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc"
+	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
+	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
+	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	reviewRepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewUsecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
 	"database/sql"
@@ -46,8 +52,19 @@ func main() {
 	categoriesUsecase := categoriesUsecase.NewCategoriesUsecase(categoriesRepo)
 
 	grpcAttractionsServer := grpc.NewServer()
-	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase, citiesUsecase, reviewUsecase, categoriesUsecase)
-	gen.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
+
+	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase)
+	genPlaces.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
+
+	citiesHandler := grpcCities.NewGrpcCitiesHandler(citiesUsecase)
+	genCities.RegisterCitiesServer(grpcAttractionsServer, citiesHandler)
+
+	reviewsHandler := grpcReviews.NewGrpcReviewsHandler(reviewUsecase)
+	genReviews.RegisterReviewsServer(grpcAttractionsServer, reviewsHandler)
+
+	categoriesHandler := grpcCategories.NewGrpcCategoriesHandler(categoriesUsecase)
+	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
+
 	reflection.Register(grpcAttractionsServer)
 
 	go func() {

@@ -5,7 +5,7 @@ services:
     container_name: gateway
     build:
       context: .
-      dockerfile: ./cmd/gateway/Dockerfile
+      dockerfile: build/gateway.Dockerfile
     env_file:
       - .env
     environment:
@@ -20,7 +20,7 @@ services:
     container_name: attractions
     build:
       context: .
-      dockerfile: ./cmd/attractions/Dockerfile
+      dockerfile: build/attraction.Dockerfile
     env_file:
       - .env
     environment:
@@ -35,7 +35,7 @@ services:
     container_name: trips
     build:
       context: .
-      dockerfile: ./cmd/trips/Dockerfile
+      dockerfile: build/trips.Dockerfile
     env_file:
       - .env
     environment:
@@ -50,7 +50,7 @@ services:
     container_name: users
     build:
       context: .
-      dockerfile: ./cmd/users/Dockerfile
+      dockerfile: build/users.Dockerfile
     env_file:
       - .env
     environment:

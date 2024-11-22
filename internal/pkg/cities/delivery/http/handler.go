@@ -2,7 +2,7 @@ package http
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
+	"2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"context"
@@ -16,11 +16,11 @@ import (
 )
 
 type CitiesHandler struct {
-	client gen.AttractionsClient
+	client gen.CitiesClient
 	logger *slog.Logger
 }
 
-func NewCitiesHandler(client gen.AttractionsClient, logger *slog.Logger) *CitiesHandler {
+func NewCitiesHandler(client gen.CitiesClient, logger *slog.Logger) *CitiesHandler {
 	return &CitiesHandler{client, logger}
 }
 

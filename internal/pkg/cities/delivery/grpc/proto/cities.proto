@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package cities;
+option go_package = ".;gen";
+
+service Cities {
+  rpc SearchCitiesByName(SearchCitiesByNameRequest) returns (SearchCitiesByNameResponse) {}
+  rpc SearchCityByID(SearchCityByIDRequest) returns (SearchCityByIDResponse) {}
+}
+
+message City {
+  uint32 id = 1;
+  string name = 2;
+}
+
+message SearchCitiesByNameRequest {
+  string query = 1;
+}
+
+message SearchCitiesByNameResponse {
+  repeated City cities = 1;
+}
+
+message SearchCityByIDRequest {
+  uint32 id = 1;
+}
+
+message SearchCityByIDResponse {
+  City city = 1;
+}
