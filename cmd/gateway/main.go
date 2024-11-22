@@ -17,14 +17,12 @@ import (
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	genTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	httpTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
+	genUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
 	httpUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/http"
 	"context"
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/gorilla/mux"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"log/slog"
 	"net/http"
@@ -32,6 +30,10 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -62,7 +64,7 @@ func main() {
 		log.Fatalf("did not connect to users service: %v", err)
 	}
 	defer usersConn.Close()
-	usersClient := gen.NewUsersClient(usersConn)
+	usersClient := genUsers.NewUserServiceClient(usersConn)
 
 	tripsConn, err := grpc.NewClient("localhost:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -112,7 +114,7 @@ func main() {
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
 	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
 
-	usersHandler := httpUsers.NewUsersHandler(usersClient, logger)
+	usersHandler := httpUsers.NewUserHandler(usersClient, logger)
 	users := r.PathPrefix("/users").Subrouter()
 	users.Handle("/me", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.CurrentUser), logger)).Methods(http.MethodGet)
 
