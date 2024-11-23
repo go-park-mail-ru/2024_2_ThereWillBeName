@@ -49,6 +49,7 @@ func (s *GrpcAttractionsHandler) GetPlace(ctx context.Context, req *gen.GetPlace
 	placeResponse := &gen.Place{
 		Id:          uint32(place.ID),
 		Name:        place.Name,
+		ImagePath:   place.ImagePath,
 		Description: place.Description,
 		Rating:      int32(place.Rating),
 		Address:     place.Address,
