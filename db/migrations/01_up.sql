@@ -97,6 +97,23 @@ CREATE TABLE IF NOT EXISTS trip_place ( --таблица для сопостав
     CONSTRAINT uq_trip_place UNIQUE (trip_id, place_id)
 );
 
+CREATE TABLE IF NOT EXISTS survey (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id INT NOT NULL,
+    review_text TEXT DEFAULT '',
+    max_rating INT NOT NULL (rating > 0) DEFAULT 1,
+    FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS user_survey (
+    survey_id INT NOT NULL,
+    user_id INT NOT NULL,
+    PRIMARY KEY(survey_id, user_id),
+    rating INT NOT NULL CHECK (rating > 0) DEFAULT 1,
+    FOREIGN KEY (survey_id) REFERENCES survey(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
+);
+
 COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);
