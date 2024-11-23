@@ -41,7 +41,7 @@ func (r *SurveyRepository) CreateSurveyResponse(ctx context.Context, response mo
 func (r *SurveyRepository) GetSurveyStatsBySurveyId(ctx context.Context, surveyId uint) (models.SurveyStatsBySurvey, error) {
 	query := `SELECT 
     	s.id AS survey_id,
-    	s.review_text,
+    	s.survey_text,
     	us.rating,
     	COUNT(us.user_id) AS count_of_users
 	FROM 
@@ -51,7 +51,7 @@ func (r *SurveyRepository) GetSurveyStatsBySurveyId(ctx context.Context, surveyI
 	WHERE 
 		s.id = $1
 	GROUP BY 
-		s.id, s.review_text, us.rating
+		s.id, s.survey_text, us.rating
 	ORDER BY 
 		s.id, us.rating; `
 
