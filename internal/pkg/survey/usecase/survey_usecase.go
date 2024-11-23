@@ -71,8 +71,8 @@ func (u *SurveysUseCaseImpl) GetSurveyStatsBySurveyId(ctx context.Context, surve
 	return survey, nil
 }
 
-func (u *SurveysUseCaseImpl) GetSurveyStatsByUserId(ctx context.Context, surveyId uint) ([]models.UserSurveyStats, error) {
-	stats, err := u.surveyRepo.GetSurveyStatsByUserId(ctx, surveyId)
+func (u *SurveysUseCaseImpl) GetSurveyStatsByUserId(ctx context.Context, userId uint) ([]models.UserSurveyStats, error) {
+	stats, err := u.surveyRepo.GetSurveyStatsByUserId(ctx, userId)
 	if err != nil {
 		log.Println(err)
 		if errors.Is(err, models.ErrNotFound) {

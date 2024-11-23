@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	_ "embed"
-	"errors"
 	"fmt"
 	"log"
 )
@@ -55,17 +54,41 @@ func (r *SurveyRepository) GetSurveyStatsBySurveyId(ctx context.Context, surveyI
 	GROUP BY 
 		s.id, s.survey_text, us.rating
 	ORDER BY 
-		s.id, us.rating; `
+		s.id, us.rating;`
 
-	row := r.db.QueryRowContext(ctx, query, surveyId)
-	var surveyStats models.SurveyStatsBySurvey
-	err := row.Scan(&surveyStats.SurveyId, &surveyStats.SurveyText, &surveyStats.AvgRating, &surveyStats.RatingsCount)
+	rows, err := r.db.QueryContext(ctx, query, surveyId)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return models.SurveyStatsBySurvey{}, fmt.Errorf("trip not found: %w", models.ErrNotFound)
-		}
-		return models.SurveyStatsBySurvey{}, fmt.Errorf("failed to scan survey stats row: %w", models.ErrInternal)
+		return models.SurveyStatsBySurvey{}, fmt.Errorf("failed to retrieve survey stats: %w", models.ErrInternal)
 	}
+	defer rows.Close()
+
+	var surveyStats models.SurveyStatsBySurvey
+	surveyStats.RatingsCount = make(map[int]int)
+	for rows.Next() {
+		var rating int
+		var count int
+		err := rows.Scan(&surveyStats.SurveyId, &surveyStats.SurveyText, &rating, &count)
+		if err != nil {
+			return models.SurveyStatsBySurvey{}, fmt.Errorf("failed to scan survey stats row: %w", models.ErrInternal)
+		}
+		surveyStats.RatingsCount[rating] = count
+	}
+
+	if len(surveyStats.RatingsCount) == 0 {
+		return models.SurveyStatsBySurvey{}, fmt.Errorf("no survey stats found: %w", models.ErrNotFound)
+	}
+
+	// Вычисление среднего рейтинга
+	totalRatings := 0
+	totalCount := 0
+	for rating, count := range surveyStats.RatingsCount {
+		totalRatings += rating * count
+		totalCount += count
+	}
+	if totalCount > 0 {
+		surveyStats.AvgRating = float64(totalRatings) / float64(totalCount)
+	}
+
 	return surveyStats, nil
 }
 
@@ -80,7 +103,7 @@ func (r *SurveyRepository) GetSurveyStatsByUserId(ctx context.Context, userId ui
 FROM 
     survey s
 LEFT JOIN 
-    user_survey us ON s.id = us.survey_id AND us.user_id = 1
+    user_survey us ON s.id = us.survey_id AND us.user_id = $1	
 ORDER BY 
     s.id;`
 	rows, err := r.db.QueryContext(ctx, query, userId)
