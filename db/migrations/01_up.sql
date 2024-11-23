@@ -99,7 +99,6 @@ CREATE TABLE IF NOT EXISTS trip_place ( --таблица для сопостав
 
 CREATE TABLE IF NOT EXISTS survey (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    user_id INT NOT NULL,
     review_text TEXT DEFAULT '',
     max_rating INT NOT NULL (rating > 0) DEFAULT 1,
     FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
