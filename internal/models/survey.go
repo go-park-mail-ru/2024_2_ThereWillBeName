@@ -3,6 +3,7 @@ package models
 type Survey struct {
 	ID         uint   `json:"id"`
 	SurveyText string `json:"survey_text"`
+	MaxRating  int    `json:"max_rating"`
 }
 
 type SurveyResponse struct {
