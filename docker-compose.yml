@@ -62,6 +62,22 @@ services:
       - 50052:50052
     depends_on:
       - tripdb
+  survey:
+    container_name: survey
+    build:
+      context: .
+      dockerfile: build/survey.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - AVATAR_STORAGE_PATH=/assets/avatars
+      - LOG_LEVEL=Debug
+    volumes:
+      - ./assets/avatars:/assets/avatars
+    ports:
+      - 50054:50054
+    depends_on:
+      - tripdb
   tripdb:
     container_name: postgres
     image: postgres:15

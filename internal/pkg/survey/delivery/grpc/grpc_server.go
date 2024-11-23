@@ -5,17 +5,19 @@ import (
 	surveyPkg "2024_2_ThereWillBeName/internal/pkg/survey"
 	"2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc/gen"
 	"context"
+	"log/slog"
 )
 
 //go:generate protoc -I . proto/survey.proto --go_out=./gen --go-grpc_out=./gen
 
 type GrpcSurveyHandler struct {
 	gen.UnimplementedSurveyServiceServer
-	uc surveyPkg.SurveysUsecase
+	uc     surveyPkg.SurveysUsecase
+	logger *slog.Logger
 }
 
-func NewGrpcSurveyHandler(uc *surveyPkg.SurveysUsecase) *GrpcSurveyHandler {
-	return &GrpcSurveyHandler{uc: *uc}
+func NewGrpcSurveyHandler(uc surveyPkg.SurveysUsecase, logger *slog.Logger) *GrpcSurveyHandler {
+	return &GrpcSurveyHandler{uc: uc, logger: logger}
 }
 
 func (s *GrpcSurveyHandler) GetSurveyById(ctx context.Context, req *gen.GetSurveyByIdRequest) (*gen.GetSurveyByIdResponce, error) {

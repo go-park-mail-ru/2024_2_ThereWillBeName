@@ -15,6 +15,8 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	genSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc/gen"
+	httpSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/http"
 	genTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	httpTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	genUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
@@ -74,6 +76,13 @@ func main() {
 	}
 	defer tripsConn.Close()
 	tripsClient := genTrips.NewTripsClient(tripsConn)
+
+	surveyConn, err := grpc.NewClient("survey:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatalf("did not connect to survey service: %v", err)
+	}
+	defer surveyConn.Close()
+	surveyClient := genSurvey.NewSurveyServiceClient(surveyConn)
 
 	// Инициализация HTTP сервера
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
@@ -140,6 +149,13 @@ func main() {
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeleteTripHandler), logger)).Methods(http.MethodDelete)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPlaceToTripHandler), logger)).Methods(http.MethodPost)
 	user.Handle("/trips", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripsByUserIDHandler), logger)).Methods(http.MethodGet)
+
+	surveyHandler := httpSurvey.NewSurveyHandler(surveyClient, logger)
+	survey := r.PathPrefix("/survey").Subrouter()
+	survey.Handle("/stats/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsBySurveyId), logger)).Methods(http.MethodGet)
+	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyById), logger)).Methods(http.MethodGet)
+	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
+	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
 
 	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.Port)}
 	go func() {
