@@ -23,7 +23,8 @@ message Survey {
 message SurveyResponce {
   uint32 survey_id = 1;
   uint32 user_id = 2;
-  uint32 rating = 3;
+  string description = 3;
+  uint32 rating = 4;
 }
 message GetSurveyByIdResponce {
   Survey survey = 1;
