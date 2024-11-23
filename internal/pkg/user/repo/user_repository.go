@@ -143,7 +143,7 @@ func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (mode
 }
 
 func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, newPassword string) error {
-	query := "UPDATE users SET password = $1 WHERE id = $2"
+	query := "UPDATE user SET password = $1 WHERE id = $2"
 
 	_, err := r.db.ExecContext(ctx, query, newPassword, userId)
 	if err != nil {
@@ -153,7 +153,7 @@ func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, ne
 }
 
 func (r UserRepositoryImpl) UpdateProfile(ctx context.Context, userID uint, login, email string) error {
-	query := "UPDATE users SET email = $1, login = $2 WHERE id = $3"
+	query := "UPDATE user SET email = $1, login = $2 WHERE id = $3"
 
 	_, err := r.db.ExecContext(ctx, query, email, login, userID)
 	if err != nil {

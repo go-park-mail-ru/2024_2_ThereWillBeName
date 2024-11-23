@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type SurveysUseCaseImpl struct {
@@ -33,20 +34,25 @@ func (u *SurveysUseCaseImpl) CreateSurveyResponse(ctx context.Context, response 
 	survey, err := u.surveyRepo.GetSurveyById(ctx, response.SurveyId)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
+			log.Println(err)
 			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
+		log.Println(err)
 		return fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 
 	if response.Rating > survey.MaxRating {
+		log.Println(err)
 		return fmt.Errorf("invalid rating: cannot be higher than the maximum rating of %d", survey.MaxRating)
 	}
 
 	err = u.surveyRepo.CreateSurveyResponse(ctx, response)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
+			log.Println(err)
 			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
+		log.Println(err)
 		return fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 	return nil
@@ -56,8 +62,10 @@ func (u *SurveysUseCaseImpl) GetSurveyStatsBySurveyId(ctx context.Context, surve
 	survey, err := u.surveyRepo.GetSurveyStatsBySurveyId(ctx, surveyId)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
+			log.Println(err)
 			return models.SurveyStatsBySurvey{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
+		log.Println(err)
 		return models.SurveyStatsBySurvey{}, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
 	return survey, nil
@@ -66,6 +74,7 @@ func (u *SurveysUseCaseImpl) GetSurveyStatsBySurveyId(ctx context.Context, surve
 func (u *SurveysUseCaseImpl) GetSurveyStatsByUserId(ctx context.Context, surveyId uint) ([]models.UserSurveyStats, error) {
 	stats, err := u.surveyRepo.GetSurveyStatsByUserId(ctx, surveyId)
 	if err != nil {
+		log.Println(err)
 		if errors.Is(err, models.ErrNotFound) {
 			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}

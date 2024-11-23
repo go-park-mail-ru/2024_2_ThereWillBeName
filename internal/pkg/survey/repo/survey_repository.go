@@ -7,6 +7,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type SurveyRepository struct {
@@ -30,8 +31,9 @@ func (r *SurveyRepository) GetSurveyById(ctx context.Context, surveyId uint) (mo
 }
 
 func (r *SurveyRepository) CreateSurveyResponse(ctx context.Context, response models.SurveyResponse) error {
-	query := `INSERT INTO user_survey (survey_id, user_id, rating) VALUES  (&1, &2, &3) RETURNING id`
-	err := r.db.QueryRowContext(ctx, query, response.SurveyId, response.UserId, response.Rating)
+	query := `INSERT INTO user_survey (survey_id, user_id, rating) VALUES  ($1, $2, $3)`
+	log.Println(response.SurveyId, response.UserId, response.Rating)
+	_, err := r.db.ExecContext(ctx, query, response.SurveyId, response.UserId, response.Rating)
 	if err != nil {
 		return fmt.Errorf("could not create survey: %w", err)
 	}
@@ -70,7 +72,7 @@ func (r *SurveyRepository) GetSurveyStatsBySurveyId(ctx context.Context, surveyI
 func (r *SurveyRepository) GetSurveyStatsByUserId(ctx context.Context, userId uint) ([]models.UserSurveyStats, error) {
 	query := `SELECT 
     s.id AS survey_id,
-    s.review_text,
+    s.survey_text,
     CASE 
         WHEN us.user_id IS NOT NULL THEN TRUE
         ELSE FALSE
