@@ -256,7 +256,8 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Router /attractions/search/{placeName} [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
-	placeName := mux.Vars(r)["placeName"]
+	placeName := r.URL.Query().Get("placeName")
+	placeName = template.HTMLEscapeString(placeName)
 
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for searching attractions by place name", slog.String("placeName", placeName))
@@ -274,9 +275,33 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	placeName = template.HTMLEscapeString(placeName)
+	cityStr := r.URL.Query().Get("city")
+	categoryStr := r.URL.Query().Get("category")
 
-	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Limit: int32(limit), Offset: int32(offset)})
+	var city, category int
+	if cityStr != "" {
+		city, err = strconv.Atoi(cityStr)
+		if err != nil {
+			h.logger.Warn("Invalid city parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+				Message: "Invalid city parameter",
+			}, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+
+	if categoryStr != "" {
+		category, err = strconv.Atoi(categoryStr)
+		if err != nil {
+			h.logger.Warn("Invalid category parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+				Message: "Invalid category parameter",
+			}, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+
+	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.Error("Failed to search attractions", slog.String("placeName", placeName), slog.String("error", err.Error()))

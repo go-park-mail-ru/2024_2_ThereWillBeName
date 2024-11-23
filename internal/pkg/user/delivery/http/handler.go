@@ -208,11 +208,11 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		AvatarPath: loginResponse.AvatarPath,
 	}
 
-	v := validator.New()
-	if models.ValidateUser(v, &user); !v.Valid() {
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
-		return
-	}
+	// v := validator.New()
+	// if models.ValidateUser(v, &user); !v.Valid() {
+	// 	httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+	// 	return
+	// }
 	h.logger.Debug("User logged in successfully", slog.Int("userID", int(user.ID)), slog.String("email", user.Email))
 
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)

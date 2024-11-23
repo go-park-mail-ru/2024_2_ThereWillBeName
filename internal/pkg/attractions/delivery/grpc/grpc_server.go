@@ -62,7 +62,7 @@ func (s *GrpcAttractionsHandler) GetPlace(ctx context.Context, req *gen.GetPlace
 }
 
 func (s *GrpcAttractionsHandler) SearchPlaces(ctx context.Context, req *gen.SearchPlacesRequest) (*gen.SearchPlacesResponse, error) {
-	places, err := s.placeUsecase.SearchPlaces(ctx, req.Name, int(req.Limit), int(req.Offset))
+	places, err := s.placeUsecase.SearchPlaces(ctx, req.Name, int(req.Category), int(req.City), int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, err
 	}

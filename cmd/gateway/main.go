@@ -23,7 +23,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"log/slog"
 	"net/http"
@@ -31,6 +30,8 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	_ "github.com/lib/pq"
 
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc"
@@ -94,7 +95,7 @@ func main() {
 	placesHandler := httpPlaces.NewPlacesHandler(attractionsClient, logger)
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placesHandler.GetPlacesHandler).Methods(http.MethodGet)
-	places.HandleFunc("/search/{placeName}", placesHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/search", placesHandler.SearchPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placesHandler.GetPlaceHandler).Methods(http.MethodGet)
 	places.HandleFunc("/category/{categoryName}", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 

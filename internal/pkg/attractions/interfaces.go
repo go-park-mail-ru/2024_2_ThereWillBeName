@@ -13,7 +13,7 @@ type PlaceRepo interface {
 	GetPlace(ctx context.Context, id uint) (models.GetPlace, error)
 	UpdatePlace(ctx context.Context, place models.UpdatePlace) error
 	DeletePlace(ctx context.Context, id uint) error
-	SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error)
+	SearchPlaces(ctx context.Context, name string, category, city, limit, offset int) ([]models.GetPlace, error)
 	GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error)
 }
 
@@ -23,6 +23,6 @@ type PlaceUsecase interface {
 	GetPlace(ctx context.Context, id uint) (models.GetPlace, error)
 	UpdatePlace(ctx context.Context, place models.UpdatePlace) error
 	DeletePlace(ctx context.Context, id uint) error
-	SearchPlaces(ctx context.Context, name string, limit, offset int) ([]models.GetPlace, error)
+	SearchPlaces(ctx context.Context, name string, category, city, limit, offset int) ([]models.GetPlace, error)
 	GetPlacesByCategory(ctx context.Context, category string, limit, offset int) ([]models.GetPlace, error)
 }
