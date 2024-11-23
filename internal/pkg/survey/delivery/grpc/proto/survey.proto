@@ -63,5 +63,5 @@ message GetSurveyStatsByUserIdRequest {
 }
 
 message GetSurveyStatsByUserIdResponce {
-  UserSurveyStats userServeyStats = 1;
+  repeated UserSurveyStats userServeyStats = 1;
 }
