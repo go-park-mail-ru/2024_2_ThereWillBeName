@@ -77,7 +77,7 @@ func main() {
 	defer tripsConn.Close()
 	tripsClient := genTrips.NewTripsClient(tripsConn)
 
-	surveyConn, err := grpc.NewClient("survey:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	surveyConn, err := grpc.NewClient("survey:50054", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to survey service: %v", err)
 	}
