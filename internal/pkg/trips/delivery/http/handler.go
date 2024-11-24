@@ -357,8 +357,9 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trips by user ID")
+	tripArr := trip.Trips
 
-	httpresponse.SendJSONResponse(w, trip, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, tripArr, http.StatusOK, h.logger)
 }
 
 // GetTripHandler godoc
@@ -410,8 +411,9 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
+	tripResponse := trip.Trip
 
-	httpresponse.SendJSONResponse(w, trip, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, tripResponse, http.StatusOK, h.logger)
 }
 
 // AddPlaceToTripHandler godoc
