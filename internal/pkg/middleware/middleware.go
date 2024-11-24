@@ -18,22 +18,26 @@ const (
 
 func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("token")
-		if err != nil {
+		token := r.Header.Get("X-Access-Token")
+
+		if token == "" {
 			response := httpresponse.ErrorResponse{
-				Message: "Cookie not found",
+				Message: "Token is missing",
 			}
-
-			logger.Error("Cookie not found", slog.Any("error", err.Error()))
-
-			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
+			if logger != nil {
+				logger.Error("Token is missing")
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusForbidden, logger)
 			return
 		}
-
-		claims, err := jwtService.ParseToken(cookie.Value)
+		claims, err := jwtService.ParseToken(token)
 		if err != nil {
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid token",
+			}
+
+			if logger != nil {
+				logger.Error("Invalid token", slog.Any("error", err))
 			}
 			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
 			return
@@ -42,12 +46,11 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 		login := claims["login"].(string)
 		email := claims["email"].(string)
 		if logger != nil {
-			logger.Info("Token parsed", slog.String("login", login), slog.String("email", email))
+			logger.Info("Token parsed", slog.Int("userID", int(userID)), slog.String("login", login), slog.String("email", email))
 		}
 		ctx := context.WithValue(r.Context(), IdKey, userID)
 		ctx = context.WithValue(ctx, LoginKey, login)
 		ctx = context.WithValue(ctx, EmailKey, email)
-
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
