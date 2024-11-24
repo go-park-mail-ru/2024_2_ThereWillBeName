@@ -14,20 +14,28 @@ import (
 	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
+	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	reviewRepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
 	reviewUsecase "2024_2_ThereWillBeName/internal/pkg/reviews/usecase"
+	grpcSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc"
+	genSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
+	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
+	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	"database/sql"
 	"flag"
-	_ "github.com/lib/pq"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
 	"log"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+
+	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -35,6 +43,8 @@ func main() {
 	flag.IntVar(&cfg.Port, "grpc-port", 50051, "gRPC server port")
 	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
 	flag.Parse()
+
+	logger := setupLogger()
 
 	db, err := sql.Open("postgres", cfg.ConnStr)
 	if err != nil {
@@ -50,6 +60,8 @@ func main() {
 	citiesUsecase := citiesUsecase.NewCitiesUsecase(citiesRepo)
 	categoriesRepo := categoriesRepo.NewCategoriesRepo(db)
 	categoriesUsecase := categoriesUsecase.NewCategoriesUsecase(categoriesRepo)
+	searchRepo := searchRepo.NewSearchRepository(db)
+	searchUsecase := searchUsecase.NewSearchUsecase(searchRepo)
 
 	grpcAttractionsServer := grpc.NewServer()
 
@@ -64,6 +76,9 @@ func main() {
 
 	categoriesHandler := grpcCategories.NewGrpcCategoriesHandler(categoriesUsecase)
 	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
+
+	searchHandler := grpcSearch.NewGrpcSearchHandler(searchUsecase, logger)
+	genSearch.RegisterSearchServer(grpcAttractionsServer, searchHandler)
 
 	reflection.Register(grpcAttractionsServer)
 
@@ -85,4 +100,23 @@ func main() {
 	log.Println("Shutting down gRPC server...")
 	grpcAttractionsServer.GracefulStop()
 	log.Println("gRPC server gracefully stopped")
+}
+
+func setupLogger() *slog.Logger {
+
+	levelEnv := os.Getenv("LOG_LEVEL")
+	logLevel := slog.LevelDebug
+	if level, err := strconv.Atoi(levelEnv); err == nil {
+		logLevel = slog.Level(level)
+	}
+
+	opts := logger.PrettyHandlerOptions{
+		SlogOpts: slog.HandlerOptions{
+			Level: logLevel,
+		},
+	}
+
+	handler := logger.NewPrettyHandler(os.Stdout, opts)
+
+	return slog.New(handler)
 }
