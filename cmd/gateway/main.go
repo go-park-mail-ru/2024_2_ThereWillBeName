@@ -148,6 +148,7 @@ func main() {
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetProfile), logger)).Methods(http.MethodGet)
 	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdatePassword), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdateProfile), logger)).Methods(http.MethodPut)
+	user.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()
