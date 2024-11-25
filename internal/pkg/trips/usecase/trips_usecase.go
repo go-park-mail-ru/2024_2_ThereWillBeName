@@ -90,3 +90,13 @@ func (u *TripsUsecaseImpl) AddPlaceToTrip(ctx context.Context, tripID uint, plac
 
 	return nil
 }
+
+func (u *TripsUsecaseImpl) AddPhotosToTrip(ctx context.Context, tripID uint, photoPaths []string) error {
+	for _, path := range photoPaths {
+		err := u.tripRepo.AddPhotoToTrip(ctx, tripID, path)
+		if err != nil {
+			return fmt.Errorf("failed to add photo to trip: %w", err)
+		}
+	}
+	return nil
+}

@@ -5,7 +5,6 @@ import (
 
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 )
 
@@ -105,20 +104,55 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 }
 
 func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
-	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at 
-              FROM trip 
-              WHERE id = $1`
-
-	row := r.db.QueryRowContext(ctx, query, tripID)
-
 	var trip models.Trip
-	err := row.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt)
+
+	query := `
+        SELECT 
+            id, user_id, name, description, city_id, start_date, end_date, private, created_at 
+        FROM 
+            trip
+        WHERE 
+            id = $1
+    `
+	err := r.db.QueryRowContext(ctx, query, tripID).Scan(
+		&trip.ID,
+		&trip.UserID,
+		&trip.Name,
+		&trip.Description,
+		&trip.CityID,
+		&trip.StartDate,
+		&trip.EndDate,
+		&trip.Private,
+		&trip.CreatedAt,
+	)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return models.Trip{}, fmt.Errorf("trip not found: %w", models.ErrNotFound)
+		if err == sql.ErrNoRows {
+			return trip, models.ErrNotFound
 		}
-		return models.Trip{}, fmt.Errorf("failed to scan trip row: %w", models.ErrInternal)
+		return trip, fmt.Errorf("failed to get trip: %w", err)
 	}
+
+	photoQuery := `
+        SELECT photo_path 
+        FROM trip_photo
+        WHERE trip_id = $1
+    `
+	rows, err := r.db.QueryContext(ctx, photoQuery, tripID)
+	if err != nil {
+		return trip, fmt.Errorf("failed to get trip photos: %w", err)
+	}
+	defer rows.Close()
+
+	var photos []string
+	for rows.Next() {
+		var photoPath string
+		if err := rows.Scan(&photoPath); err != nil {
+			return trip, fmt.Errorf("failed to scan photo: %w", err)
+		}
+		photos = append(photos, photoPath)
+	}
+
+	trip.Photos = photos
 
 	return trip, nil
 }
@@ -141,5 +175,17 @@ func (r *TripRepository) AddPlaceToTrip(ctx context.Context, tripID uint, placeI
 		return fmt.Errorf("no rows were created: %w", models.ErrNotFound)
 	}
 
+	return nil
+}
+
+func (r *TripRepository) AddPhotoToTrip(ctx context.Context, tripID uint, photoPath string) error {
+	query := `
+        INSERT INTO trip_photo (trip_id, photo_path)
+        VALUES ($1, $2)
+    `
+	_, err := r.db.ExecContext(ctx, query, tripID, photoPath)
+	if err != nil {
+		return fmt.Errorf("failed to insert photo into database: %w", err)
+	}
 	return nil
 }

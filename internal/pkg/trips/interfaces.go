@@ -12,6 +12,7 @@ type TripsUsecase interface {
 	GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error)
 	GetTrip(ctx context.Context, tripID uint) (models.Trip, error)
 	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
+	AddPhotosToTrip(ctx context.Context, tripID uint, photos []string) error
 }
 
 type TripsRepo interface {
@@ -21,4 +22,5 @@ type TripsRepo interface {
 	GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error)
 	GetTrip(ctx context.Context, tripID uint) (models.Trip, error)
 	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
+	AddPhotoToTrip(ctx context.Context, tripID uint, photoPath string) error
 }
