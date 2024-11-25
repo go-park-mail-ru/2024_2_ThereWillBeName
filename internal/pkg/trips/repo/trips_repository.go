@@ -6,6 +6,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
+	"github.com/lib/pq"
 )
 
 type TripRepository struct {
@@ -74,33 +76,43 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 }
 
 func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
-	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at 
-              FROM trip 
-              WHERE user_id = $1
-              ORDER BY created_at DESC
-			  LIMIT $2 OFFSET $3`
+	query := `
+		SELECT 
+			t.id, t.user_id, t.name, t.description, t.city_id, 
+			t.start_date, t.end_date, t.private, t.created_at, 
+			COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
+		FROM trip t
+		LEFT JOIN trip_photo tp ON t.id = tp.trip_id
+		WHERE t.user_id = $1
+		GROUP BY t.id
+		ORDER BY t.created_at DESC
+		LIMIT $2 OFFSET $3`
 
 	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve trips: %w", models.ErrInternal)
 	}
 	defer rows.Close()
 
-	var tripRows []models.Trip
+	var trips []models.Trip
 	for rows.Next() {
 		var trip models.Trip
-		if err := rows.Scan(&trip.ID, &trip.UserID, &trip.Name, &trip.Description, &trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private, &trip.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&trip.ID, &trip.UserID, &trip.Name, &trip.Description,
+			&trip.CityID, &trip.StartDate, &trip.EndDate, &trip.Private,
+			&trip.CreatedAt, pq.Array(&trip.Photos),
+		); err != nil {
 			return nil, fmt.Errorf("failed to scan trip row: %w", models.ErrInternal)
 		}
-		tripRows = append(tripRows, trip)
+
+		trips = append(trips, trip)
 	}
 
-	if len(tripRows) == 0 {
+	if len(trips) == 0 {
 		return nil, fmt.Errorf("no trips found: %w", models.ErrNotFound)
 	}
 
-	return tripRows, nil
+	return trips, nil
 }
 
 func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {

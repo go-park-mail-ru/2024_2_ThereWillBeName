@@ -55,7 +55,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 		return response, http.StatusNotFound
 	}
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action), slog.Any("error", err.Error()))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action), slog.Any("error", err.Error()))
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s trip", action),
 	}
@@ -539,7 +539,5 @@ func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Requ
 
 	h.logger.DebugContext(logCtx, "Successfully added photos to the trip")
 
-	httpresponse.SendJSONResponse(w, map[string]interface{}{
-		"photos": resp.Photos,
-	}, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(w, resp.Photos, http.StatusCreated, h.logger)
 }

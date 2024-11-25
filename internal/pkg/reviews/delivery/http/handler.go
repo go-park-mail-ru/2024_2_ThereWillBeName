@@ -41,7 +41,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 		return response, http.StatusNotFound
 	}
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action), slog.Any("error", err.Error()))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s reviews", action), slog.Any("error", err.Error()))
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s review", action),
 	}

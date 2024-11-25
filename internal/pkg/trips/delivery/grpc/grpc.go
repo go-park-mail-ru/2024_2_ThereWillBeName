@@ -90,6 +90,7 @@ func (h *GrpcTripsHandler) GetTripsByUserID(ctx context.Context, in *tripsGen.Ge
 			CityId:      uint32(trip.CityID),
 			StartDate:   trip.StartDate,
 			EndDate:     trip.EndDate,
+			Photos:      trip.Photos,
 			Private:     trip.Private,
 		})
 	}
