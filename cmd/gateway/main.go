@@ -27,6 +27,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net/http"
@@ -91,6 +92,7 @@ func main() {
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
+	r.PathPrefix("/metrics").Handler(promhttp.Handler())
 
 	// Обработка ненайденных маршрутов
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -13,9 +13,11 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 8080:8080
+      - "8080:8080"
     depends_on:
       - tripdb
+    networks:
+      - my_network
   attractions:
     container_name: attractions
     build:
@@ -28,9 +30,11 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 8081:8081
+      - "8081:8081"
     depends_on:
       - tripdb
+    networks:
+      - my_network
   trips:
     container_name: trips
     build:
@@ -43,9 +47,11 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 50053:50053
+      - "50053:50053"
     depends_on:
       - tripdb
+    networks:
+      - my_network
   users:
     container_name: users
     build:
@@ -59,9 +65,11 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 50052:50052
+      - "50052:50052"
     depends_on:
       - tripdb
+    networks:
+      - my_network
   survey:
     container_name: survey
     build:
@@ -75,9 +83,11 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
     ports:
-      - 50054:50054
+      - "50054:50054"
     depends_on:
       - tripdb
+    networks:
+      - my_network
   tripdb:
     container_name: postgres
     image: postgres:15
@@ -90,4 +100,47 @@ services:
       - ./data:/var/lib/postgresql/data
     restart: unless-stopped
     ports:
-      - 5432:5432
+      - "5432:5432"
+    networks:
+      - my_network
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - my_network
+  node_exporter:
+    depends_on:
+      - prometheus
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.ignored-mount-points
+      - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+    hostname: node_exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - my_network
+  grafana:
+    image: grafana/grafana-enterprise
+    volumes:
+      - ./grafana:/var/lib/grafana/
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    ports:
+      - "3000:3000"
+    networks:
+      - my_network
+
+networks:
+  my_network:

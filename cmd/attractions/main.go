@@ -15,6 +15,7 @@ import (
 	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	reviewRepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
@@ -24,14 +25,20 @@ import (
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	"database/sql"
+	"errors"
 	"flag"
+	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -52,6 +59,24 @@ func main() {
 	}
 	defer db.Close()
 
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	r.PathPrefix("/metrics").Handler(promhttp.Handler())
+	httpSrv := &http.Server{
+		Addr:              ":8091",
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+
+		logger.Info("Starting HTTP server for metrics on :8091")
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
+
 	reviewsRepo := reviewRepo.NewReviewRepository(db)
 	reviewUsecase := reviewUsecase.NewReviewsUsecase(reviewsRepo)
 	placeRepo := placeRepo.NewPLaceRepository(db)
@@ -63,21 +88,20 @@ func main() {
 	searchRepo := searchRepo.NewSearchRepository(db)
 	searchUsecase := searchUsecase.NewSearchUsecase(searchRepo)
 
-	grpcAttractionsServer := grpc.NewServer()
+	metricMw := metricsMw.Create()
 
 	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase)
-	genPlaces.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
-
 	citiesHandler := grpcCities.NewGrpcCitiesHandler(citiesUsecase)
-	genCities.RegisterCitiesServer(grpcAttractionsServer, citiesHandler)
-
 	reviewsHandler := grpcReviews.NewGrpcReviewsHandler(reviewUsecase)
-	genReviews.RegisterReviewsServer(grpcAttractionsServer, reviewsHandler)
-
 	categoriesHandler := grpcCategories.NewGrpcCategoriesHandler(categoriesUsecase)
-	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
-
 	searchHandler := grpcSearch.NewGrpcSearchHandler(searchUsecase, logger)
+
+	grpcAttractionsServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
+
+	genPlaces.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
+	genCities.RegisterCitiesServer(grpcAttractionsServer, citiesHandler)
+	genReviews.RegisterReviewsServer(grpcAttractionsServer, reviewsHandler)
+	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
 	genSearch.RegisterSearchServer(grpcAttractionsServer, searchHandler)
 
 	reflection.Register(grpcAttractionsServer)

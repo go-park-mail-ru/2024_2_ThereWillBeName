@@ -3,21 +3,27 @@ package main
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	grpcTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	tripRepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripUsecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 	"database/sql"
+	"errors"
 	"flag"
 	"fmt"
+	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -37,10 +43,30 @@ func main() {
 	}
 	defer db.Close()
 
+	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	r.PathPrefix("/metrics").Handler(promhttp.Handler())
+	httpSrv := &http.Server{
+		Addr:              ":8092",
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+
+		logger.Info("Starting HTTP server for metrics on :8092")
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
+
 	tripRepo := tripRepo.NewTripRepository(db)
 	tripUsecase := tripUsecase.NewTripsUsecase(tripRepo)
 
-	grpcTripsServer := grpc.NewServer()
+	metricMw := metricsMw.Create()
+
+	grpcTripsServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
 	tripsHandler := grpcTrips.NewGrpcTripHandler(tripUsecase, logger)
 	gen.RegisterTripsServer(grpcTripsServer, tripsHandler)
 	reflection.Register(grpcTripsServer)
