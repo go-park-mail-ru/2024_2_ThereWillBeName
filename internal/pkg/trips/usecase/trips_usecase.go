@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 )
 
 type TripsUsecaseImpl struct {
@@ -92,8 +93,9 @@ func (u *TripsUsecaseImpl) AddPlaceToTrip(ctx context.Context, tripID uint, plac
 }
 
 func (u *TripsUsecaseImpl) AddPhotosToTrip(ctx context.Context, tripID uint, photoPaths []string) error {
-	for _, path := range photoPaths {
-		err := u.tripRepo.AddPhotoToTrip(ctx, tripID, path)
+	for _, fullpath := range photoPaths {
+		filename := path.Base(fullpath)
+		err := u.tripRepo.AddPhotoToTrip(ctx, tripID, filename)
 		if err != nil {
 			return fmt.Errorf("failed to add photo to trip: %w", err)
 		}
