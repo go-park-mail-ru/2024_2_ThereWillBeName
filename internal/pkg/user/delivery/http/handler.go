@@ -6,10 +6,9 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/user"
+	"2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -31,9 +30,9 @@ type Credentials struct {
 }
 
 type Handler struct {
-	usecase user.UserUsecase
-	jwt     jwt.JWTInterface
-	logger  *slog.Logger
+	client gen.UserServiceClient
+	jwt    jwt.JWTInterface
+	logger *slog.Logger
 }
 
 type UserResponseWithToken struct {
@@ -41,11 +40,11 @@ type UserResponseWithToken struct {
 	Token string      `json:"token"`
 }
 
-func NewUserHandler(usecase user.UserUsecase, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
+func NewUserHandler(client gen.UserServiceClient, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
 	return &Handler{
-		usecase: usecase,
-		jwt:     jwt,
-		logger:  logger,
+		client: client,
+		jwt:    jwt,
+		logger: logger,
 	}
 }
 
@@ -91,8 +90,14 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	signUpRequest := &gen.SignUpRequest{
+		Login:    user.Login,
+		Email:    user.Email,
+		Password: user.Password,
+	}
+
 	var err error
-	user.ID, err = h.usecase.SignUp(context.Background(), user)
+	signupResponse, err := h.client.SignUp(r.Context(), signUpRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrAlreadyExists) {
 			h.logger.Warn("User already exists", slog.String("login", user.Login), slog.String("email", user.Email))
@@ -112,6 +117,8 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user.ID = uint(signupResponse.Id)
+
 	h.logger.Debug("User signed up successfully", slog.Int("userID", int(user.ID)), slog.String("login", user.Login))
 
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
@@ -124,7 +131,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
+	h.logger.Debug("Token generated", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
 	response := UserResponseWithToken{
 		User: models.User{
@@ -170,7 +177,12 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	credentials.Email = template.HTMLEscapeString(credentials.Email)
 	credentials.Password = template.HTMLEscapeString(credentials.Password)
 
-	user, err := h.usecase.Login(context.Background(), credentials.Email, credentials.Password)
+	loginRequest := &gen.LoginRequest{
+		Email:    credentials.Email,
+		Password: credentials.Password,
+	}
+
+	loginResponse, err := h.client.Login(r.Context(), loginRequest)
 	if err != nil {
 		h.logger.Warn("Login failed: invalid email or password", slog.String("email", credentials.Email))
 
@@ -180,11 +192,19 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
-	v := validator.New()
-	if models.ValidateUser(v, &user); !v.Valid() {
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
-		return
+
+	user := models.User{
+		ID:         uint(loginResponse.Id),
+		Login:      loginResponse.Login,
+		Email:      loginResponse.Email,
+		AvatarPath: loginResponse.AvatarPath,
 	}
+
+	// v := validator.New()
+	// if models.ValidateUser(v, &user); !v.Valid() {
+	// 	httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+	// 	return
+	// }
 	h.logger.Debug("User logged in successfully", slog.Int("userID", int(user.ID)), slog.String("email", user.Email))
 
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
@@ -196,18 +216,14 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
-	h.logger.Debug("Token generated and set as cookie", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
+	h.logger.Debug("Token generated", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("login", user.Login), slog.String("email", user.Email))
 
 	response := UserResponseWithToken{
-		User: models.User{
-			ID:    user.ID,
-			Login: user.Login,
-			Email: user.Email,
-		},
+		User:  user,
 		Token: token,
 	}
 
-	h.logger.DebugContext(logCtx, "Sign-up request completed successfully")
+	h.logger.DebugContext(logCtx, "Login request completed successfully")
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 
@@ -234,15 +250,6 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
-
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    "",
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   false,
-		MaxAge:   -1,
-	})
 
 	h.logger.DebugContext(logCtx, "User logged out successfully")
 
@@ -406,8 +413,14 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Debug("Uploading avatar", "userID", userID, "avatarFileName", avatarFileName)
 
-	var avatarPath string
-	if avatarPath, err = h.usecase.UploadAvatar(context.Background(), uint(userID), avatarData, avatarFileName); err != nil {
+	uploadAvatarRequest := &gen.UploadAvatarRequest{
+		Id:             uint32(userID),
+		AvatarData:     avatarData,
+		AvatarFileName: avatarFileName,
+	}
+
+	uploadAvatarResponse, err := h.client.UploadAvatar(r.Context(), uploadAvatarRequest)
+	if err != nil {
 		h.logger.Error("Failed to upload avatar", "userID", userID, "error", err)
 		response := httpresponse.ErrorResponse{
 			Message: "Failed to upload avatar",
@@ -418,10 +431,10 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	response := map[string]string{
 		"message":    "Avatar uploaded successfully",
-		"avatarPath": avatarPath,
+		"avatarPath": uploadAvatarResponse.AvatarPath,
 	}
 
-	h.logger.DebugContext(logCtx, "Avatar uploaded successfully", "userID", userID, "avatarPath", avatarPath)
+	h.logger.DebugContext(logCtx, "Avatar uploaded successfully", "userID", userID, "avatarPath", uploadAvatarResponse.AvatarPath)
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }
@@ -465,7 +478,12 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Debug("Fetching profile", "userID", userID, "requesterID", requesterID)
 
-	profile, err := h.usecase.GetProfile(context.Background(), uint(userID), requesterID)
+	getProfileRequest := &gen.GetProfileRequest{
+		Id:          uint32(userID),
+		RequesterId: uint32(requesterID),
+	}
+
+	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.Warn("User not found", "userID", userID)
@@ -487,7 +505,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.Debug("User profile retrieved successfully", "userID", userID)
 
-	httpresponse.SendJSONResponse(w, profile, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, GetProfileResponse, http.StatusOK, h.logger)
 }
 
 func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
@@ -532,16 +550,17 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.User{
-		ID:       userID,
-		Login:    login,
-		Email:    email,
-		Password: credentials.OldPassword,
-	}
-
 	h.logger.Debug("updating password", "userID", userID, "oldPassword", credentials.OldPassword, "newPassword", credentials.NewPassword)
 
-	err := h.usecase.UpdatePassword(r.Context(), user, credentials.NewPassword)
+	updatePasswordRequest := &gen.UpdatePasswordRequest{
+		Id:          uint32(userID),
+		Login:       login,
+		Email:       email,
+		OldPassword: credentials.OldPassword,
+		NewPassword: credentials.NewPassword,
+	}
+
+	_, err := h.client.UpdatePassword(r.Context(), updatePasswordRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			response := httpresponse.ErrorResponse{
@@ -565,11 +584,11 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := struct {
-		ID       uint   `json:"id"`
-		Password string `json:"password"`
+		ID      uint   `json:"id"`
+		Message string `json:"message"`
 	}{
-		ID:       user.ID,
-		Password: credentials.NewPassword,
+		ID:      userID,
+		Message: "User's password updated successfully",
 	}
 
 	h.logger.Debug("User password updated successfully")
@@ -604,7 +623,13 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.Debug("updating profile", "userID", userID, "username", userData.Login, "email", userData.Email)
 
-	err := h.usecase.UpdateProfile(r.Context(), userID, userData.Login, userData.Email)
+	updateProfileRequest := &gen.UpdateProfileRequest{
+		UserId:   uint32(userID),
+		Username: userData.Login,
+		Email:    userData.Email,
+	}
+
+	_, err := h.client.UpdateProfile(r.Context(), updateProfileRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			response := httpresponse.ErrorResponse{

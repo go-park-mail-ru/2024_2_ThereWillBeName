@@ -5,7 +5,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/reviews"
+	"2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 	"context"
 	"html/template"
@@ -21,12 +21,12 @@ import (
 )
 
 type ReviewHandler struct {
-	uc     reviews.ReviewsUsecase
+	client gen.ReviewsClient
 	logger *slog.Logger
 }
 
-func NewReviewHandler(uc reviews.ReviewsUsecase, logger *slog.Logger) *ReviewHandler {
-	return &ReviewHandler{uc, logger}
+func NewReviewHandler(client gen.ReviewsClient, logger *slog.Logger) *ReviewHandler {
+	return &ReviewHandler{client, logger}
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
@@ -108,9 +108,17 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	review.UserID = uint(userID)
+	review.UserID = userID
 
-	createdReview, err := h.uc.CreateReview(context.Background(), review)
+	reviewRequest := &gen.Review{
+		Id:         uint32(review.ID),
+		UserId:     uint32(review.UserID),
+		PlaceId:    uint32(review.PlaceID),
+		Rating:     int32(review.Rating),
+		ReviewText: review.ReviewText,
+	}
+
+	createdReview, err := h.client.CreateReview(context.Background(), &gen.CreateReviewRequest{Review: reviewRequest})
 	if err != nil {
 		response, status := ErrorCheck(err, "create", h.logger, context.Background())
 		httpresponse.SendJSONResponse(w, response, status, h.logger)
@@ -119,7 +127,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully created a review")
 
-	httpresponse.SendJSONResponse(w, createdReview, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(w, createdReview.Review, http.StatusCreated, h.logger)
 }
 
 // UpdateReviewHandler godoc
@@ -154,7 +162,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	var review models.Review
 	vars := mux.Vars(r)
-	reviewID, err := strconv.Atoi(vars["id"])
+	reviewID, err := strconv.Atoi(vars["reviewID"])
 	if err != nil || reviewID < 0 {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
@@ -183,7 +191,15 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	review.ReviewText = template.HTMLEscapeString(review.ReviewText)
 
 	review.ID = uint(reviewID)
-	err = h.uc.UpdateReview(context.Background(), review)
+
+	reviewRequest := &gen.Review{
+		ReviewText: review.ReviewText,
+		UserId:     uint32(review.UserID),
+		PlaceId:    uint32(review.PlaceID),
+		Rating:     int32(review.Rating),
+		Id:         uint32(review.ID),
+	}
+	res, err := h.client.UpdateReview(r.Context(), &gen.UpdateReviewRequest{Review: reviewRequest})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("reviewID", reviewID))
 		response, status := ErrorCheck(err, "update", h.logger, logCtx)
@@ -192,7 +208,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 	h.logger.DebugContext(logCtx, "Successfully updated a review")
 
-	w.WriteHeader(http.StatusOK)
+	httpresponse.SendJSONResponse(w, res.Success, http.StatusOK, h.logger)
 }
 
 // DeleteReviewHandler godoc
@@ -209,7 +225,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Router /reviews/{id} [delete]
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idStr := vars["id"]
+	idStr := vars["reviewID"]
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
@@ -236,7 +252,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = h.uc.DeleteReview(context.Background(), uint(id))
+	_, err = h.client.DeleteReview(r.Context(), &gen.DeleteReviewRequest{Id: uint32(id)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("reviewID", idStr))
 		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
@@ -245,7 +261,11 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a review")
 
-	w.WriteHeader(http.StatusNoContent)
+	response := map[string]string{
+		"message": "Review deleted successfully",
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }
 
 // GetReviewsByPlaceIDHandler godoc
@@ -257,7 +277,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Failure 400 {object} httpresponses.ErrorResponse "Invalid place ID"
 // @Failure 404 {object} httpresponses.ErrorResponse "No reviews found for the place"
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve reviews"
-// @Router /places/{placeID}/reviews [get]
+// @Router /attractions/{placeID}/reviews [get]
 func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	placeIDStr := vars["placeID"]
@@ -288,7 +308,7 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	}
 	limit := 10
 	offset := limit * (page - 1)
-	reviews, err := h.uc.GetReviewsByPlaceID(context.Background(), uint(placeID), limit, offset)
+	reviews, err := h.client.GetReviewsByPlaceID(r.Context(), &gen.GetReviewsByPlaceIDRequest{PlaceId: uint32(placeID), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("placeID", placeIDStr))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -297,7 +317,7 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	}
 	h.logger.DebugContext(logCtx, "Successfully got reviews by place ID")
 
-	httpresponse.SendJSONResponse(w, reviews, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, reviews.Reviews, http.StatusOK, h.logger)
 }
 
 // GetReviewsByUserIDHandler godoc
@@ -342,7 +362,7 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 	}
 	limit := 10
 	offset := limit * (page - 1)
-	reviews, err := h.uc.GetReviewsByUserID(context.Background(), uint(userID), limit, offset)
+	reviews, err := h.client.GetReviewsByUserID(r.Context(), &gen.GetReviewsByUserIDRequest{UserId: uint32(userID), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("userID", int(userID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -351,7 +371,7 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 	}
 	h.logger.DebugContext(logCtx, "Successfully got reviews by user ID")
 
-	httpresponse.SendJSONResponse(w, reviews, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, reviews.Reviews, http.StatusOK, h.logger)
 }
 
 // GetReviewHandler godoc
@@ -381,7 +401,7 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	review, err := h.uc.GetReview(context.Background(), uint(reviewID))
+	review, err := h.client.GetReview(r.Context(), &gen.GetReviewRequest{Id: uint32(reviewID)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("reviewID", reviewIDStr))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -391,5 +411,5 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 
 	h.logger.DebugContext(logCtx, "Successfully got review by ID")
 
-	httpresponse.SendJSONResponse(w, review, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, review.Review, http.StatusOK, h.logger)
 }

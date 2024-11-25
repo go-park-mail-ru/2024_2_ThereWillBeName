@@ -1,0 +1,20 @@
+syntax = "proto3";
+package search;
+option go_package = "./internal/pkg/search/delivery/grpc/gen/;gen";
+service Search {
+    rpc Search(SearchRequest) returns (SearchResponse);
+} 
+
+message SearchRequest {
+    string decoded_query = 1;
+}
+
+message SearchResponse {
+    repeated SearchResult search_result = 1;
+}
+
+message SearchResult {
+    string name = 1;
+    uint32 id = 2;
+    string type = 3;
+}

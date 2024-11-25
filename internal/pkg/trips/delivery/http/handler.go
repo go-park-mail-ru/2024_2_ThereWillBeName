@@ -5,7 +5,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
-	"2024_2_ThereWillBeName/internal/pkg/trips"
+	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 
 	"context"
@@ -35,12 +35,12 @@ type TripData struct {
 }
 
 type TripHandler struct {
-	uc     trips.TripsUsecase
+	client tripsGen.TripsClient
 	logger *slog.Logger
 }
 
-func NewTripHandler(uc trips.TripsUsecase, logger *slog.Logger) *TripHandler {
-	return &TripHandler{uc, logger}
+func NewTripHandler(client tripsGen.TripsClient, logger *slog.Logger) *TripHandler {
+	return &TripHandler{client, logger}
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
@@ -125,7 +125,17 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
-	err = h.uc.CreateTrip(context.Background(), trip)
+	// err = h.uc.CreateTrip(context.Background(), trip)
+	_, err = h.client.CreateTrip(r.Context(), &tripsGen.CreateTripRequest{Trip: &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+	}})
 	if err != nil {
 		response, status := ErrorCheck(err, "create", h.logger, context.Background())
 		httpresponse.SendJSONResponse(w, response, status, h.logger)
@@ -211,7 +221,17 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
-	err = h.uc.UpdateTrip(context.Background(), trip)
+	// err = h.uc.UpdateTrip(context.Background(), trip)
+	_, err = h.client.UpdateTrip(r.Context(), &tripsGen.UpdateTripRequest{Trip: &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+	}})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("tripID", tripID))
 		response, status := ErrorCheck(err, "update", h.logger, logCtx)
@@ -264,7 +284,8 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.uc.DeleteTrip(context.Background(), uint(id))
+	// err = h.uc.DeleteTrip(context.Background(), uint(id))
+	_, err = h.client.DeleteTrip(r.Context(), &tripsGen.DeleteTripRequest{Id: uint32(id)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", idStr))
 		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
@@ -322,7 +343,12 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 	}
 	limit := 10
 	offset := limit * (page - 1)
-	trip, err := h.uc.GetTripsByUserID(context.Background(), uint(userID), limit, offset)
+	// trip, err := h.uc.GetTripsByUserID(context.Background(), uint(userID), limit, offset)
+	trip, err := h.client.GetTripsByUserID(r.Context(), &tripsGen.GetTripsByUserIDRequest{
+		UserId: uint32(userID),
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.Int("userID", int(userID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -331,8 +357,9 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trips by user ID")
+	tripArr := trip.Trips
 
-	httpresponse.SendJSONResponse(w, trip, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, tripArr, http.StatusOK, h.logger)
 }
 
 // GetTripHandler godoc
@@ -374,7 +401,8 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
+	// trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
+	trip, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", tripIDStr))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
@@ -383,8 +411,9 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
+	tripResponse := trip.Trip
 
-	httpresponse.SendJSONResponse(w, trip, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(w, tripResponse, http.StatusOK, h.logger)
 }
 
 // AddPlaceToTripHandler godoc
@@ -442,7 +471,11 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = h.uc.AddPlaceToTrip(context.Background(), uint(tripID), req.PlaceID)
+	// err = h.uc.AddPlaceToTrip(context.Background(), uint(tripID), req.PlaceID)
+	_, err = h.client.AddPlaceToTrip(r.Context(), &tripsGen.AddPlaceToTripRequest{
+		TripId:  uint32(tripID),
+		PlaceId: uint32(req.PlaceID),
+	})
 	if err != nil {
 		response, status := ErrorCheck(err, "add place", h.logger, context.Background())
 		httpresponse.SendJSONResponse(w, response, status, h.logger)

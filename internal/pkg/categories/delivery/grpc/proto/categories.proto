@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package categories;
+option go_package = ".;gen";
+
+service Categories {
+  rpc GetCategories(GetCategoriesRequest) returns (GetCategoriesResponse) {}
+}
+
+message Category {
+  uint32 id = 1;
+  string name = 2;
+}
+
+message GetCategoriesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetCategoriesResponse {
+  repeated Category categories = 1;
+}

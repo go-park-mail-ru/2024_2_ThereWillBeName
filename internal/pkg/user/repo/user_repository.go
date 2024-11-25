@@ -37,9 +37,9 @@ func (r *UserRepositoryImpl) CreateUser(ctx context.Context, user models.User) (
 
 func (r *UserRepositoryImpl) GetUserByEmail(ctx context.Context, email string) (models.User, error) {
 	var user models.User
-	query := `SELECT id, login, email, password_hash, created_at FROM "user" WHERE email = $1`
+	query := `SELECT id, login, email, password_hash FROM "user" WHERE email = $1`
 	row := r.db.QueryRowContext(ctx, query, email)
-	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password, &user.CreatedAt)
+	err := row.Scan(&user.ID, &user.Login, &user.Email, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.User{}, fmt.Errorf("user not found with email: %s, %s", email, models.ErrNotFound)
@@ -143,7 +143,7 @@ func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (mode
 }
 
 func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, newPassword string) error {
-	query := "UPDATE users SET password = $1 WHERE id = $2"
+	query := "UPDATE user SET password = $1 WHERE id = $2"
 
 	_, err := r.db.ExecContext(ctx, query, newPassword, userId)
 	if err != nil {
@@ -153,7 +153,7 @@ func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, ne
 }
 
 func (r UserRepositoryImpl) UpdateProfile(ctx context.Context, userID uint, login, email string) error {
-	query := "UPDATE users SET email = $1, login = $2 WHERE id = $3"
+	query := "UPDATE user SET email = $1, login = $2 WHERE id = $3"
 
 	_, err := r.db.ExecContext(ctx, query, email, login, userID)
 	if err != nil {

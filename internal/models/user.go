@@ -21,7 +21,7 @@ type UserProfile struct {
 }
 
 func ValidateUser(v *validator.Validator, user *User) {
-	v.Check(user.Login != "", "login", "must be provided")
+	// v.Check(user.Login != "", "login", "must be provided")
 	v.Check(user.Password != "", "password", "must be provided")
 	v.Check(user.Email != "", "email", "must be provided")
 	v.Matches(user.Email, validator.EmailRX)

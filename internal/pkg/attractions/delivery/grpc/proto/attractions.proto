@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package attractions;
+option go_package = ".;gen";
+
+service Attractions {
+  rpc GetPlaces(GetPlacesRequest) returns (GetPlacesResponse) {}
+  //rpc CreatePlace(CreatePlaceRequest) returns (CreatePlaceResponse) {}
+  rpc GetPlace(GetPlaceRequest) returns (GetPlaceResponse) {}
+  //rpc UpdatePlace(UpdatePlaceRequest) returns (UpdatePlaceResponse) {}
+  //rpc DeletePlace(DeletePlaceRequest) returns (DeletePlaceResponse) {}
+  rpc SearchPlaces(SearchPlacesRequest) returns (SearchPlacesResponse) {}
+  rpc GetPlacesByCategory(GetPlacesByCategoryRequest) returns (GetPlacesByCategoryResponse) {}
+}
+
+message Place {
+  uint32 id = 1;
+  string name = 2;
+  string imagePath = 3;
+  string description = 4;
+  int32 rating = 5;
+  string address = 6;
+  string city = 7;
+  string phoneNumber = 8;
+  repeated string categories = 9;
+  double latitude = 10;
+  double longitude = 11;
+}
+
+message GetPlacesRequest {
+  int32 limit = 1;
+  int32 offset = 2;
+}
+
+message GetPlacesResponse {
+  repeated Place places = 1;
+}
+
+message GetPlaceRequest {
+  uint32 id = 1;
+}
+
+message GetPlaceResponse {
+  Place place = 1;
+}
+
+message SearchPlacesRequest {
+  string name = 1;
+  int32 category = 2;
+  int32 city = 3;
+  int32 limit = 4;
+  int32 offset = 5;
+}
+
+message SearchPlacesResponse {
+  repeated Place places = 1;
+}
+
+message GetPlacesByCategoryRequest {
+  string category = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetPlacesByCategoryResponse {
+  repeated Place places = 1;
+}

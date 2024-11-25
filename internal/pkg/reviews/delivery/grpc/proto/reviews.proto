@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package reviews;
+option go_package = ".;gen";
+
+service Reviews {
+  rpc CreateReview(CreateReviewRequest) returns (CreateReviewResponse) {}
+  rpc UpdateReview(UpdateReviewRequest) returns (UpdateReviewResponse) {}
+  rpc DeleteReview(DeleteReviewRequest) returns (DeleteReviewResponse) {}
+  rpc GetReviewsByPlaceID(GetReviewsByPlaceIDRequest) returns (GetReviewsByPlaceIDResponse) {}
+  rpc GetReviewsByUserID(GetReviewsByUserIDRequest) returns (GetReviewsByUserIDResponse) {}
+  rpc GetReview(GetReviewRequest) returns (GetReviewResponse) {}
+}
+
+message Review {
+  uint32 id = 1;
+  uint32 user_id = 2;
+  uint32 place_id = 3;
+  int32 rating = 4;
+  string review_text = 5;
+}
+
+message GetReview {
+  uint32 id = 1;
+  string user_login = 2;
+  string avatar_path = 3;
+  int32 rating = 4;
+  string review_text = 5;
+}
+
+message GetReviewByUserID {
+  uint32 id = 1;
+  string place_name = 2;
+  int32 rating = 3;
+  string review_text = 4;
+}
+
+message CreateReviewRequest {
+  Review review = 1;
+}
+
+message CreateReviewResponse {
+  GetReview review = 1;
+}
+
+message UpdateReviewRequest {
+  Review review = 1;
+}
+
+message UpdateReviewResponse {
+  bool success = 1;
+}
+
+message DeleteReviewRequest {
+  uint32 id = 1;
+}
+
+message DeleteReviewResponse {
+  bool success = 1;
+}
+
+message GetReviewsByPlaceIDRequest {
+  uint32 place_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetReviewsByPlaceIDResponse {
+  repeated GetReview reviews = 1;
+}
+
+message GetReviewsByUserIDRequest {
+  uint32 user_id = 1;
+  int32 limit = 2;
+  int32 offset = 3;
+}
+
+message GetReviewsByUserIDResponse {
+  repeated GetReviewByUserID reviews = 1;
+}
+
+message GetReviewRequest {
+  uint32 id = 1;
+}
+
+message GetReviewResponse {
+  GetReview review = 1;
+}
