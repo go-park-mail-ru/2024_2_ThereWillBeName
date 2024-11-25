@@ -11,6 +11,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -135,6 +136,16 @@ func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.Add
 	log.Println("grpc in photos: ", in.Photos)
 	for _, base64Photo := range in.Photos {
 		log.Println("grcp base64 photo: ", base64Photo)
+		if strings.HasPrefix(base64Photo, "data:image/") {
+			index := strings.Index(base64Photo, ",")
+			if index != -1 {
+				base64Photo = base64Photo[index+1:]
+			} else {
+				h.logger.Error("Invalid base64 photo format: missing ',' separator")
+				return nil, fmt.Errorf("invalid base64 photo format: missing ',' separator")
+			}
+		}
+
 		photoBytes, err := base64.StdEncoding.DecodeString(base64Photo)
 		log.Println("grcp photo bytes: ", photoBytes)
 		if err != nil {
