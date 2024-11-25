@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -131,9 +132,11 @@ func (h *GrpcTripsHandler) AddPlaceToTrip(ctx context.Context, in *tripsGen.AddP
 
 func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.AddPhotosToTripRequest) (*tripsGen.AddPhotosToTripResponse, error) {
 	var savedPhotoPaths []string
-
+	log.Println("grpc in photos: ", in.Photos)
 	for _, base64Photo := range in.Photos {
+		log.Println("grcp base64 photo: ", base64Photo)
 		photoBytes, err := base64.StdEncoding.DecodeString(base64Photo)
+		log.Println("grcp photo bytes: ", photoBytes)
 		if err != nil {
 			h.logger.Error("Failed to decode base64 photo", slog.Any("error", err))
 			return nil, fmt.Errorf("invalid base64 data: %w", err)

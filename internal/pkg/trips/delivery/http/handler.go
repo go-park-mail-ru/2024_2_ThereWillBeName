@@ -488,7 +488,6 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	tripIDStr := vars["id"]
-
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for adding photos to a trip", slog.String("tripID", tripIDStr))
 
@@ -525,7 +524,6 @@ func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Requ
 		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
 		return
 	}
-
 	resp, err := h.client.AddPhotosToTrip(r.Context(), &tripsGen.AddPhotosToTripRequest{
 		TripId: uint32(tripID),
 		Photos: photosRequest.Photos,
