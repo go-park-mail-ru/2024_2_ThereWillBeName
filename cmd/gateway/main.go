@@ -15,6 +15,8 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
+	genSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
+	httpSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/http"
 	genSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc/gen"
 	httpSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/http"
 	genTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
@@ -62,6 +64,7 @@ func main() {
 	categoriesClient := genCategories.NewCategoriesClient(attractionsConn)
 	citiesClient := genCities.NewCitiesClient(attractionsConn)
 	reviewsClient := genReviews.NewReviewsClient(attractionsConn)
+	searchClient := genSearch.NewSearchClient(attractionsConn)
 
 	usersConn, err := grpc.NewClient("users:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
@@ -125,6 +128,11 @@ func main() {
 	cities.HandleFunc("/search", citiesHandler.SearchCitiesByNameHandler).Methods(http.MethodGet)
 	cities.HandleFunc("/{id}", citiesHandler.SearchCityByIDHandler).Methods(http.MethodGet)
 
+	searchHandler := httpSearch.NewSearchHandler(searchClient, logger)
+	search := r.PathPrefix("/search").Subrouter()
+	search.HandleFunc("", searchHandler.Search).Methods(http.MethodGet)
+
+	//Маршруты для Users
 	usersHandler := httpUsers.NewUserHandler(usersClient, jwtHandler, logger)
 	auth := r.PathPrefix("/auth").Subrouter()
 	auth.HandleFunc("/signup", usersHandler.SignUp).Methods(http.MethodPost)
