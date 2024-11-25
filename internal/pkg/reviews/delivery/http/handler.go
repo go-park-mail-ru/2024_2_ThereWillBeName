@@ -162,7 +162,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	var review models.Review
 	vars := mux.Vars(r)
-	reviewID, err := strconv.Atoi(vars["id"])
+	reviewID, err := strconv.Atoi(vars["reviewID"])
 	if err != nil || reviewID < 0 {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
@@ -225,7 +225,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 // @Router /reviews/{id} [delete]
 func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	idStr := vars["id"]
+	idStr := vars["reviewID"]
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
@@ -252,7 +252,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	res, err := h.client.DeleteReview(r.Context(), &gen.DeleteReviewRequest{Id: uint32(id)})
+	_, err = h.client.DeleteReview(r.Context(), &gen.DeleteReviewRequest{Id: uint32(id)})
 	if err != nil {
 		logCtx := log.AppendCtx(context.Background(), slog.String("reviewID", idStr))
 		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
@@ -261,7 +261,11 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a review")
 
-	httpresponse.SendJSONResponse(w, res.Success, http.StatusBadRequest, h.logger)
+	response := map[string]string{
+		"message": "Review deleted successfully",
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }
 
 // GetReviewsByPlaceIDHandler godoc
