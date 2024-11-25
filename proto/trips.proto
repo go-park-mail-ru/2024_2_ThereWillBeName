@@ -10,6 +10,7 @@ service Trips {
     rpc GetTrip(GetTripRequest) returns (GetTripResponse);
     rpc AddPlaceToTrip(AddPlaceToTripRequest) returns (EmptyResponse);   
     rpc AddPhotosToTrip(AddPhotosToTripRequest) returns (AddPhotosToTripResponse);
+    rpc DeletePhotoFromTrip(DeletePhotoRequest) returns (EmptyResponse);
 }
 
 message CreateTripRequest {
@@ -59,7 +60,10 @@ message AddPhotosToTripResponse {
 message Photo {
     string photoPath = 1; 
 }
-
+message DeletePhotoRequest {
+    uint32 trip_id = 1;     
+    string photo_path = 2;  
+}
 message EmptyResponse {}
 
 message Trip {

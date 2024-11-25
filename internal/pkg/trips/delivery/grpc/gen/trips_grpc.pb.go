@@ -19,13 +19,14 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Trips_CreateTrip_FullMethodName       = "/trips.Trips/CreateTrip"
-	Trips_UpdateTrip_FullMethodName       = "/trips.Trips/UpdateTrip"
-	Trips_DeleteTrip_FullMethodName       = "/trips.Trips/DeleteTrip"
-	Trips_GetTripsByUserID_FullMethodName = "/trips.Trips/GetTripsByUserID"
-	Trips_GetTrip_FullMethodName          = "/trips.Trips/GetTrip"
-	Trips_AddPlaceToTrip_FullMethodName   = "/trips.Trips/AddPlaceToTrip"
-	Trips_AddPhotosToTrip_FullMethodName  = "/trips.Trips/AddPhotosToTrip"
+	Trips_CreateTrip_FullMethodName          = "/trips.Trips/CreateTrip"
+	Trips_UpdateTrip_FullMethodName          = "/trips.Trips/UpdateTrip"
+	Trips_DeleteTrip_FullMethodName          = "/trips.Trips/DeleteTrip"
+	Trips_GetTripsByUserID_FullMethodName    = "/trips.Trips/GetTripsByUserID"
+	Trips_GetTrip_FullMethodName             = "/trips.Trips/GetTrip"
+	Trips_AddPlaceToTrip_FullMethodName      = "/trips.Trips/AddPlaceToTrip"
+	Trips_AddPhotosToTrip_FullMethodName     = "/trips.Trips/AddPhotosToTrip"
+	Trips_DeletePhotoFromTrip_FullMethodName = "/trips.Trips/DeletePhotoFromTrip"
 )
 
 // TripsClient is the client API for Trips service.
@@ -39,6 +40,7 @@ type TripsClient interface {
 	GetTrip(ctx context.Context, in *GetTripRequest, opts ...grpc.CallOption) (*GetTripResponse, error)
 	AddPlaceToTrip(ctx context.Context, in *AddPlaceToTripRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	AddPhotosToTrip(ctx context.Context, in *AddPhotosToTripRequest, opts ...grpc.CallOption) (*AddPhotosToTripResponse, error)
+	DeletePhotoFromTrip(ctx context.Context, in *DeletePhotoRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 }
 
 type tripsClient struct {
@@ -119,6 +121,16 @@ func (c *tripsClient) AddPhotosToTrip(ctx context.Context, in *AddPhotosToTripRe
 	return out, nil
 }
 
+func (c *tripsClient) DeletePhotoFromTrip(ctx context.Context, in *DeletePhotoRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(EmptyResponse)
+	err := c.cc.Invoke(ctx, Trips_DeletePhotoFromTrip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TripsServer is the server API for Trips service.
 // All implementations must embed UnimplementedTripsServer
 // for forward compatibility.
@@ -130,6 +142,7 @@ type TripsServer interface {
 	GetTrip(context.Context, *GetTripRequest) (*GetTripResponse, error)
 	AddPlaceToTrip(context.Context, *AddPlaceToTripRequest) (*EmptyResponse, error)
 	AddPhotosToTrip(context.Context, *AddPhotosToTripRequest) (*AddPhotosToTripResponse, error)
+	DeletePhotoFromTrip(context.Context, *DeletePhotoRequest) (*EmptyResponse, error)
 	mustEmbedUnimplementedTripsServer()
 }
 
@@ -160,6 +173,9 @@ func (UnimplementedTripsServer) AddPlaceToTrip(context.Context, *AddPlaceToTripR
 }
 func (UnimplementedTripsServer) AddPhotosToTrip(context.Context, *AddPhotosToTripRequest) (*AddPhotosToTripResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddPhotosToTrip not implemented")
+}
+func (UnimplementedTripsServer) DeletePhotoFromTrip(context.Context, *DeletePhotoRequest) (*EmptyResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeletePhotoFromTrip not implemented")
 }
 func (UnimplementedTripsServer) mustEmbedUnimplementedTripsServer() {}
 func (UnimplementedTripsServer) testEmbeddedByValue()               {}
@@ -308,6 +324,24 @@ func _Trips_AddPhotosToTrip_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Trips_DeletePhotoFromTrip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePhotoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).DeletePhotoFromTrip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_DeletePhotoFromTrip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).DeletePhotoFromTrip(ctx, req.(*DeletePhotoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Trips_ServiceDesc is the grpc.ServiceDesc for Trips service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -342,6 +376,10 @@ var Trips_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "AddPhotosToTrip",
 			Handler:    _Trips_AddPhotosToTrip_Handler,
+		},
+		{
+			MethodName: "DeletePhotoFromTrip",
+			Handler:    _Trips_DeletePhotoFromTrip_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

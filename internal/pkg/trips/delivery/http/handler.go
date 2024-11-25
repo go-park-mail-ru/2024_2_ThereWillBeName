@@ -539,3 +539,37 @@ func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Requ
 
 	httpresponse.SendJSONResponse(w, resp.Photos, http.StatusCreated, h.logger)
 }
+
+func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request) {
+	tripIDStr := mux.Vars(r)["id"]
+	var photoPath struct {
+		PhotoPath string `json:"photo_path"`
+	}
+	err := json.NewDecoder(r.Body).Decode(&photoPath)
+	if err != nil {
+		h.logger.Warn("Failed to decode photos delete request body", slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request body",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	req := &tripsGen.DeletePhotoRequest{
+		TripId:    uint32(tripID),
+		PhotoPath: photoPath.PhotoPath,
+	}
+
+	_, err = h.client.DeletePhotoFromTrip(r.Context(), req)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Failed to delete photo"}, http.StatusInternalServerError, h.logger)
+		return
+	}
+
+	httpresponse.SendJSONResponse(w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
+}

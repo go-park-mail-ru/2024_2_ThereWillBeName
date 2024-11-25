@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"log"
 
 	"context"
 	"database/sql"
@@ -199,5 +200,24 @@ func (r *TripRepository) AddPhotoToTrip(ctx context.Context, tripID uint, photoP
 	if err != nil {
 		return fmt.Errorf("failed to insert photo into database: %w", err)
 	}
+	return nil
+}
+
+func (r *TripRepository) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
+	query := `DELETE FROM trip_photo WHERE trip_id = $1 AND photo_path = $2`
+	log.Println(tripID, photoPath)
+	result, err := r.db.ExecContext(ctx, query, tripID, photoPath)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo from database: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get affected rows: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("photo not found in trip: %w", models.ErrNotFound)
+	}
+
 	return nil
 }

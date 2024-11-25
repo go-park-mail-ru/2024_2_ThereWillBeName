@@ -133,7 +133,6 @@ func (h *GrpcTripsHandler) AddPlaceToTrip(ctx context.Context, in *tripsGen.AddP
 
 func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.AddPhotosToTripRequest) (*tripsGen.AddPhotosToTripResponse, error) {
 	var savedPhotoPaths []string
-	log.Println("grpc in photos: ", in.Photos)
 	for _, base64Photo := range in.Photos {
 		log.Println("grcp base64 photo: ", base64Photo)
 		if strings.HasPrefix(base64Photo, "data:image/") {
@@ -147,7 +146,6 @@ func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.Add
 		}
 
 		photoBytes, err := base64.StdEncoding.DecodeString(base64Photo)
-		log.Println("grcp photo bytes: ", photoBytes)
 		if err != nil {
 			h.logger.Error("Failed to decode base64 photo", slog.Any("error", err))
 			return nil, fmt.Errorf("invalid base64 data: %w", err)
@@ -183,4 +181,23 @@ func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.Add
 	}
 
 	return &tripsGen.AddPhotosToTripResponse{Photos: grpcPhotos}, nil
+}
+
+func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen.DeletePhotoRequest) (*tripsGen.EmptyResponse, error) {
+	photoPath := in.PhotoPath
+
+	err := h.uc.DeletePhotoFromTrip(ctx, uint(in.TripId), photoPath)
+	if err != nil {
+		h.logger.Error("Failed to delete photo path from database", slog.Any("error", err))
+		return nil, fmt.Errorf("failed to delete photo path: %w", err)
+	}
+
+	err = os.Remove(photoPath)
+	if err != nil && !os.IsNotExist(err) {
+		h.logger.Error("Failed to delete photo file", slog.String("path", photoPath), slog.Any("error", err))
+		return nil, fmt.Errorf("failed to delete photo file: %w", err)
+	}
+
+	h.logger.Info("Photo successfully deleted", slog.String("path", photoPath))
+	return &tripsGen.EmptyResponse{}, nil
 }

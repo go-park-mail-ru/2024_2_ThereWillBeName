@@ -102,3 +102,12 @@ func (u *TripsUsecaseImpl) AddPhotosToTrip(ctx context.Context, tripID uint, pho
 	}
 	return nil
 }
+
+func (u *TripsUsecaseImpl) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
+	err := u.tripRepo.DeletePhotoFromTrip(ctx, tripID, photoPath)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo from database: %w", err)
+	}
+
+	return nil
+}
