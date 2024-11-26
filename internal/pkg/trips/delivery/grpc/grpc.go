@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"path/filepath"
