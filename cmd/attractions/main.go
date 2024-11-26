@@ -53,6 +53,8 @@ func main() {
 
 	logger := setupLogger()
 
+	metricMw := metricsMw.Create()
+
 	db, err := sql.Open("postgres", cfg.ConnStr)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
@@ -70,7 +72,6 @@ func main() {
 	}
 
 	go func() {
-
 		logger.Info("Starting HTTP server for metrics on :8091")
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
@@ -87,8 +88,6 @@ func main() {
 	categoriesUsecase := categoriesUsecase.NewCategoriesUsecase(categoriesRepo)
 	searchRepo := searchRepo.NewSearchRepository(db)
 	searchUsecase := searchUsecase.NewSearchUsecase(searchRepo)
-
-	metricMw := metricsMw.Create()
 
 	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase)
 	citiesHandler := grpcCities.NewGrpcCitiesHandler(citiesUsecase)

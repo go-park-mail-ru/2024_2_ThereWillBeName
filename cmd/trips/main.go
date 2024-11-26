@@ -86,6 +86,24 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
 
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("trips")
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	stop1 := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-stop1
+
 	log.Println("Shutting down gRPC server...")
 	grpcTripsServer.GracefulStop()
 	log.Println("gRPC server gracefully stopped")

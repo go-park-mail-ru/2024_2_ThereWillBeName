@@ -7,8 +7,9 @@ import (
 )
 
 type MetricsHTTP interface {
-	IncreaseHits(string, string)
-	IncreaseErr(string, string)
-	AddDurationToHistogram(string, time.Duration)
-	ServerMetricsInterceptor(context.Context, interface{}, *grpc.UnaryServerInfo, grpc.UnaryHandler) (interface{}, error)
+	IncreaseHits(method, path, service string)
+	IncreaseErr(method, path, service string)
+	AddDurationToHistogram(method, service string, duration time.Duration)
+	TrackSystemMetrics(serviceName string)
+	ServerMetricsInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
 }
