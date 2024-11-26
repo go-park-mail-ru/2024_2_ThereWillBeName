@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"path"
 )
 
@@ -105,6 +106,7 @@ func (u *TripsUsecaseImpl) AddPhotosToTrip(ctx context.Context, tripID uint, pho
 
 func (u *TripsUsecaseImpl) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
 	err := u.tripRepo.DeletePhotoFromTrip(ctx, tripID, photoPath)
+	log.Println("handling usecase for deleting photo")
 	if err != nil {
 		return fmt.Errorf("failed to delete photo from database: %w", err)
 	}

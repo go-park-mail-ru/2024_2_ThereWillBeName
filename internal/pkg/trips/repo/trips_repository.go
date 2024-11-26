@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"log"
 
 	"context"
 	"database/sql"
@@ -204,6 +205,7 @@ func (r *TripRepository) AddPhotoToTrip(ctx context.Context, tripID uint, photoP
 
 func (r *TripRepository) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
 	query := `DELETE FROM trip_photo WHERE trip_id = $1 AND photo_path = $2`
+	log.Println("handling repo for deleting photo")
 	result, err := r.db.ExecContext(ctx, query, tripID, photoPath)
 	if err != nil {
 		return fmt.Errorf("failed to delete photo from database: %w", err)

@@ -545,6 +545,9 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 	var photoPath struct {
 		PhotoPath string `json:"photo_path"`
 	}
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+
+	h.logger.DebugContext(logCtx, "Handling request for deleting photo from a trip", slog.String("tripID", tripIDStr))
 	err := json.NewDecoder(r.Body).Decode(&photoPath)
 	if err != nil {
 		h.logger.Warn("Failed to decode photos delete request body", slog.String("error", err.Error()))

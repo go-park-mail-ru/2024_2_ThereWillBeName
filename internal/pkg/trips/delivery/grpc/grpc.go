@@ -183,7 +183,7 @@ func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.Add
 
 func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen.DeletePhotoRequest) (*tripsGen.EmptyResponse, error) {
 	photoPath := in.PhotoPath
-
+	h.logger.Log(ctx, slog.LevelDebug, "Handling grpc request for deleting photo from trip")
 	err := h.uc.DeletePhotoFromTrip(ctx, uint(in.TripId), photoPath)
 	if err != nil {
 		h.logger.Error("Failed to delete photo path from database", slog.Any("error", err))
