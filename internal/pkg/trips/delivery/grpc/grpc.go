@@ -134,7 +134,6 @@ func (h *GrpcTripsHandler) AddPlaceToTrip(ctx context.Context, in *tripsGen.AddP
 func (h *GrpcTripsHandler) AddPhotosToTrip(ctx context.Context, in *tripsGen.AddPhotosToTripRequest) (*tripsGen.AddPhotosToTripResponse, error) {
 	var savedPhotoPaths []string
 	for _, base64Photo := range in.Photos {
-		log.Println("grcp base64 photo: ", base64Photo)
 		if strings.HasPrefix(base64Photo, "data:image/") {
 			index := strings.Index(base64Photo, ",")
 			if index != -1 {
