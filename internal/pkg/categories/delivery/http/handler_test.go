@@ -1,23 +1,5 @@
 package http
 
-// import (
-// 	"2024_2_ThereWillBeName/internal/models"
-// 	mock_categories "2024_2_ThereWillBeName/internal/pkg/categories/mocks"
-// 	"context"
-// 	"encoding/json"
-// 	"errors"
-// 	"github.com/golang/mock/gomock"
-// 	"github.com/gorilla/mux"
-// 	"github.com/stretchr/testify/assert"
-// 	"log/slog"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"net/url"
-// 	"os"
-// 	"strconv"
-// 	"testing"
-// )
-
 // func TestCategoriesHandler_GetCategoriesHandler(t *testing.T) {
 // 	ctrl := gomock.NewController(t)
 // 	defer ctrl.Finish()
