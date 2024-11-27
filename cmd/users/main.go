@@ -45,8 +45,8 @@ func main() {
 	}
 	defer db.Close()
 
-	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
-	r.PathPrefix("/metrics").Handler(promhttp.Handler())
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
 		Addr:              ":8093",
 		Handler:           r,
@@ -87,6 +87,24 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
+
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("users")
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	stop1 := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-stop1
 
 	log.Println("Shutting down gRPC server...")
 	grpcUsersServer.GracefulStop()

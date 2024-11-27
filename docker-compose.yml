@@ -14,6 +14,7 @@ services:
       - ./assets/avatars:/assets/avatars
     ports:
       - "8080:8080"
+      - "8094:8094"
     depends_on:
       - tripdb
     networks:
@@ -31,6 +32,7 @@ services:
       - ./assets/avatars:/assets/avatars
     ports:
       - "8081:8081"
+      - "8091:8091"
     depends_on:
       - tripdb
     networks:
@@ -48,6 +50,7 @@ services:
       - ./assets/avatars:/assets/avatars
     ports:
       - "50053:50053"
+      - "8092:8092"
     depends_on:
       - tripdb
     networks:
@@ -66,6 +69,7 @@ services:
       - ./assets/avatars:/assets/avatars
     ports:
       - "50052:50052"
+      - "8093:8093"
     depends_on:
       - tripdb
     networks:

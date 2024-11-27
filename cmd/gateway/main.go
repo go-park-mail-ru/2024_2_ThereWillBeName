@@ -12,6 +12,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
@@ -35,6 +36,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -51,6 +53,8 @@ func main() {
 	flag.Parse()
 
 	logger := setupLogger()
+
+	metricMw := metricsMw.Create()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)
@@ -92,7 +96,22 @@ func main() {
 	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
-	r.PathPrefix("/metrics").Handler(promhttp.Handler())
+	r.Handle("/metrics", promhttp.Handler())
+	r.Use(corsMiddleware.CorsMiddleware)
+	httpSrvMw := &http.Server{
+		Addr:              ":8094",
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+		logger.Info("Starting HTTP server for metrics on :8094")
+		if err := httpSrvMw.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
 
 	// Обработка ненайденных маршрутов
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -179,6 +198,24 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	<-stop
+
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("gateway")
+			case <-stop:
+				return
+			}
+		}
+	}()
+
+	stop1 := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-stop1
 
 	logger.Info("Shutting down HTTP server...")
 	if err := httpSrv.Shutdown(context.Background()); err != nil {

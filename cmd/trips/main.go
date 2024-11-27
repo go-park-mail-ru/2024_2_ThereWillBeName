@@ -43,8 +43,8 @@ func main() {
 	}
 	defer db.Close()
 
-	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
-	r.PathPrefix("/metrics").Handler(promhttp.Handler())
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
 		Addr:              ":8092",
 		Handler:           r,

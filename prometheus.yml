@@ -14,19 +14,19 @@ scrape_configs:
   - job_name: "gateway"
     metrics_path: /api/v1/metrics
     static_configs:
-      - targets: [ 'gateway:8080' ]
+      - targets: [ 'gateway:8094' ]
 
   - job_name: "attractions"
-    metrics_path: api/v1/metrics
+    metrics_path: /metrics
     static_configs:
       - targets: [ 'attractions:8091' ]
 
   - job_name: "trips"
-    metrics_path: api/v1/metrics
+    metrics_path: /metrics
     static_configs:
       - targets: [ 'trips:8092' ]
 
   - job_name: "users"
-    metrics_path: api/v1/metrics
+    metrics_path: /metrics
     static_configs:
       - targets: [ 'users:8093' ]

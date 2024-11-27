@@ -114,14 +114,15 @@ func (m *GrpcMiddleware) ServerMetricsInterceptor(
 ) (interface{}, error) {
 	start := time.Now()
 	serviceName := extractServiceName(info.FullMethod)
+	path := extractPath(info.FullMethod)
 
 	h, err := handler(ctx, req)
 	duration := time.Since(start)
 
 	if err != nil {
-		m.IncreaseErr(info.FullMethod, "error", serviceName)
+		m.IncreaseErr(info.FullMethod, path, serviceName)
 	}
-	m.IncreaseHits(info.FullMethod, "success", serviceName)
+	m.IncreaseHits(info.FullMethod, path, serviceName)
 	m.AddDurationToHistogram(info.FullMethod, serviceName, duration)
 
 	return h, err
@@ -131,6 +132,15 @@ func extractServiceName(fullMethod string) string {
 	parts := strings.Split(fullMethod, "/")
 	if len(parts) >= 2 {
 		return parts[1]
+	}
+	return "unknown"
+}
+
+func extractPath(fullMethod string) string {
+	parts := strings.Split(fullMethod, "/")
+	if len(parts) >= 3 {
+		// Возвращаем путь (третий элемент в массиве)
+		return parts[2]
 	}
 	return "unknown"
 }
