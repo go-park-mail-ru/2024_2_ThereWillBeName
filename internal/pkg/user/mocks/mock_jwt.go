@@ -1,4 +1,4 @@
-package user
+package mock_user
 
 import (
 	reflect "reflect"

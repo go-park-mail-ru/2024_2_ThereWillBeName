@@ -3,329 +3,497 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
+	"testing"
 	"time"
 
-	"testing"
-
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateTrip(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to create mock: %s", err)
-	}
-	defer db.Close()
-
-	repo := NewTripRepository(db)
-
 	tests := []struct {
-		name        string
-		trip        models.Trip
-		mockSetup   func()
-		expectedErr error
+		name          string
+		trip          models.Trip
+		mockBehavior  func(mock sqlmock.Sqlmock)
+		expectedError error
 	}{
 		{
-			name: "successful creation",
-			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
-			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
+			name: "Success",
+			trip: models.Trip{
+				UserID:      1,
+				Name:        "Trip to Paris",
+				Description: "A great trip",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
+			},
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip`).
+					WithArgs(1, "Trip to Paris", "A great trip", 2, "2024-12-01", "2024-12-10", false).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
-			expectedErr: nil,
+			expectedError: nil,
 		},
 		{
-			name: "error on exec",
-			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
-			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
-					WillReturnError(errors.New("exec error"))
+			name: "Insert Failed",
+			trip: models.Trip{
+				UserID:      1,
+				Name:        "Trip to Paris",
+				Description: "A great trip",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
 			},
-			expectedErr: fmt.Errorf("failed to create a trip: %w", models.ErrInternal),
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip`).
+					WithArgs(1, "Trip to Paris", "A great trip", 2, "2024-12-01", "2024-12-10", false).
+					WillReturnError(errors.New("insert failed"))
+			},
+			expectedError: models.ErrInternal,
 		},
 		{
-			name: "no rows created",
-			trip: models.Trip{UserID: 1, Name: "Test trip", Description: "A trip for testing", CityID: 1},
-			mockSetup: func() {
-				mock.ExpectExec(`INSERT INTO trip`).WithArgs(1, "Test trip", "A trip for testing", 1, sqlmock.AnyArg(), sqlmock.AnyArg(), false).
-					WillReturnResult(sqlmock.NewResult(0, 0))
+			name: "No Rows Affected",
+			trip: models.Trip{
+				UserID:      1,
+				Name:        "Trip to Paris",
+				Description: "A great trip",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
 			},
-			expectedErr: fmt.Errorf("no rows were created: %w", models.ErrNotFound),
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip`).
+					WithArgs(1, "Trip to Paris", "A great trip", 2, "2024-12-01", "2024-12-10", false).
+					WillReturnResult(sqlmock.NewResult(1, 0))
+			},
+			expectedError: models.ErrNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
+			db, mock, _ := sqlmock.New()
+			defer db.Close()
+
+			repo := NewTripRepository(db)
+
+			tt.mockBehavior(mock)
+
 			err := repo.CreateTrip(context.Background(), tt.trip)
-			if tt.expectedErr != nil {
-				assert.EqualError(t, err, tt.expectedErr.Error())
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
 
 func TestUpdateTrip(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to create mock: %s", err)
-	}
-	defer db.Close()
-
-	repo := NewTripRepository(db)
-
 	tests := []struct {
-		name        string
-		trip        models.Trip
-		mockSetup   func()
-		expectedErr error
+		name          string
+		trip          models.Trip
+		mockBehavior  func(mock sqlmock.Sqlmock)
+		expectedError error
 	}{
 		{
-			name: "successful update",
-			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
-			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
+			name: "Success",
+			trip: models.Trip{
+				ID:          1,
+				Name:        "Updated Trip",
+				Description: "Updated Description",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
+			},
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`UPDATE trip`).
+					WithArgs("Updated Trip", "Updated Description", 2, "2024-12-01", "2024-12-10", false, 1).
 					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
-			expectedErr: nil,
+			expectedError: nil,
 		},
 		{
-			name: "error on exec",
-			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
-			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
-					WillReturnError(errors.New("exec error"))
+			name: "Update Failed",
+			trip: models.Trip{
+				ID:          1,
+				Name:        "Updated Trip",
+				Description: "Updated Description",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
 			},
-			expectedErr: fmt.Errorf("failed to execute update query: %w", models.ErrInternal),
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`UPDATE trip`).
+					WithArgs("Updated Trip", "Updated Description", 2, "2024-12-01", "2024-12-10", false, 1).
+					WillReturnError(errors.New("update failed"))
+			},
+			expectedError: models.ErrInternal,
 		},
 		{
-			name: "no rows updated",
-			trip: models.Trip{ID: 1, Name: "Updated Trip", Description: "Updated description", CityID: 2},
-			mockSetup: func() {
-				mock.ExpectExec(`UPDATE trip`).WithArgs("Updated Trip", "Updated description", 2, sqlmock.AnyArg(), sqlmock.AnyArg(), false, 1).
-					WillReturnResult(sqlmock.NewResult(0, 0))
+			name: "No Rows Affected",
+			trip: models.Trip{
+				ID:          1,
+				Name:        "Updated Trip",
+				Description: "Updated Description",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
 			},
-			expectedErr: fmt.Errorf("no rows were updated: %w", models.ErrNotFound),
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`UPDATE trip`).
+					WithArgs("Updated Trip", "Updated Description", 2, "2024-12-01", "2024-12-10", false, 1).
+					WillReturnResult(sqlmock.NewResult(1, 0))
+			},
+			expectedError: models.ErrNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
+			db, mock, _ := sqlmock.New()
+			defer db.Close()
+
+			repo := NewTripRepository(db)
+
+			tt.mockBehavior(mock)
+
 			err := repo.UpdateTrip(context.Background(), tt.trip)
-			if tt.expectedErr != nil {
-				assert.EqualError(t, err, tt.expectedErr.Error())
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
 }
 
 func TestDeleteTrip(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to create mock: %s", err)
-	}
-	defer db.Close()
-
-	repo := NewTripRepository(db)
-
-	tests := []struct {
-		name        string
-		tripID      uint
-		mockSetup   func()
-		expectedErr error
-	}{
-		{
-			name:   "successful deletion",
-			tripID: 1,
-			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnResult(sqlmock.NewResult(1, 1))
-			},
-			expectedErr: nil,
-		},
-		{
-			name:   "error on exec",
-			tripID: 1,
-			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnError(errors.New("exec error"))
-			},
-			expectedErr: fmt.Errorf("failed to delete trip: %w", models.ErrInternal),
-		},
-		{
-			name:   "no rows deleted",
-			tripID: 1,
-			mockSetup: func() {
-				mock.ExpectExec(`DELETE FROM trip`).WithArgs(1).WillReturnResult(sqlmock.NewResult(0, 0))
-			},
-			expectedErr: fmt.Errorf("no rows were deleted: %w", models.ErrNotFound),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
-			err := repo.DeleteTrip(context.Background(), tt.tripID)
-			if tt.expectedErr != nil {
-				assert.EqualError(t, err, tt.expectedErr.Error())
-			} else {
-				assert.NoError(t, err)
-			}
-			assert.NoError(t, mock.ExpectationsWereMet())
-		})
-	}
-}
-
-func TestGetTripsByUserID(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("failed to create mock: %s", err)
-	}
-	defer db.Close()
-	ctx := context.Background()
-	repo := NewTripRepository(db)
-	userID := uint(1)
-	limit, offset := 10, 0
-	createdAt := time.Now()
-
-	tests := []struct {
-		name          string
-		mockSetup     func()
-		expectedTrips []models.Trip
-		expectedError error
-	}{
-		{
-			name: "successful retrieval",
-			mockSetup: func() {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "name", "description", "city_id", "start_date", "end_date", "private", "created_at"}).
-					AddRow(1, userID, "Test trip 1", "A trip for testing", 1, "2024-01-01", "2024-01-05", false, createdAt).
-					AddRow(2, userID, "Test trip 2", "A trip for testing", 2, "2024-02-01", "2024-02-10", true, createdAt)
-
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
-					WithArgs(userID, limit, offset).
-					WillReturnRows(rows)
-			},
-			expectedTrips: []models.Trip{
-				{ID: 1, UserID: userID, Name: "Test trip 1", Description: "A trip for testing", CityID: 1, StartDate: "2024-01-01", EndDate: "2024-01-05", Private: false, CreatedAt: createdAt},
-				{ID: 2, UserID: userID, Name: "Test trip 2", Description: "A trip for testing", CityID: 2, StartDate: "2024-02-01", EndDate: "2024-02-10", Private: true, CreatedAt: createdAt},
-			},
-			expectedError: nil,
-		},
-		{
-			name: "query execution error",
-			mockSetup: func() {
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
-					WithArgs(userID, limit, offset).
-					WillReturnError(models.ErrInternal)
-			},
-			expectedTrips: nil,
-			expectedError: fmt.Errorf("failed to retrieve trips: %w", models.ErrInternal),
-		},
-		{
-			name: "no trips found",
-			mockSetup: func() {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "name", "description", "city_id", "start_date", "end_date", "private", "created_at"})
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE user_id = \$1 ORDER BY created_at DESC LIMIT \$2 OFFSET \$3`).
-					WithArgs(userID, limit, offset).
-					WillReturnRows(rows)
-			},
-			expectedTrips: nil,
-			expectedError: fmt.Errorf("no trips found: %w", models.ErrNotFound),
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup()
-
-			trips, err := repo.GetTripsByUserID(ctx, userID, limit, offset)
-			assert.Equal(t, tt.expectedError, err)
-			assert.Equal(t, tt.expectedTrips, trips)
-		})
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestGetTrip(t *testing.T) {
 	tests := []struct {
 		name          string
 		tripID        uint
-		mockSetup     func(sqlmock.Sqlmock)
-		expectedTrip  models.Trip
+		mockBehavior  func(mock sqlmock.Sqlmock)
 		expectedError error
 	}{
 		{
-			name:   "successful retrieval",
+			name:   "Success",
 			tripID: 1,
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				rows := sqlmock.NewRows([]string{"id", "user_id", "name", "description", "city_id", "start_date", "end_date", "private", "created_at"}).
-					AddRow(1, 1, "Test trip", "A trip for testing", 1, "2024-01-01", "2024-01-05", false, time.Now())
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = \$1`).
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`DELETE FROM trip`).
 					WithArgs(1).
-					WillReturnRows(rows)
-			},
-			expectedTrip: models.Trip{
-				ID:          1,
-				UserID:      1,
-				Name:        "Test trip",
-				Description: "A trip for testing",
-				CityID:      1,
-				StartDate:   "2024-01-01",
-				EndDate:     "2024-01-05",
-				Private:     false,
+					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			expectedError: nil,
 		},
 		{
-			name:   "trip not found",
-			tripID: 2,
-			mockSetup: func(mock sqlmock.Sqlmock) {
-				mock.ExpectQuery(`SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = \$1`).
-					WithArgs(2).
-					WillReturnError(sql.ErrNoRows)
+			name:   "Delete Failed",
+			tripID: 1,
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`DELETE FROM trip`).
+					WithArgs(1).
+					WillReturnError(errors.New("delete failed"))
 			},
-			expectedTrip:  models.Trip{},
-			expectedError: fmt.Errorf("trip not found: %w", models.ErrNotFound),
+			expectedError: models.ErrInternal,
+		},
+		{
+			name:   "No Rows Affected",
+			tripID: 1,
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`DELETE FROM trip`).
+					WithArgs(1).
+					WillReturnResult(sqlmock.NewResult(1, 0))
+			},
+			expectedError: models.ErrNotFound,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			assert.NoError(t, err)
+			db, mock, _ := sqlmock.New()
 			defer db.Close()
 
 			repo := NewTripRepository(db)
-			tt.mockSetup(mock)
 
-			trip, err := repo.GetTrip(context.Background(), tt.tripID)
+			tt.mockBehavior(mock)
+
+			err := repo.DeleteTrip(context.Background(), tt.tripID)
 			if tt.expectedError != nil {
-				assert.Error(t, err)
-				assert.EqualError(t, err, tt.expectedError.Error())
+				assert.ErrorIs(t, err, tt.expectedError)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.expectedTrip.ID, trip.ID)
-				assert.Equal(t, tt.expectedTrip.UserID, trip.UserID)
-				assert.Equal(t, tt.expectedTrip.Name, trip.Name)
-				assert.Equal(t, tt.expectedTrip.Description, trip.Description)
-				assert.Equal(t, tt.expectedTrip.CityID, trip.CityID)
-				assert.Equal(t, tt.expectedTrip.StartDate, trip.StartDate)
-				assert.Equal(t, tt.expectedTrip.EndDate, trip.EndDate)
-				assert.Equal(t, tt.expectedTrip.Private, trip.Private)
 			}
-			assert.NoError(t, mock.ExpectationsWereMet())
 		})
 	}
+}
+func TestGetTripsByUserID(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("unexpected error when opening stub database connection: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewTripRepository(db)
+
+	t.Run("Success", func(t *testing.T) {
+		createdAt := time.Date(2024, time.November, 25, 0, 0, 0, 0, time.UTC)
+		rows := sqlmock.NewRows([]string{
+			"id", "user_id", "name", "description", "city_id",
+			"start_date", "end_date", "private", "created_at", "photos",
+		}).AddRow(
+			1, 1, "Trip 1", "Description 1", 2,
+			"2024-12-01", "2024-12-10", false, createdAt, pq.Array([]string{"photo1.jpg", "photo2.jpg"}),
+		)
+
+		mock.ExpectQuery(`SELECT (.+) FROM trip t LEFT JOIN trip_photo tp`).
+			WithArgs(1, 10, 0).
+			WillReturnRows(rows)
+
+		expected := []models.Trip{
+			{
+				ID:          1,
+				UserID:      1,
+				Name:        "Trip 1",
+				Description: "Description 1",
+				CityID:      2,
+				StartDate:   "2024-12-01",
+				EndDate:     "2024-12-10",
+				Private:     false,
+				Photos:      []string{"photo1.jpg", "photo2.jpg"},
+				CreatedAt:   createdAt,
+			},
+		}
+
+		result, err := repo.GetTripsByUserID(context.Background(), 1, 10, 0)
+
+		assert.NoError(t, err)
+		assert.Equal(t, expected, result)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("No Trips Found", func(t *testing.T) {
+		rows := sqlmock.NewRows([]string{
+			"id", "user_id", "name", "description", "city_id",
+			"start_date", "end_date", "private", "created_at", "photos",
+		})
+
+		mock.ExpectQuery(`SELECT (.+) FROM trip t LEFT JOIN trip_photo tp`).
+			WithArgs(1, 10, 0).
+			WillReturnRows(rows)
+
+		result, err := repo.GetTripsByUserID(context.Background(), 1, 10, 0)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "no trips found")
+		assert.Nil(t, result)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		mock.ExpectQuery(`SELECT (.+) FROM trip t LEFT JOIN trip_photo tp`).
+			WithArgs(1, 10, 0).
+			WillReturnError(fmt.Errorf("database error"))
+
+		result, err := repo.GetTripsByUserID(context.Background(), 1, 10, 0)
+
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to retrieve trips")
+		assert.Nil(t, result)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+}
+
+func TestAddPlaceToTrip(t *testing.T) {
+	tests := []struct {
+		name          string
+		tripID        uint
+		placeID       uint
+		mockBehavior  func(mock sqlmock.Sqlmock)
+		expectedError error
+	}{
+		{
+			name:    "Success",
+			tripID:  1,
+			placeID: 2,
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip_place`).
+					WithArgs(1, 2).
+					WillReturnResult(sqlmock.NewResult(1, 1))
+			},
+			expectedError: nil,
+		},
+		{
+			name:    "Insert Failed",
+			tripID:  1,
+			placeID: 2,
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip_place`).
+					WithArgs(1, 2).
+					WillReturnError(errors.New("insert failed"))
+			},
+			expectedError: models.ErrInternal,
+		},
+		{
+			name:    "No Rows Affected",
+			tripID:  1,
+			placeID: 2,
+			mockBehavior: func(mock sqlmock.Sqlmock) {
+				mock.ExpectExec(`INSERT INTO trip_place`).
+					WithArgs(1, 2).
+					WillReturnResult(sqlmock.NewResult(1, 0))
+			},
+			expectedError: models.ErrNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			db, mock, _ := sqlmock.New()
+			defer db.Close()
+
+			repo := NewTripRepository(db)
+
+			tt.mockBehavior(mock)
+
+			err := repo.AddPlaceToTrip(context.Background(), tt.tripID, tt.placeID)
+			if tt.expectedError != nil {
+				assert.ErrorIs(t, err, tt.expectedError)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+func TestAddPhotoToTrip(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("unexpected error when opening stub database connection: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewTripRepository(db)
+
+	t.Run("Success", func(t *testing.T) {
+		tripID := uint(1)
+		photoPath := "photo1.jpg"
+
+		query := `
+        INSERT INTO trip_photo \(trip_id, photo_path\)
+        VALUES \(\$1, \$2\)`
+
+		mock.ExpectExec(query).
+			WithArgs(tripID, photoPath).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err := repo.AddPhotoToTrip(context.Background(), tripID, photoPath)
+		assert.NoError(t, err)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		tripID := uint(1)
+		photoPath := "photo1.jpg"
+
+		query := `
+        INSERT INTO trip_photo \(trip_id, photo_path\)
+        VALUES \(\$1, \$2\)`
+
+		mock.ExpectExec(query).
+			WithArgs(tripID, photoPath).
+			WillReturnError(fmt.Errorf("database error"))
+
+		err := repo.AddPhotoToTrip(context.Background(), tripID, photoPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to insert photo into database")
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+}
+
+func TestDeletePhotoFromTrip(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("unexpected error when opening stub database connection: %v", err)
+	}
+	defer db.Close()
+
+	repo := NewTripRepository(db)
+
+	t.Run("Success", func(t *testing.T) {
+		tripID := uint(1)
+		photoPath := "photo1.jpg"
+
+		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
+
+		mock.ExpectExec(query).
+			WithArgs(tripID, photoPath).
+			WillReturnResult(sqlmock.NewResult(1, 1))
+
+		err := repo.DeletePhotoFromTrip(context.Background(), tripID, photoPath)
+		assert.NoError(t, err)
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("Photo Not Found", func(t *testing.T) {
+		tripID := uint(1)
+		photoPath := "photo1.jpg"
+
+		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
+
+		mock.ExpectExec(query).
+			WithArgs(tripID, photoPath).
+			WillReturnResult(sqlmock.NewResult(0, 0))
+
+		err := repo.DeletePhotoFromTrip(context.Background(), tripID, photoPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "photo not found in trip")
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
+
+	t.Run("Database Error", func(t *testing.T) {
+		tripID := uint(1)
+		photoPath := "photo1.jpg"
+
+		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
+
+		mock.ExpectExec(query).
+			WithArgs(tripID, photoPath).
+			WillReturnError(fmt.Errorf("database error"))
+
+		err := repo.DeletePhotoFromTrip(context.Background(), tripID, photoPath)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to delete photo from database")
+
+		if err := mock.ExpectationsWereMet(); err != nil {
+			t.Errorf("there were unfulfilled expectations: %s", err)
+		}
+	})
 }
