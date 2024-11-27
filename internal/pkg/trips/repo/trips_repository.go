@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 
 	"context"
 	"database/sql"
@@ -11,10 +12,10 @@ import (
 )
 
 type TripRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewTripRepository(db *sql.DB) *TripRepository {
+func NewTripRepository(db *dblogger.DB) *TripRepository {
 	return &TripRepository{db: db}
 }
 

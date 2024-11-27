@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
 	"database/sql"
 	_ "embed"
@@ -12,10 +13,10 @@ import (
 )
 
 type PlaceRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewPLaceRepository(db *sql.DB) *PlaceRepository {
+func NewPLaceRepository(db *dblogger.DB) *PlaceRepository {
 	return &PlaceRepository{db: db}
 }
 
