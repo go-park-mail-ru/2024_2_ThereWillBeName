@@ -2,9 +2,12 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -80,8 +83,14 @@ func TestCreateTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, _ := sqlmock.New()
 			defer db.Close()
+			var logBuffer bytes.Buffer
 
-			repo := NewTripRepository(db)
+			handler := slog.NewTextHandler(&logBuffer, nil)
+
+			logger := slog.New(handler)
+			loggerDB := dblogger.NewDB(db, logger)
+
+			repo := NewTripRepository(loggerDB)
 
 			tt.mockBehavior(mock)
 
@@ -163,7 +172,14 @@ func TestUpdateTrip(t *testing.T) {
 			db, mock, _ := sqlmock.New()
 			defer db.Close()
 
-			repo := NewTripRepository(db)
+			var logBuffer bytes.Buffer
+
+			handler := slog.NewTextHandler(&logBuffer, nil)
+
+			logger := slog.New(handler)
+			loggerDB := dblogger.NewDB(db, logger)
+
+			repo := NewTripRepository(loggerDB)
 
 			tt.mockBehavior(mock)
 
@@ -220,8 +236,14 @@ func TestDeleteTrip(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			db, mock, _ := sqlmock.New()
 			defer db.Close()
+			var logBuffer bytes.Buffer
 
-			repo := NewTripRepository(db)
+			handler := slog.NewTextHandler(&logBuffer, nil)
+
+			logger := slog.New(handler)
+			loggerDB := dblogger.NewDB(db, logger)
+
+			repo := NewTripRepository(loggerDB)
 
 			tt.mockBehavior(mock)
 
@@ -241,7 +263,14 @@ func TestGetTripsByUserID(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewTripRepository(db)
+	var logBuffer bytes.Buffer
+
+	handler := slog.NewTextHandler(&logBuffer, nil)
+
+	logger := slog.New(handler)
+	loggerDB := dblogger.NewDB(db, logger)
+
+	repo := NewTripRepository(loggerDB)
 
 	t.Run("Success", func(t *testing.T) {
 		createdAt := time.Date(2024, time.November, 25, 0, 0, 0, 0, time.UTC)
@@ -368,8 +397,14 @@ func TestAddPlaceToTrip(t *testing.T) {
 			db, mock, _ := sqlmock.New()
 			defer db.Close()
 
-			repo := NewTripRepository(db)
+			var logBuffer bytes.Buffer
 
+			handler := slog.NewTextHandler(&logBuffer, nil)
+
+			logger := slog.New(handler)
+			loggerDB := dblogger.NewDB(db, logger)
+
+			repo := NewTripRepository(loggerDB)
 			tt.mockBehavior(mock)
 
 			err := repo.AddPlaceToTrip(context.Background(), tt.tripID, tt.placeID)
@@ -388,8 +423,14 @@ func TestAddPhotoToTrip(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewTripRepository(db)
+	var logBuffer bytes.Buffer
 
+	handler := slog.NewTextHandler(&logBuffer, nil)
+
+	logger := slog.New(handler)
+	loggerDB := dblogger.NewDB(db, logger)
+
+	repo := NewTripRepository(loggerDB)
 	t.Run("Success", func(t *testing.T) {
 		tripID := uint(1)
 		photoPath := "photo1.jpg"
@@ -439,8 +480,14 @@ func TestDeletePhotoFromTrip(t *testing.T) {
 	}
 	defer db.Close()
 
-	repo := NewTripRepository(db)
+	var logBuffer bytes.Buffer
 
+	handler := slog.NewTextHandler(&logBuffer, nil)
+
+	logger := slog.New(handler)
+	loggerDB := dblogger.NewDB(db, logger)
+
+	repo := NewTripRepository(loggerDB)
 	t.Run("Success", func(t *testing.T) {
 		tripID := uint(1)
 		photoPath := "photo1.jpg"
