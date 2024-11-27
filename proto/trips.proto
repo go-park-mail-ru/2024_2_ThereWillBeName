@@ -1,0 +1,81 @@
+syntax = "proto3";
+package trips;
+import "google/protobuf/timestamp.proto";
+option go_package = "./internal/pkg/trips/delivery/grpc/gen/;gen"; 
+service Trips {
+    rpc CreateTrip(CreateTripRequest) returns (EmptyResponse);
+    rpc UpdateTrip(UpdateTripRequest) returns (EmptyResponse);
+    rpc DeleteTrip(DeleteTripRequest) returns (EmptyResponse);
+    rpc GetTripsByUserID(GetTripsByUserIDRequest) returns (GetTripsByUserIDResponse);
+    rpc GetTrip(GetTripRequest) returns (GetTripResponse);
+    rpc AddPlaceToTrip(AddPlaceToTripRequest) returns (EmptyResponse);   
+    rpc AddPhotosToTrip(AddPhotosToTripRequest) returns (AddPhotosToTripResponse);
+    rpc DeletePhotoFromTrip(DeletePhotoRequest) returns (EmptyResponse);
+}
+
+message CreateTripRequest {
+    Trip trip = 1;
+}
+
+message UpdateTripRequest {
+    Trip trip = 1;
+}
+
+message DeleteTripRequest {
+    uint32 id = 1;
+}
+
+message GetTripsByUserIDRequest {
+    uint32 user_id = 1;
+    int32 limit = 2;
+    int32 offset = 3;
+}
+
+message GetTripsByUserIDResponse {
+    repeated Trip trips = 1;
+}
+
+message GetTripRequest {
+    uint32 trip_id = 1;
+}
+
+message GetTripResponse {
+    Trip trip = 1;
+}
+
+message AddPlaceToTripRequest {
+    uint32 trip_id = 1;
+    uint32 place_id = 2;
+}
+
+message AddPhotosToTripRequest {
+    uint32 trip_id = 1;         
+    repeated string photos = 2; 
+}
+
+message AddPhotosToTripResponse {
+    repeated Photo photos = 2;  
+}
+
+message Photo {
+    string photoPath = 1; 
+}
+message DeletePhotoRequest {
+    uint32 trip_id = 1;     
+    string photo_path = 2;  
+}
+message EmptyResponse {}
+
+message Trip {
+    uint32 id = 1;
+    uint32 user_id = 2;
+    string name = 3;
+    string description = 4;
+    uint32 city_id = 5;
+    string start_date = 6;
+    string end_date = 7;
+    bool private = 8;
+    repeated string photos = 9; 
+    google.protobuf.Timestamp created_at = 10;
+}
+

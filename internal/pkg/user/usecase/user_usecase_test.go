@@ -2,98 +2,151 @@ package usecase
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
-	mocks "2024_2_ThereWillBeName/internal/pkg/user/mocks"
+	mock "2024_2_ThereWillBeName/internal/pkg/user/mocks"
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
-	gomock "github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestLogin_Success(t *testing.T) {
+func TestUserUsecaseImpl_SignUp(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	mockRepo := mocks.NewMockUserRepo(ctrl)
 
-	authUsecase := NewUserUsecase(mockRepo, "storage")
+	storagePath := "/storage"
+	mockRepo := mock.NewMockUserRepo(ctrl)
+	usecase := NewUserUsecase(mockRepo, storagePath)
 
 	user := models.User{
-		ID:    1,
-		Login: "testuser",
+		Login:    "newuser",
+		Password: "plainpassword",
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-	assert.NoError(t, err)
-	user.Password = string(hashedPassword)
-	mockRepo.EXPECT().GetUserByEmail(gomock.Any(), user.Login).Return(user, nil).Times(1)
+	expectedUserID := uint(1)
 
-	token, err := authUsecase.Login(context.Background(), user.Login, "password123")
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
+	tests := []struct {
+		name           string
+		mockBehavior   func()
+		user           models.User
+		expectedUserID uint
+		expectedErr    string
+	}{
+		{
+			name: "Success",
+			mockBehavior: func() {
+				mockRepo.EXPECT().CreateUser(gomock.Any(), gomock.AssignableToTypeOf(models.User{})).DoAndReturn(func(ctx context.Context, user models.User) (uint, error) {
+					assert.NotEqual(t, user.Password, "plainpassword")
+					err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte("plainpassword"))
+					assert.NoError(t, err)
+					return expectedUserID, nil
+				})
+			},
+			user:           user,
+			expectedUserID: expectedUserID,
+			expectedErr:    "",
+		},
+		{
+			name: "Repository Error",
+			mockBehavior: func() {
+				mockRepo.EXPECT().CreateUser(gomock.Any(), gomock.AssignableToTypeOf(models.User{})).Return(uint(0), errors.New("internal error"))
+			},
+			user:           user,
+			expectedUserID: 0,
+			expectedErr:    "internal error",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBehavior()
+
+			userID, err := usecase.SignUp(context.Background(), tt.user)
+
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedErr, err.Error())
+				assert.Equal(t, tt.expectedUserID, userID)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedUserID, userID)
+			}
+		})
+	}
 }
 
-func TestLogin_UserNotFound(t *testing.T) {
+func TestUserUsecaseImpl_Login(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockRepo := mocks.NewMockUserRepo(ctrl)
-	// mockJWT := jwt.NewJWT("secret_key")
+	storagePath := "/storage"
+	mockRepo := mock.NewMockUserRepo(ctrl)
+	usecase := NewUserUsecase(mockRepo, storagePath)
 
-	authUsecase := NewUserUsecase(mockRepo, "storage")
+	userEmail := "testuser@example.com"
+	plainPassword := "password123"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(plainPassword), bcrypt.DefaultCost)
 
-	mockRepo.EXPECT().GetUserByEmail(gomock.Any(), "nonexistent").Return(models.User{}, fmt.Errorf("user not found")).Times(1)
+	user := models.User{
+		Email:    userEmail,
+		Password: string(hashedPassword),
+	}
 
-	_, err := authUsecase.Login(context.Background(), "nonexistent", "password123")
-	assert.Error(t, err)
-	assert.Equal(t, "user not found", err.Error())
+	tests := []struct {
+		name         string
+		mockBehavior func()
+		email        string
+		password     string
+		expectedErr  string
+		expectedUser models.User
+	}{
+		{
+			name: "Success - Correct password",
+			mockBehavior: func() {
+				mockRepo.EXPECT().GetUserByEmail(gomock.Any(), userEmail).Return(user, nil)
+			},
+			email:        userEmail,
+			password:     plainPassword,
+			expectedErr:  "",
+			expectedUser: user,
+		},
+		{
+			name: "Error - User not found",
+			mockBehavior: func() {
+				mockRepo.EXPECT().GetUserByEmail(gomock.Any(), userEmail).Return(models.User{}, models.ErrNotFound)
+			},
+			email:        userEmail,
+			password:     plainPassword,
+			expectedErr:  "not found",
+			expectedUser: models.User{},
+		},
+		{
+			name: "Error - Incorrect password",
+			mockBehavior: func() {
+				mockRepo.EXPECT().GetUserByEmail(gomock.Any(), userEmail).Return(user, nil)
+			},
+			email:        userEmail,
+			password:     "wrongpassword",
+			expectedErr:  "crypto/bcrypt: hashedPassword is not the hash of the given password",
+			expectedUser: models.User{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mockBehavior()
+
+			user, err := usecase.Login(context.Background(), tt.email, tt.password)
+
+			if tt.expectedErr != "" {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedUser, user)
+			}
+		})
+	}
 }
-
-// func TestSignUp(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-
-// 	mockRepo := mocks.NewMockAuthRepo(ctrl)
-// 	mockJWT := jwt.NewJWT("secret_key")
-
-// 	authUsecase := NewAuthUsecase(mockRepo, mockJWT)
-
-// 	user := models.User{
-// 		Login:    "testuser",
-// 		Password: "password123",
-// 	}
-
-// 	mockRepo.EXPECT().CreateUser(gomock.Any(), gomock.Any()).Do(func(ctx context.Context, u models.User) {
-// 		assert.NotEqual(t, u.Password, "password123")
-// 		assert.Equal(t, u.Login, user.Login)
-// 	}).Return(nil).Times(1)
-
-// 	err := authUsecase.SignUp(context.Background(), user)
-// 	assert.NoError(t, err)
-// }
-
-// func TestLogin_InvalidPassword(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
-// 	defer ctrl.Finish()
-
-// 	mockRepo := mocks.NewMockAuthRepo(ctrl)
-// 	mockJWT := jwt.NewJWT("secret_key")
-
-// 	authUsecase := NewAuthUsecase(mockRepo, mockJWT)
-
-// 	user := models.User{
-// 		ID:    1,
-// 		Login: "testuser",
-// 	}
-
-// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte("password123"), bcrypt.DefaultCost)
-// 	assert.NoError(t, err)
-// 	user.Password = string(hashedPassword)
-
-// 	mockRepo.EXPECT().GetUserByLogin(gomock.Any(), user.Login).Return(user, nil).Times(1)
-
-// 	_, err = authUsecase.Login(context.Background(), user.Login, "wrongpassword")
-// 	assert.Error(t, err)
-// 	assert.Equal(t, "crypto/bcrypt: hashedPassword is not the hash of the given password", err.Error())
-// }

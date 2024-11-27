@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 
 	"context"
 	"database/sql"
@@ -10,17 +11,17 @@ import (
 )
 
 type CitiesRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewCitiesRepository(db *sql.DB) *CitiesRepository {
+func NewCitiesRepository(db *dblogger.DB) *CitiesRepository {
 	return &CitiesRepository{db: db}
 }
 
 func (r *CitiesRepository) SearchCitiesByName(ctx context.Context, query string) ([]models.City, error) {
 	var cities []models.City
 
-	searchQuery := `SELECT id, name, created_at FROM cities WHERE name ILIKE $1`
+	searchQuery := `SELECT id, name, created_at FROM city WHERE name ILIKE $1`
 
 	rows, err := r.db.QueryContext(ctx, searchQuery, query+"%")
 	if err != nil {
@@ -47,7 +48,7 @@ func (r *CitiesRepository) SearchCitiesByName(ctx context.Context, query string)
 func (r *CitiesRepository) SearchCityByID(ctx context.Context, id uint) (models.City, error) {
 	var city models.City
 
-	query := `SELECT id, name, created_at FROM cities WHERE id = $1`
+	query := `SELECT id, name, created_at FROM city WHERE id = $1`
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&city.ID, &city.Name, &city.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"2024_2_ThereWillBeName/internal/validator"
+	"time"
+)
 
 type Review struct {
 	ID         uint      `json:"id"`
@@ -17,4 +20,19 @@ type GetReview struct {
 	AvatarPath string `json:"avatar_path"`
 	Rating     int    `json:"rating"`
 	ReviewText string `json:"review_text"`
+}
+
+type GetReviewByUserID struct {
+	ID         uint   `json:"id"`
+	PlaceName  string `json:"place_name"`
+	Rating     int    `json:"rating"`
+	ReviewText string `json:"review_text"`
+}
+
+func ValidateReview(v *validator.Validator, review *Review) {
+	v.Check(review.ReviewText != "", "reviewText", "must be provided")
+	v.Check(len(review.ReviewText) <= 255, "reviewText", "must not be more than 255 symbols")
+	v.Check(review.Rating != 0, "rating", "must be provided")
+	v.Check(review.PlaceID != 0, "place id", "must be provided")
+	v.Check(review.UserID != 0, "user id", "must be provided")
 }

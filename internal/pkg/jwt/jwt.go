@@ -16,17 +16,20 @@ type JWT struct {
 func NewJWT(secret string, logger *slog.Logger) *JWT {
 	return &JWT{
 		secret: []byte(secret),
+		logger: logger,
 	}
+
 }
 
 func (j *JWT) GenerateToken(userID uint, email, login string) (string, error) {
 	claims := jwt.MapClaims{
-		"id":    userID,
-		"email": email,
-		"login": login,
-		"exp":   time.Now().Add(time.Hour * 24).Unix(),
+		"userID": userID,
+		"email":  email,
+		"login":  login,
+		"exp":    time.Now().Add(time.Hour * 24).Unix(),
 	}
 
+	j.logger.Debug("checking claims", "claims:", claims)
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(j.secret)
 }
@@ -40,7 +43,9 @@ func (j *JWT) ParseToken(token string) (map[string]interface{}, error) {
 	})
 
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok && parsedToken.Valid {
+		j.logger.Debug("from Generate token", "JWT_claims", claims)
 		return claims, nil
 	}
+
 	return nil, err
 }

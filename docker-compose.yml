@@ -1,11 +1,61 @@
 version: "3.3"
 
 services:
-  main:
-    container_name: main-service
+  gateway:
+    container_name: gateway
     build:
       context: .
-      dockerfile: ./build/main.Dockerfile
+      dockerfile: build/gateway.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL=Debug
+    volumes:
+      - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+    ports:
+      - 8080:8080
+    depends_on:
+      - tripdb
+  attractions:
+    container_name: attractions
+    build:
+      context: .
+      dockerfile: build/attraction.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL=Debug
+    volumes:
+      - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+
+    ports:
+      - 8081:8081
+    depends_on:
+      - tripdb
+  trips:
+    container_name: trips
+    build:
+      context: .
+      dockerfile: build/trips.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - LOG_LEVEL=Debug
+      - PHOTO_STORAGE_PATH=/assets/photos
+    volumes:
+      - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+    ports:
+      - 50053:50053
+    depends_on:
+      - tripdb
+  users:
+    container_name: users
+    build:
+      context: .
+      dockerfile: build/users.Dockerfile
     env_file:
       - .env
     environment:
@@ -13,8 +63,28 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
-      - 8080:8080
+      - 50052:50052
+    depends_on:
+      - tripdb
+  survey:
+    container_name: survey
+    build:
+      context: .
+      dockerfile: build/survey.Dockerfile
+    env_file:
+      - .env
+    environment:
+      - AVATAR_STORAGE_PATH=/assets/avatars
+      - LOG_LEVEL=Debug
+    volumes:
+      - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+    ports:
+      - 50054:50054
+    depends_on:
+      - tripdb
   tripdb:
     container_name: postgres
     image: postgres:15

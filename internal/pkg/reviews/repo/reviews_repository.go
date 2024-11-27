@@ -2,6 +2,7 @@ package reviews
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
 	"database/sql"
 	"fmt"
@@ -10,36 +11,38 @@ import (
 )
 
 type ReviewRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewReviewRepository(db *sql.DB) *ReviewRepository {
+func NewReviewRepository(db *dblogger.DB) *ReviewRepository {
 	return &ReviewRepository{db: db}
 }
 
-func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Review) error {
-	query := `INSERT INTO reviews (user_id, place_id, rating, review_text, created_at) 
-              VALUES ($1, $2, $3, $4, NOW())`
+func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Review) (models.GetReview, error) {
+	query := `INSERT INTO review (user_id, place_id, rating, review_text, created_at, updated_at) 
+              VALUES ($1, $2, $3, $4, NOW(), NOW()) RETURNING id`
 
-	result, err := r.db.ExecContext(ctx, query, review.UserID, review.PlaceID, review.Rating, review.ReviewText)
+	var reviewID int
+	err := r.db.QueryRowContext(ctx, query, review.UserID, review.PlaceID, review.Rating, review.ReviewText).Scan(&reviewID)
 	if err != nil {
-		return fmt.Errorf("failed to create review: %w", models.ErrInternal)
+		if err == sql.ErrNoRows {
+			return models.GetReview{}, fmt.Errorf("no rows were created for the review: %w", models.ErrNotFound)
+		}
+		return models.GetReview{}, fmt.Errorf("failed to create review: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	// Теперь, после успешного создания отзыва, мы можем использовать его ID, чтобы получить полные данные
+	createdReview, err := r.GetReview(ctx, uint(reviewID))
 	if err != nil {
-		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
+		return models.GetReview{}, fmt.Errorf("failed to retrieve created review details: %w", err)
 	}
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("no rows were created for the review: %w", models.ErrNotFound)
-	}
-	return nil
+	return createdReview, nil
 }
 
 func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Review) error {
-	query := `UPDATE reviews 
-              SET rating = $1, review_text = $2 
+	query := `UPDATE review 
+              SET rating = $1, review_text = $2, updated_at = NOW() 
               WHERE id = $3`
 
 	result, err := r.db.ExecContext(ctx, query, review.Rating, review.ReviewText, review.ID)
@@ -60,7 +63,7 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 }
 
 func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) error {
-	query := `DELETE FROM reviews WHERE id = $1`
+	query := `DELETE FROM review WHERE id = $1`
 
 	result, err := r.db.ExecContext(ctx, query, reviewID)
 	if err != nil {
@@ -80,9 +83,9 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 }
 
 func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint, limit, offset int) ([]models.GetReview, error) {
-	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
-              FROM reviews r
-              JOIN users u ON r.user_id = u.id
+	query := `SELECT r.id, u.login, u.avatar_path, r.rating, r.review_text 
+              FROM review r
+              JOIN "user" u ON r.user_id = u.id
               WHERE r.place_id = $1
               ORDER BY r.created_at DESC
               LIMIT $2 OFFSET $3`
@@ -109,10 +112,41 @@ func (r *ReviewRepository) GetReviewsByPlaceID(ctx context.Context, placeID uint
 	return reviews, nil
 }
 
+func (r *ReviewRepository) GetReviewsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.GetReviewByUserID, error) {
+	query := `SELECT r.id, r.rating, r.review_text, p.name 
+              FROM review r
+              JOIN "user" u ON r.user_id = u.id
+              JOIN place p ON r.place_id = p.id
+              WHERE r.user_id = $1
+              ORDER BY r.created_at DESC
+              LIMIT $2 OFFSET $3`
+
+	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve reviews by user: %w", models.ErrInternal)
+	}
+	defer rows.Close()
+
+	var reviews []models.GetReviewByUserID
+	for rows.Next() {
+		var review models.GetReviewByUserID
+		if err := rows.Scan(&review.ID, &review.Rating, &review.ReviewText, &review.PlaceName); err != nil {
+			return nil, fmt.Errorf("failed to scan review row: %w", models.ErrInternal)
+		}
+		reviews = append(reviews, review)
+	}
+
+	if len(reviews) == 0 {
+		return nil, fmt.Errorf("no reviews found for user with ID %d: %w", userID, models.ErrNotFound)
+	}
+
+	return reviews, nil
+}
+
 func (r *ReviewRepository) GetReview(ctx context.Context, reviewID uint) (models.GetReview, error) {
-	query := `SELECT r.id, u.login, u.avatarPath, r.rating, r.review_text 
-              FROM reviews r
-              JOIN users u ON r.user_id = u.id
+	query := `SELECT r.id, u.login, u.avatar_path, r.rating, r.review_text 
+              FROM review r
+              JOIN "user" u ON r.user_id = u.id
               WHERE r.id = $1`
 
 	row := r.db.QueryRowContext(ctx, query, reviewID)
