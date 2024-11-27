@@ -9,6 +9,8 @@ service Trips {
     rpc GetTripsByUserID(GetTripsByUserIDRequest) returns (GetTripsByUserIDResponse);
     rpc GetTrip(GetTripRequest) returns (GetTripResponse);
     rpc AddPlaceToTrip(AddPlaceToTripRequest) returns (EmptyResponse);   
+    rpc AddPhotosToTrip(AddPhotosToTripRequest) returns (AddPhotosToTripResponse);
+    rpc DeletePhotoFromTrip(DeletePhotoRequest) returns (EmptyResponse);
 }
 
 message CreateTripRequest {
@@ -46,6 +48,22 @@ message AddPlaceToTripRequest {
     uint32 place_id = 2;
 }
 
+message AddPhotosToTripRequest {
+    uint32 trip_id = 1;         
+    repeated string photos = 2; 
+}
+
+message AddPhotosToTripResponse {
+    repeated Photo photos = 2;  
+}
+
+message Photo {
+    string photoPath = 1; 
+}
+message DeletePhotoRequest {
+    uint32 trip_id = 1;     
+    string photo_path = 2;  
+}
 message EmptyResponse {}
 
 message Trip {
@@ -57,6 +75,7 @@ message Trip {
     string start_date = 6;
     string end_date = 7;
     bool private = 8;
-    google.protobuf.Timestamp created_at = 9;
+    repeated string photos = 9; 
+    google.protobuf.Timestamp created_at = 10;
 }
 

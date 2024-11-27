@@ -97,6 +97,12 @@ CREATE TABLE IF NOT EXISTS trip_place ( --таблица для сопостав
     CONSTRAINT uq_trip_place UNIQUE (trip_id, place_id)
 );
 
+CREATE TABLE trip_photo (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY, 
+    trip_id INT REFERENCES trip(id) ON DELETE CASCADE,
+    photo_path TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS survey (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     survey_text TEXT DEFAULT '',

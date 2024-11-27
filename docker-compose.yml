@@ -12,6 +12,7 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - 8080:8080
     depends_on:
@@ -27,6 +28,8 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+
     ports:
       - 8081:8081
     depends_on:
@@ -40,8 +43,10 @@ services:
       - .env
     environment:
       - LOG_LEVEL=Debug
+      - PHOTO_STORAGE_PATH=/assets/photos
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - 50053:50053
     depends_on:
@@ -58,6 +63,7 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - 50052:50052
     depends_on:
@@ -74,6 +80,7 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - 50054:50054
     depends_on:

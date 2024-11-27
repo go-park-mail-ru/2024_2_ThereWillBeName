@@ -14,6 +14,7 @@ type Trip struct {
 	StartDate   string    `json:"start_date"`
 	EndDate     string    `json:"end_date"`
 	Private     bool      `json:"private_trip"`
+	Photos      []string  `json:"photos"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
