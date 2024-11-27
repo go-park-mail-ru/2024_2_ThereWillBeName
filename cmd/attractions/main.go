@@ -14,6 +14,7 @@ import (
 	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
@@ -52,15 +53,17 @@ func main() {
 	}
 	defer db.Close()
 
-	reviewsRepo := reviewRepo.NewReviewRepository(db)
+	wrappedDB := dblogger.NewDB(db, logger)
+
+	reviewsRepo := reviewRepo.NewReviewRepository(wrappedDB)
 	reviewUsecase := reviewUsecase.NewReviewsUsecase(reviewsRepo)
-	placeRepo := placeRepo.NewPLaceRepository(db)
+	placeRepo := placeRepo.NewPLaceRepository(wrappedDB)
 	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
-	citiesRepo := citiesRepo.NewCitiesRepository(db)
+	citiesRepo := citiesRepo.NewCitiesRepository(wrappedDB)
 	citiesUsecase := citiesUsecase.NewCitiesUsecase(citiesRepo)
-	categoriesRepo := categoriesRepo.NewCategoriesRepo(db)
+	categoriesRepo := categoriesRepo.NewCategoriesRepo(wrappedDB)
 	categoriesUsecase := categoriesUsecase.NewCategoriesUsecase(categoriesRepo)
-	searchRepo := searchRepo.NewSearchRepository(db)
+	searchRepo := searchRepo.NewSearchRepository(wrappedDB)
 	searchUsecase := searchUsecase.NewSearchUsecase(searchRepo)
 
 	grpcAttractionsServer := grpc.NewServer()

@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
 	"database/sql"
 	"errors"
@@ -13,10 +14,10 @@ import (
 )
 
 type UserRepositoryImpl struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewAuthRepository(db *sql.DB) *UserRepositoryImpl {
+func NewAuthRepository(db *dblogger.DB) *UserRepositoryImpl {
 	return &UserRepositoryImpl{db: db}
 }
 

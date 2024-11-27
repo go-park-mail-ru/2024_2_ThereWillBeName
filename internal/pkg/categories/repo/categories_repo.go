@@ -2,16 +2,16 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
-	"database/sql"
 	"fmt"
 )
 
 type CategoriesRepo struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewCategoriesRepo(db *sql.DB) *CategoriesRepo {
+func NewCategoriesRepo(db *dblogger.DB) *CategoriesRepo {
 	return &CategoriesRepo{db: db}
 }
 

@@ -2,6 +2,7 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
@@ -10,7 +11,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"log/slog"
 	"net"
@@ -18,6 +18,8 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	_ "github.com/lib/pq"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -37,7 +39,9 @@ func main() {
 	}
 	defer db.Close()
 
-	tripRepo := tripRepo.NewTripRepository(db)
+	wrappedDB := dblogger.NewDB(db, logger)
+
+	tripRepo := tripRepo.NewTripRepository(wrappedDB)
 	tripUsecase := tripUsecase.NewTripsUsecase(tripRepo)
 
 	grpcTripsServer := grpc.NewServer()

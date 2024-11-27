@@ -92,6 +92,8 @@ func main() {
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
 
+	r.Use(middleware.RequestLoggerMiddleware(logger))
+
 	// Обработка ненайденных маршрутов
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		response := httpresponses.ErrorResponse{

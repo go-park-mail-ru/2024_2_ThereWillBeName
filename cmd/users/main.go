@@ -2,6 +2,7 @@ package main
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
@@ -10,7 +11,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	_ "github.com/lib/pq"
 	"log"
 	"log/slog"
 	"net"
@@ -18,6 +18,8 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+
+	_ "github.com/lib/pq"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -39,7 +41,9 @@ func main() {
 	}
 	defer db.Close()
 
-	userRepo := userRepo.NewAuthRepository(db)
+	wrappedDB := dblogger.NewDB(db, logger)
+
+	userRepo := userRepo.NewAuthRepository(wrappedDB)
 	userUsecase := userUsecase.NewUserUsecase(userRepo, storagePath)
 
 	grpcUsersServer := grpc.NewServer()
