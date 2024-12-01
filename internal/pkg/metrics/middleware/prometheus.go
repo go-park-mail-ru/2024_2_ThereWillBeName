@@ -6,13 +6,13 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+	"log"
 	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"google.golang.org/grpc"
 )
 
@@ -32,34 +32,34 @@ type GrpcMiddleware struct {
 
 func Create() metrics.MetricsHTTP {
 	middleware := &GrpcMiddleware{
-		hits: promauto.NewCounterVec(prometheus.CounterOpts{
+		hits: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "grpc_method_hits_total",
 			Help: "Total number of gRPC method calls across all services",
 		}, []string{"method", "path", "service"}),
 
-		errors: promauto.NewCounterVec(prometheus.CounterOpts{
+		errors: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "grpc_method_errors_total",
 			Help: "Total number of gRPC method errors across all services",
 		}, []string{"method", "path", "service"}),
 
-		durations: promauto.NewHistogramVec(prometheus.HistogramOpts{
+		durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{
 			Name:    "grpc_method_duration_seconds",
 			Help:    "Histogram of gRPC method call durations across services",
 			Buckets: prometheus.DefBuckets,
 		}, []string{"method", "service"}),
 
 		systemMetric: &SystemMetrics{
-			cpuUsage: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			cpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "service_cpu_usage_percent",
 				Help: "CPU usage percentage per service",
 			}, []string{"service", "hostname"}),
 
-			memoryUsage: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			memoryUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "service_memory_usage_bytes",
 				Help: "Memory usage in bytes per service",
 			}, []string{"service", "hostname"}),
 
-			diskUsage: promauto.NewGaugeVec(prometheus.GaugeOpts{
+			diskUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "service_disk_usage_percent",
 				Help: "Disk usage percentage per service",
 			}, []string{"service", "mount_point", "hostname"}),
@@ -67,6 +67,15 @@ func Create() metrics.MetricsHTTP {
 	}
 
 	return middleware
+}
+
+func (m *GrpcMiddleware) RegisterMetrics() {
+	prometheus.MustRegister(m.hits)
+	prometheus.MustRegister(m.errors)
+	prometheus.MustRegister(m.durations)
+	prometheus.MustRegister(m.systemMetric.cpuUsage)
+	prometheus.MustRegister(m.systemMetric.memoryUsage)
+	prometheus.MustRegister(m.systemMetric.diskUsage)
 }
 
 func (m *GrpcMiddleware) IncreaseHits(method, path, service string) {
@@ -91,6 +100,8 @@ func (m *GrpcMiddleware) TrackSystemMetrics(serviceName string) {
 	cpuPercent, err := cpu.Percent(time.Second, false)
 	if err == nil && len(cpuPercent) > 0 {
 		m.systemMetric.cpuUsage.WithLabelValues(serviceName, hostname).Set(cpuPercent[0])
+	} else {
+		log.Println("не обновилось")
 	}
 
 	// Memory Usage

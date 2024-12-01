@@ -12,4 +12,5 @@ type MetricsHTTP interface {
 	AddDurationToHistogram(method, service string, duration time.Duration)
 	TrackSystemMetrics(serviceName string)
 	ServerMetricsInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error)
+	RegisterMetrics()
 }

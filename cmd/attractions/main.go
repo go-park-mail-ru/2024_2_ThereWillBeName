@@ -26,9 +26,7 @@ import (
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	"database/sql"
-	"fmt"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -54,22 +52,16 @@ func main() {
 	logger := setupLogger()
 
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
-	metricMw := metricsMw.Create()
-
-	db, err := sql.Open("postgres", cfg.ConnStr)
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 	wrappedDB := dblogger.NewDB(db, logger)
 
-	reviewsRepo := reviewRepo.NewReviewRepository(wrappedDB)
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
@@ -87,7 +79,7 @@ func main() {
 		}
 	}()
 
-	reviewsRepo := reviewRepo.NewReviewRepository(db)
+	reviewsRepo := reviewRepo.NewReviewRepository(wrappedDB)
 	reviewUsecase := reviewUsecase.NewReviewsUsecase(reviewsRepo)
 	placeRepo := placeRepo.NewPLaceRepository(wrappedDB)
 	placeUsecase := placeUsecase.NewPlaceUsecase(placeRepo)
@@ -142,10 +134,6 @@ func main() {
 			}
 		}
 	}()
-
-	stop1 := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop1
 
 	log.Println("Shutting down gRPC server...")
 	grpcAttractionsServer.GracefulStop()

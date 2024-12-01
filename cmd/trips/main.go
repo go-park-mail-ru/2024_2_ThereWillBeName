@@ -11,7 +11,6 @@ import (
 	tripUsecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 	"database/sql"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -25,8 +24,6 @@ import (
 	"strconv"
 	"syscall"
 	"time"
-
-	_ "github.com/lib/pq"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -50,7 +47,6 @@ func main() {
 
 	wrappedDB := dblogger.NewDB(db, logger)
 
-	tripRepo := tripRepo.NewTripRepository(wrappedDB)
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
@@ -69,7 +65,7 @@ func main() {
 		}
 	}()
 
-	tripRepo := tripRepo.NewTripRepository(db)
+	tripRepo := tripRepo.NewTripRepository(wrappedDB)
 	tripUsecase := tripUsecase.NewTripsUsecase(tripRepo)
 
 	metricMw := metricsMw.Create()
@@ -107,10 +103,6 @@ func main() {
 			}
 		}
 	}()
-
-	stop1 := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop1
 
 	log.Println("Shutting down gRPC server...")
 	grpcTripsServer.GracefulStop()

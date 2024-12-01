@@ -11,7 +11,6 @@ import (
 	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 	"database/sql"
 	"errors"
-	"flag"
 	"fmt"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -24,8 +23,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	_ "github.com/lib/pq"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -51,7 +49,6 @@ func main() {
 
 	wrappedDB := dblogger.NewDB(db, logger)
 
-	userRepo := userRepo.NewAuthRepository(wrappedDB)
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
@@ -70,7 +67,7 @@ func main() {
 		}
 	}()
 
-	userRepo := userRepo.NewAuthRepository(db)
+	userRepo := userRepo.NewAuthRepository(wrappedDB)
 	userUsecase := userUsecase.NewUserUsecase(userRepo, storagePath)
 
 	metricMw := metricsMw.Create()
@@ -108,10 +105,6 @@ func main() {
 			}
 		}
 	}()
-
-	stop1 := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop1
 
 	log.Println("Shutting down gRPC server...")
 	grpcUsersServer.GracefulStop()
