@@ -1,13 +1,13 @@
 package main
 
 import (
-	"2024_2_ThereWillBeName/internal/models"
 	genAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpPlaces "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/http"
 	genCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	httpCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
 	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	httpCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
+	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
@@ -25,7 +25,6 @@ import (
 	httpUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/http"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -43,18 +42,14 @@ import (
 )
 
 func main() {
-	var cfg models.Config
-	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
-	flag.StringVar(&cfg.Env, "env", "production", "Environment")
-	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
-	flag.Parse()
+	cfg := config.Load()
 
 	logger := setupLogger()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)
 
-	attractionsConn, err := grpc.Dial("attractions:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	attractionsConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.AttractionContainerIp, cfg.Grpc.AttractionPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to attractions service: %v", err)
 	}
@@ -66,21 +61,21 @@ func main() {
 	reviewsClient := genReviews.NewReviewsClient(attractionsConn)
 	searchClient := genSearch.NewSearchClient(attractionsConn)
 
-	usersConn, err := grpc.NewClient("users:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	usersConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.UserContainerIp, cfg.Grpc.UserPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to users service: %v", err)
 	}
 	defer usersConn.Close()
 	usersClient := genUsers.NewUserServiceClient(usersConn)
 
-	tripsConn, err := grpc.NewClient("trips:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	tripsConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.TripContainerIp, cfg.Grpc.TripPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to trips service: %v", err)
 	}
 	defer tripsConn.Close()
 	tripsClient := genTrips.NewTripsClient(tripsConn)
 
-	surveyConn, err := grpc.NewClient("survey:50054", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	surveyConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.SurveyContainerIp, cfg.Grpc.SurveyPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to survey service: %v", err)
 	}
@@ -88,7 +83,7 @@ func main() {
 	surveyClient := genSurvey.NewSurveyServiceClient(surveyConn)
 
 	// Инициализация HTTP сервера
-	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
+	corsMiddleware := middleware.NewCORSMiddleware(cfg.AllowedOrigins)
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
 
@@ -169,9 +164,9 @@ func main() {
 	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
 	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
 
-	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.Port)}
+	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", 8080)}
 	go func() {
-		logger.Info("HTTP server listening on :%d", cfg.Port)
+		logger.Info("HTTP server listening on :%d", 8080)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("failed to serve HTTP: %d", err)
 			os.Exit(1)

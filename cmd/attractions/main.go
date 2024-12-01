@@ -1,7 +1,6 @@
 package main
 
 import (
-	"2024_2_ThereWillBeName/internal/models"
 	grpcAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc"
 	genPlaces "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	placeRepo "2024_2_ThereWillBeName/internal/pkg/attractions/repo"
@@ -14,6 +13,7 @@ import (
 	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	citiesRepo "2024_2_ThereWillBeName/internal/pkg/cities/repo"
 	citiesUsecase "2024_2_ThereWillBeName/internal/pkg/cities/usecase"
+	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
@@ -25,7 +25,7 @@ import (
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	"database/sql"
-	"flag"
+	"fmt"
 	"log"
 	"log/slog"
 	"net"
@@ -40,18 +40,21 @@ import (
 )
 
 func main() {
-	var cfg models.ConfigGrpc
-	flag.IntVar(&cfg.Port, "grpc-port", 50051, "gRPC server port")
-	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
-	flag.Parse()
+
+	cfg := config.Load()
 
 	logger := setupLogger()
 
-	db, err := sql.Open("postgres", cfg.ConnStr)
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("failed to ping database: %v", err)
+	}
 
 	wrappedDB := dblogger.NewDB(db, logger)
 
@@ -86,11 +89,11 @@ func main() {
 	reflection.Register(grpcAttractionsServer)
 
 	go func() {
-		listener, err := net.Listen("tcp", ":8081")
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Grpc.AttractionPort))
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		log.Printf("gRPC server listening on :%d", cfg.Port)
+		log.Printf("gRPC server listening on :%d", cfg.Grpc.AttractionPort)
 		if err := grpcAttractionsServer.Serve(listener); err != nil {
 			log.Fatalf("failed to serve gRPC: %v", err)
 		}

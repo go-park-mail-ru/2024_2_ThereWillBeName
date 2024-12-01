@@ -1,6 +1,20 @@
 version: "3.3"
 
 services:
+  tripdb:
+    container_name: postgres
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - ./db/migrations:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - ${DB_PORT}:5432
+
   gateway:
     container_name: gateway
     build:
@@ -17,6 +31,8 @@ services:
       - 8080:8080
     depends_on:
       - tripdb
+    restart: unless-stopped
+
   attractions:
     container_name: attractions
     build:
@@ -31,9 +47,10 @@ services:
       - ./assets/photos:/assets/photos
 
     ports:
-      - 8081:8081
+      - "50051:50051"
     depends_on:
       - tripdb
+    restart: unless-stopped
   trips:
     container_name: trips
     build:
@@ -48,9 +65,10 @@ services:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
     ports:
-      - 50053:50053
+      - "50053:50053"
     depends_on:
       - tripdb
+    restart: unless-stopped
   users:
     container_name: users
     build:
@@ -65,9 +83,10 @@ services:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
     ports:
-      - 50052:50052
+      - "50052:50052"
     depends_on:
       - tripdb
+    restart: unless-stopped
   survey:
     container_name: survey
     build:
@@ -82,19 +101,7 @@ services:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
     ports:
-      - 50054:50054
+      - "50054:50054"
     depends_on:
       - tripdb
-  tripdb:
-    container_name: postgres
-    image: postgres:15
-    environment:
-        POSTGRES_DB: "trip"
-        POSTGRES_USER: "service"
-        POSTGRES_PASSWORD: "test"
-    volumes:
-      - ./db/migrations:/docker-entrypoint-initdb.d
-      - ./data:/var/lib/postgresql/data
     restart: unless-stopped
-    ports:
-      - 5432:5432
