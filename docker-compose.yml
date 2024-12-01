@@ -1,6 +1,20 @@
 version: "3.3"
 
 services:
+  tripdb:
+    container_name: postgres
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - ./db/migrations:/docker-entrypoint-initdb.d
+      - ./data:/var/lib/postgresql/data
+    restart: unless-stopped
+    ports:
+      - ${DB_PORT}:5432
+
   gateway:
     container_name: gateway
     build:
@@ -12,6 +26,7 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - "8080:8080"
       - "8094:8094"
@@ -19,6 +34,8 @@ services:
       - tripdb
     networks:
       - my_network
+    restart: unless-stopped
+
   attractions:
     container_name: attractions
     build:
@@ -30,11 +47,14 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
+
     ports:
-      - "8081:8081"
       - "8091:8091"
+      - "50051:50051"
     depends_on:
       - tripdb
+    restart: unless-stopped
     networks:
       - my_network
   trips:
@@ -46,13 +66,16 @@ services:
       - .env
     environment:
       - LOG_LEVEL=Debug
+      - PHOTO_STORAGE_PATH=/assets/photos
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - "50053:50053"
       - "8092:8092"
     depends_on:
       - tripdb
+    restart: unless-stopped
     networks:
       - my_network
   users:
@@ -67,11 +90,13 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - "50052:50052"
       - "8093:8093"
     depends_on:
       - tripdb
+    restart: unless-stopped
     networks:
       - my_network
   survey:
@@ -86,27 +111,11 @@ services:
       - LOG_LEVEL=Debug
     volumes:
       - ./assets/avatars:/assets/avatars
+      - ./assets/photos:/assets/photos
     ports:
       - "50054:50054"
     depends_on:
       - tripdb
-    networks:
-      - my_network
-  tripdb:
-    container_name: postgres
-    image: postgres:15
-    environment:
-        POSTGRES_DB: "trip"
-        POSTGRES_USER: "service"
-        POSTGRES_PASSWORD: "test"
-    volumes:
-      - ./db/migrations:/docker-entrypoint-initdb.d
-      - ./data:/var/lib/postgresql/data
-    restart: unless-stopped
-    ports:
-      - "5432:5432"
-    networks:
-      - my_network
   prometheus:
     image: prom/prometheus:latest
     volumes:

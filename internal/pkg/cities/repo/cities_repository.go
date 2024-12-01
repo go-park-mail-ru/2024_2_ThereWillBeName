@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 
 	"context"
 	"database/sql"
@@ -10,10 +11,10 @@ import (
 )
 
 type CitiesRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewCitiesRepository(db *sql.DB) *CitiesRepository {
+func NewCitiesRepository(db *dblogger.DB) *CitiesRepository {
 	return &CitiesRepository{db: db}
 }
 

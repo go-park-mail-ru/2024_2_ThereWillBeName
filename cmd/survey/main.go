@@ -1,14 +1,13 @@
 package main
 
 import (
-	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	grpcSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc/gen"
 	surveyRepo "2024_2_ThereWillBeName/internal/pkg/survey/repo"
 	surveyUsecase "2024_2_ThereWillBeName/internal/pkg/survey/usecase"
 	"database/sql"
-	"flag"
 	"fmt"
 	_ "github.com/lib/pq"
 	"log"
@@ -24,18 +23,20 @@ import (
 )
 
 func main() {
-	var cfg models.ConfigGrpc
-	flag.IntVar(&cfg.Port, "grpc-port", 50054, "gRPC server port")
-	flag.StringVar(&cfg.ConnStr, "connStr", "host=tripdb port=5432 user=service password=test dbname=trip sslmode=disable", "PostgreSQL connection string")
-	flag.Parse()
+	cfg := config.Load()
 
 	logger := setupLogger()
 
-	db, err := sql.Open("postgres", cfg.ConnStr)
+	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Fatalf("failed to ping database: %v", err)
+	}
 
 	surveyRepoImpl := surveyRepo.NewPLaceRepository(db)
 	surveyUsecaseImpl := surveyUsecase.NewSurveysUsecase(surveyRepoImpl)
@@ -46,11 +47,11 @@ func main() {
 	reflection.Register(grpcSurveyServer)
 
 	go func() {
-		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+		listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Grpc.SurveyPort))
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		log.Printf("gRPC server listening on :%d", cfg.Port)
+		log.Printf("gRPC server listening on :%d", cfg.Grpc.SurveyPort)
 		if err := grpcSurveyServer.Serve(listener); err != nil {
 			log.Fatalf("failed to serve gRPC: %v", err)
 		}

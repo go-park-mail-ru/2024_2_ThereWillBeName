@@ -2,6 +2,7 @@ package reviews
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
 	"database/sql"
 	"fmt"
@@ -10,10 +11,10 @@ import (
 )
 
 type ReviewRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewReviewRepository(db *sql.DB) *ReviewRepository {
+func NewReviewRepository(db *dblogger.DB) *ReviewRepository {
 	return &ReviewRepository{db: db}
 }
 

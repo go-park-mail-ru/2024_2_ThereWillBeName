@@ -7,5 +7,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -mod=readonly -o ./.bin ./cmd/survey/main.
 FROM scratch AS runner
 WORKDIR /build
 COPY --from=builder /github.com/go-park-mail-ru/2024_2_ThereWillBeName/survey/.bin .
+COPY --from=builder /github.com/go-park-mail-ru/2024_2_ThereWillBeName/survey/config config/
 EXPOSE 50054
 ENTRYPOINT ["./.bin"]

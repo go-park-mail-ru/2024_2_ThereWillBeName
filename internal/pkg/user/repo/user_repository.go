@@ -2,6 +2,7 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
 	"database/sql"
 	"errors"
@@ -13,10 +14,10 @@ import (
 )
 
 type UserRepositoryImpl struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewAuthRepository(db *sql.DB) *UserRepositoryImpl {
+func NewAuthRepository(db *dblogger.DB) *UserRepositoryImpl {
 	return &UserRepositoryImpl{db: db}
 }
 
@@ -60,25 +61,6 @@ func (r *UserRepositoryImpl) DeleteUser(ctx context.Context, id string) error {
 	query := `DELETE FROM "user" WHERE id = $1`
 	_, err := r.db.ExecContext(ctx, query, id)
 	return err
-}
-
-func (r *UserRepositoryImpl) GetUsers(ctx context.Context, count, offset int64) ([]models.User, error) {
-	query := `SELECT id, login, email, created_at FROM "user" LIMIT $1 OFFSET $2`
-	rows, err := r.db.QueryContext(ctx, query, count, offset)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var users []models.User
-	for rows.Next() {
-		var user models.User
-		if err := rows.Scan(&user.ID, &user.Login, &user.Email, &user.CreatedAt); err != nil {
-			return nil, err
-		}
-		users = append(users, user)
-	}
-	return users, nil
 }
 
 func (r *UserRepositoryImpl) GetAvatarPathByUserId(ctx context.Context, userID uint) (string, error) {
@@ -136,7 +118,7 @@ func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (mode
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.UserProfile{}, models.ErrNotFound
 		}
-		return models.UserProfile{}, fmt.Errorf("failed to scan user profile: %w", err)
+		return models.UserProfile{}, fmt.Errorf("failed to scan user profile: %w", models.ErrInternal)
 	}
 
 	return userProfile, nil
@@ -145,19 +127,36 @@ func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (mode
 func (r *UserRepositoryImpl) UpdatePassword(ctx context.Context, userId uint, newPassword string) error {
 	query := "UPDATE user SET password = $1 WHERE id = $2"
 
-	_, err := r.db.ExecContext(ctx, query, newPassword, userId)
+	result, err := r.db.ExecContext(ctx, query, newPassword, userId)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
 	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
+	}
+	if rowsAffected == 0 {
+		return models.ErrNotFound
+	}
+
 	return nil
 }
 
 func (r UserRepositoryImpl) UpdateProfile(ctx context.Context, userID uint, login, email string) error {
 	query := "UPDATE user SET email = $1, login = $2 WHERE id = $3"
 
-	_, err := r.db.ExecContext(ctx, query, email, login, userID)
+	result, err := r.db.ExecContext(ctx, query, email, login, userID)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
+	}
+	if rowsAffected == 0 {
+		return models.ErrNotFound
 	}
 	return nil
 }

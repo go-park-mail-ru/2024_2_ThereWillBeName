@@ -20,7 +20,6 @@ type UserRepo interface {
 	GetUserByEmail(ctx context.Context, email string) (models.User, error)
 	UpdateUser(ctx context.Context, user models.User) error
 	DeleteUser(ctx context.Context, id string) error
-	GetUsers(ctx context.Context, count, offset int64) ([]models.User, error)
 	UpdateAvatarPathByUserId(ctx context.Context, userID uint, avatarPath string) error
 	GetAvatarPathByUserId(ctx context.Context, userID uint) (string, error)
 	GetUserByID(ctx context.Context, userID uint) (models.UserProfile, error)

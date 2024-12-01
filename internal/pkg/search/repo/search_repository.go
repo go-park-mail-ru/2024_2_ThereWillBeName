@@ -2,16 +2,16 @@ package search
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"context"
-	"database/sql"
 	"fmt"
 )
 
 type SearchRepository struct {
-	db *sql.DB
+	db *dblogger.DB
 }
 
-func NewSearchRepository(db *sql.DB) *SearchRepository {
+func NewSearchRepository(db *dblogger.DB) *SearchRepository {
 	return &SearchRepository{db}
 }
 

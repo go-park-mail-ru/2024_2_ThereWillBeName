@@ -2,11 +2,15 @@ package repo
 
 import (
 	"2024_2_ThereWillBeName/internal/models"
+	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"bytes"
 	"context"
 	"fmt"
+	"log/slog"
+	"testing"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCategoryRepoGetCategories(t *testing.T) {
@@ -16,7 +20,14 @@ func TestCategoryRepoGetCategories(t *testing.T) {
 	}
 	defer db.Close()
 
-	r := NewCategoriesRepo(db)
+	var logBuffer bytes.Buffer
+
+	handler := slog.NewTextHandler(&logBuffer, nil)
+
+	logger := slog.New(handler)
+	loggerDB := dblogger.NewDB(db, logger)
+
+	r := NewCategoriesRepo(loggerDB)
 
 	tests := []struct {
 		name        string
@@ -60,7 +71,7 @@ func TestCategoryRepoGetCategories(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.mockSetup() // Настройка мока для текущего теста
+			tt.mockSetup()
 
 			res, err := r.GetCategories(context.Background(), 10, 0)
 
@@ -71,7 +82,6 @@ func TestCategoryRepoGetCategories(t *testing.T) {
 			}
 			assert.Equal(t, tt.categories, res)
 
-			// Проверка всех ожиданий
 			if err := mock.ExpectationsWereMet(); err != nil {
 				t.Errorf("there were unfulfilled expectations: %s", err)
 			}

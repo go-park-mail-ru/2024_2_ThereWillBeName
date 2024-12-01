@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path"
 )
 
 type TripsUsecaseImpl struct {
@@ -86,6 +87,26 @@ func (u *TripsUsecaseImpl) AddPlaceToTrip(ctx context.Context, tripID uint, plac
 		} else {
 			return fmt.Errorf("internal error: %w", models.ErrInternal)
 		}
+	}
+
+	return nil
+}
+
+func (u *TripsUsecaseImpl) AddPhotosToTrip(ctx context.Context, tripID uint, photoPaths []string) error {
+	for _, fullpath := range photoPaths {
+		filename := path.Base(fullpath)
+		err := u.tripRepo.AddPhotoToTrip(ctx, tripID, filename)
+		if err != nil {
+			return fmt.Errorf("failed to add photo to trip: %w", err)
+		}
+	}
+	return nil
+}
+
+func (u *TripsUsecaseImpl) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
+	err := u.tripRepo.DeletePhotoFromTrip(ctx, tripID, photoPath)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo from database: %w", err)
 	}
 
 	return nil

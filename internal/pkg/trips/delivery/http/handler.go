@@ -55,7 +55,7 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 		return response, http.StatusNotFound
 	}
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action), slog.Any("error", err.Error()))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action), slog.Any("error", err.Error()))
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s trip", action),
 	}
@@ -483,4 +483,96 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	httpresponse.SendJSONResponse(w, "Place added to trip successfully", http.StatusCreated, h.logger)
+}
+
+func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tripIDStr := vars["id"]
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for adding photos to a trip", slog.String("tripID", tripIDStr))
+
+	_, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+		h.logger.Warn("Failed to retrieve user ID from context")
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
+	if err != nil {
+		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", tripIDStr), slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid trip ID",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	var photosRequest struct {
+		Photos []string `json:"photos"`
+	}
+
+	err = json.NewDecoder(r.Body).Decode(&photosRequest)
+	if err != nil {
+		h.logger.Warn("Failed to decode photos request body", slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request body",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	resp, err := h.client.AddPhotosToTrip(r.Context(), &tripsGen.AddPhotosToTripRequest{
+		TripId: uint32(tripID),
+		Photos: photosRequest.Photos,
+	})
+	if err != nil {
+		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", tripIDStr))
+		response, status := ErrorCheck(err, "add photos", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		return
+	}
+
+	h.logger.DebugContext(logCtx, "Successfully added photos to the trip")
+
+	httpresponse.SendJSONResponse(w, resp.Photos, http.StatusCreated, h.logger)
+}
+
+func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request) {
+	tripIDStr := mux.Vars(r)["id"]
+	var photoPath struct {
+		PhotoPath string `json:"photo_path"`
+	}
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+
+	h.logger.DebugContext(logCtx, "Handling request for deleting photo from a trip", slog.String("tripID", tripIDStr))
+	err := json.NewDecoder(r.Body).Decode(&photoPath)
+	if err != nil {
+		h.logger.Warn("Failed to decode photos delete request body", slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request body",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	req := &tripsGen.DeletePhotoRequest{
+		TripId:    uint32(tripID),
+		PhotoPath: photoPath.PhotoPath,
+	}
+
+	_, err = h.client.DeletePhotoFromTrip(r.Context(), req)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Failed to delete photo"}, http.StatusInternalServerError, h.logger)
+		return
+	}
+
+	httpresponse.SendJSONResponse(w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
 }

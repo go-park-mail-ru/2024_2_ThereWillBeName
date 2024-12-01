@@ -3,9 +3,11 @@ package middleware
 import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
+	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	"context"
 	"log/slog"
 	"net/http"
+	"strconv"
 )
 
 type contextKey string
@@ -46,11 +48,13 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 		login := claims["login"].(string)
 		email := claims["email"].(string)
 		if logger != nil {
-			logger.Info("Token parsed", slog.Int("userID", int(userID)), slog.String("login", login), slog.String("email", email))
+			logger.Debug("Token parsed", slog.Int("userID", int(userID)), slog.String("login", login), slog.String("email", email))
 		}
 		ctx := context.WithValue(r.Context(), IdKey, userID)
 		ctx = context.WithValue(ctx, LoginKey, login)
 		ctx = context.WithValue(ctx, EmailKey, email)
+		ctx = log.AppendCtx(ctx, slog.String("user_id", strconv.FormatUint(uint64(userID), 10)))
+
 		r = r.WithContext(ctx)
 
 		next.ServeHTTP(w, r)
