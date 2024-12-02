@@ -119,8 +119,6 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
-
 	go func() {
 		ticker := time.NewTicker(15 * time.Second)
 		defer ticker.Stop()
@@ -134,6 +132,8 @@ func main() {
 			}
 		}
 	}()
+
+	<-stop
 
 	log.Println("Shutting down gRPC server...")
 	grpcAttractionsServer.GracefulStop()
