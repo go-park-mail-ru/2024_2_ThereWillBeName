@@ -34,6 +34,9 @@ func main() {
 
 	logger := setupLogger()
 
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
+
 	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
@@ -69,8 +72,6 @@ func main() {
 
 	userRepo := userRepo.NewAuthRepository(wrappedDB)
 	userUsecase := userUsecase.NewUserUsecase(userRepo, storagePath)
-
-	metricMw := metricsMw.Create()
 
 	grpcUsersServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
 	usersHandler := grpcUsers.NewGrpcUserHandler(userUsecase, logger)

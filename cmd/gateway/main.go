@@ -50,6 +50,7 @@ func main() {
 	logger := setupLogger()
 
 	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)

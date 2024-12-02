@@ -3,11 +3,6 @@ package metrics
 import (
 	"2024_2_ThereWillBeName/internal/pkg/metrics"
 	"context"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/mem"
-	"log"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -23,11 +18,11 @@ type SystemMetrics struct {
 }
 
 type GrpcMiddleware struct {
-	hits         *prometheus.CounterVec
-	errors       *prometheus.CounterVec
-	durations    *prometheus.HistogramVec
-	systemMetric *SystemMetrics
-	mu           sync.Mutex
+	hits      *prometheus.CounterVec
+	errors    *prometheus.CounterVec
+	durations *prometheus.HistogramVec
+	//systemMetric *SystemMetrics
+	mu sync.Mutex
 }
 
 func Create() metrics.MetricsHTTP {
@@ -48,22 +43,22 @@ func Create() metrics.MetricsHTTP {
 			Buckets: prometheus.DefBuckets,
 		}, []string{"method", "service"}),
 
-		systemMetric: &SystemMetrics{
-			cpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: "service_cpu_usage_percent",
-				Help: "CPU usage percentage per service",
-			}, []string{"service", "hostname"}),
-
-			memoryUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: "service_memory_usage_bytes",
-				Help: "Memory usage in bytes per service",
-			}, []string{"service", "hostname"}),
-
-			diskUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-				Name: "service_disk_usage_percent",
-				Help: "Disk usage percentage per service",
-			}, []string{"service", "mount_point", "hostname"}),
-		},
+		//systemMetric: &SystemMetrics{
+		//	cpuUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		//		Name: "service_cpu_usage_percent",
+		//		Help: "CPU usage percentage per service",
+		//	}, []string{"service", "hostname"}),
+		//
+		//	memoryUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		//		Name: "service_memory_usage_bytes",
+		//		Help: "Memory usage in bytes per service",
+		//	}, []string{"service", "hostname"}),
+		//
+		//	diskUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		//		Name: "service_disk_usage_percent",
+		//		Help: "Disk usage percentage per service",
+		//	}, []string{"service", "mount_point", "hostname"}),
+		//},
 	}
 
 	return middleware
@@ -73,9 +68,9 @@ func (m *GrpcMiddleware) RegisterMetrics() {
 	prometheus.MustRegister(m.hits)
 	prometheus.MustRegister(m.errors)
 	prometheus.MustRegister(m.durations)
-	prometheus.MustRegister(m.systemMetric.cpuUsage)
-	prometheus.MustRegister(m.systemMetric.memoryUsage)
-	prometheus.MustRegister(m.systemMetric.diskUsage)
+	//prometheus.MustRegister(m.systemMetric.cpuUsage)
+	//prometheus.MustRegister(m.systemMetric.memoryUsage)
+	//prometheus.MustRegister(m.systemMetric.diskUsage)
 }
 
 func (m *GrpcMiddleware) IncreaseHits(method, path, service string) {
@@ -91,30 +86,30 @@ func (m *GrpcMiddleware) AddDurationToHistogram(method, service string, duration
 }
 
 func (m *GrpcMiddleware) TrackSystemMetrics(serviceName string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	hostname, _ := os.Hostname()
-
-	// CPU Usage
-	cpuPercent, err := cpu.Percent(time.Second, false)
-	if err == nil && len(cpuPercent) > 0 {
-		m.systemMetric.cpuUsage.WithLabelValues(serviceName, hostname).Set(cpuPercent[0])
-	} else {
-		log.Println("не обновилось")
-	}
-
-	// Memory Usage
-	vmStat, err := mem.VirtualMemory()
-	if err == nil {
-		m.systemMetric.memoryUsage.WithLabelValues(serviceName, hostname).Set(float64(vmStat.Used))
-	}
-
-	// Disk Usage
-	diskStat, err := disk.Usage("/")
-	if err == nil {
-		m.systemMetric.diskUsage.WithLabelValues(serviceName, "/", hostname).Set(diskStat.UsedPercent)
-	}
+	//m.mu.Lock()
+	//defer m.mu.Unlock()
+	//
+	//hostname, _ := os.Hostname()
+	//
+	//// CPU Usage
+	//cpuPercent, err := cpu.Percent(time.Second, false)
+	//if err == nil && len(cpuPercent) > 0 {
+	//	m.systemMetric.cpuUsage.WithLabelValues(serviceName, hostname).Set(cpuPercent[0])
+	//} else {
+	//	log.Println("не обновилось")
+	//}
+	//
+	//// Memory Usage
+	//vmStat, err := mem.VirtualMemory()
+	//if err == nil {
+	//	m.systemMetric.memoryUsage.WithLabelValues(serviceName, hostname).Set(float64(vmStat.Used))
+	//}
+	//
+	//// Disk Usage
+	//diskStat, err := disk.Usage("/")
+	//if err == nil {
+	//	m.systemMetric.diskUsage.WithLabelValues(serviceName, "/", hostname).Set(diskStat.UsedPercent)
+	//}
 }
 
 func (m *GrpcMiddleware) ServerMetricsInterceptor(
