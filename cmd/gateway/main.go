@@ -186,9 +186,9 @@ func main() {
 	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
 	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
 
-	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", 8080)}
+	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", 8081)}
 	go func() {
-		logger.Info("HTTP server listening on :%d", 8080)
+		logger.Info("HTTP server listening on :%d", 8081)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("failed to serve HTTP: %d", err)
 			os.Exit(1)
