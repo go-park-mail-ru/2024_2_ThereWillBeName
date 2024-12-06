@@ -166,8 +166,8 @@ services:
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
+      - /sys:/sys:rw
+      - /var/lib/docker/:/var/lib/docker:rw
     networks:
       - my_network
 

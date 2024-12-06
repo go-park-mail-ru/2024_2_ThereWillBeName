@@ -65,7 +65,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
-		Addr:              ":8091",
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.AttractionPort),
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -73,7 +73,7 @@ func main() {
 	}
 
 	go func() {
-		logger.Info("Starting HTTP server for metrics on :8091")
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.AttractionPort))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
 		}
@@ -120,7 +120,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
-		ticker := time.NewTicker(15 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for {

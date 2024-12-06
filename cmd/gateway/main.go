@@ -92,18 +92,20 @@ func main() {
 	corsMiddleware := middleware.NewCORSMiddleware(cfg.AllowedOrigins)
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
-	r.Handle("/metrics", promhttp.Handler())
+	r.Use(metricMw.MetricsMiddleware)
 	r.Use(corsMiddleware.CorsMiddleware)
+	metricsRouter := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	metricsRouter.Handle("/metrics", promhttp.Handler())
 	httpSrvMw := &http.Server{
-		Addr:              ":8094",
-		Handler:           r,
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.GatewayPort),
+		Handler:           metricsRouter,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,
 		WriteTimeout:      10 * time.Second,
 	}
 
 	go func() {
-		logger.Info("Starting HTTP server for metrics on :8094")
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.GatewayPort))
 		if err := httpSrvMw.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
 		}
@@ -127,8 +129,8 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placesHandler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/search", placesHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/category", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placesHandler.GetPlaceHandler).Methods(http.MethodGet)
-	places.HandleFunc("/category/{categoryName}", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 
 	categoriesHandler := httpCategories.NewCategoriesHandler(categoriesClient, logger)
 	categories := r.PathPrefix("/categories").Subrouter()
@@ -186,9 +188,9 @@ func main() {
 	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
 	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
 
-	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", 8081)}
+	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.HttpServer.Address)}
 	go func() {
-		logger.Info("HTTP server listening on :%d", 8081)
+		logger.Info(fmt.Sprintf("HTTP server listening on :%d", cfg.HttpServer.Address))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("failed to serve HTTP: %d", err)
 			os.Exit(1)
@@ -197,10 +199,9 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
 
 	go func() {
-		ticker := time.NewTicker(15 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -212,10 +213,7 @@ func main() {
 			}
 		}
 	}()
-
-	stop1 := make(chan os.Signal, 1)
-	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop1
+	<-stop
 
 	logger.Info("Shutting down HTTP server...")
 	if err := httpSrv.Shutdown(context.Background()); err != nil {

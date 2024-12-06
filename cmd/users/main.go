@@ -55,7 +55,7 @@ func main() {
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
 	httpSrv := &http.Server{
-		Addr:              ":8093",
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.UserPort),
 		Handler:           r,
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -64,7 +64,7 @@ func main() {
 
 	go func() {
 
-		logger.Info("Starting HTTP server for metrics on :8093")
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.UserPort))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
 		}
@@ -91,10 +91,9 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-stop
 
 	go func() {
-		ticker := time.NewTicker(15 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -106,6 +105,7 @@ func main() {
 			}
 		}
 	}()
+	<-stop
 
 	log.Println("Shutting down gRPC server...")
 	grpcUsersServer.GracefulStop()

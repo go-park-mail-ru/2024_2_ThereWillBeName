@@ -7,7 +7,10 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"log"
+	"net/http"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -26,6 +29,7 @@ type GrpcMiddleware struct {
 	hits         *prometheus.CounterVec
 	errors       *prometheus.CounterVec
 	durations    *prometheus.HistogramVec
+	statusCodes  *prometheus.CounterVec // Добавляем метрику для статусов кодов
 	systemMetric *SystemMetrics
 	mu           sync.Mutex
 }
@@ -33,18 +37,18 @@ type GrpcMiddleware struct {
 func Create() metrics.MetricsHTTP {
 	middleware := &GrpcMiddleware{
 		hits: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "grpc_method_hits_total",
-			Help: "Total number of gRPC method calls across all services",
-		}, []string{"method", "path", "service"}),
+			Name: "http_method_hits_total",
+			Help: "Total number of http method calls across all services",
+		}, []string{"method", "path", "status_code"}),
 
 		errors: prometheus.NewCounterVec(prometheus.CounterOpts{
-			Name: "grpc_method_errors_total",
-			Help: "Total number of gRPC method errors across all services",
+			Name: "http_method_errors_total",
+			Help: "Total number of http method errors across all services",
 		}, []string{"method", "path", "service"}),
 
 		durations: prometheus.NewHistogramVec(prometheus.HistogramOpts{
-			Name:    "grpc_method_duration_seconds",
-			Help:    "Histogram of gRPC method call durations across services",
+			Name:    "http_method_duration_seconds",
+			Help:    "Histogram of http method call durations across services",
 			Buckets: prometheus.DefBuckets,
 		}, []string{"method", "service"}),
 
@@ -62,7 +66,7 @@ func Create() metrics.MetricsHTTP {
 			diskUsage: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 				Name: "service_disk_usage_percent",
 				Help: "Disk usage percentage per service",
-			}, []string{"service", "mount_point", "hostname"}),
+			}, []string{"service", "hostname"}),
 		},
 	}
 
@@ -78,8 +82,8 @@ func (m *GrpcMiddleware) RegisterMetrics() {
 	prometheus.MustRegister(m.systemMetric.diskUsage)
 }
 
-func (m *GrpcMiddleware) IncreaseHits(method, path, service string) {
-	m.hits.WithLabelValues(method, path, service).Inc()
+func (m *GrpcMiddleware) IncreaseHits(method, path, statusCode string) {
+	m.hits.WithLabelValues(method, path, statusCode).Inc()
 }
 
 func (m *GrpcMiddleware) IncreaseErr(method, path, service string) {
@@ -100,8 +104,6 @@ func (m *GrpcMiddleware) TrackSystemMetrics(serviceName string) {
 	cpuPercent, err := cpu.Percent(time.Second, false)
 	if err == nil && len(cpuPercent) > 0 {
 		m.systemMetric.cpuUsage.WithLabelValues(serviceName, hostname).Set(cpuPercent[0])
-	} else {
-		log.Println("не обновилось")
 	}
 
 	// Memory Usage
@@ -113,7 +115,7 @@ func (m *GrpcMiddleware) TrackSystemMetrics(serviceName string) {
 	// Disk Usage
 	diskStat, err := disk.Usage("/")
 	if err == nil {
-		m.systemMetric.diskUsage.WithLabelValues(serviceName, "/", hostname).Set(diskStat.UsedPercent)
+		m.systemMetric.diskUsage.WithLabelValues(serviceName, hostname).Set(diskStat.UsedPercent)
 	}
 }
 
@@ -128,21 +130,47 @@ func (m *GrpcMiddleware) ServerMetricsInterceptor(
 	path := extractPath(info.FullMethod)
 
 	h, err := handler(ctx, req)
+	log.Println(err)
 	duration := time.Since(start)
 
 	if err != nil {
 		m.IncreaseErr(info.FullMethod, path, serviceName)
 	}
-	m.IncreaseHits(info.FullMethod, path, serviceName)
 	m.AddDurationToHistogram(info.FullMethod, serviceName, duration)
 
 	return h, err
 }
 
+func (m *GrpcMiddleware) MetricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw := NewResponseWriter(w)
+		next.ServeHTTP(rw, r)
+		normalizedPath := normalizePath(r.URL.Path)
+
+		m.IncreaseHits(r.Method, normalizedPath, strconv.Itoa(rw.statusCode))
+	})
+}
+
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func NewResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{w, http.StatusOK}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
 func extractServiceName(fullMethod string) string {
 	parts := strings.Split(fullMethod, "/")
 	if len(parts) >= 2 {
-		return parts[1]
+		if len(parts[1]) >= 2 {
+			return strings.Split(parts[1], ".")[0]
+		}
 	}
 	return "unknown"
 }
@@ -150,8 +178,14 @@ func extractServiceName(fullMethod string) string {
 func extractPath(fullMethod string) string {
 	parts := strings.Split(fullMethod, "/")
 	if len(parts) >= 3 {
-		// Возвращаем путь (третий элемент в массиве)
+		log.Println(fullMethod)
+		log.Println(parts[2])
 		return parts[2]
 	}
 	return "unknown"
+}
+
+func normalizePath(path string) string {
+	re := regexp.MustCompile(`/\d+`)
+	return re.ReplaceAllString(path, "/:id")
 }
