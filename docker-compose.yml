@@ -11,6 +11,8 @@ services:
     volumes:
       - ./db/migrations:/docker-entrypoint-initdb.d
       - ./data:/var/lib/postgresql/data
+      - ./config/postgresql.conf:/var/lib/postgresql/data/postgresql.conf
+      - ./db/logs:/var/lib/postgresql/data/log
     restart: unless-stopped
     ports:
       - ${DB_PORT}:5432
