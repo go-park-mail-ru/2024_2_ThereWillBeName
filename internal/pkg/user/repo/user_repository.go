@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 )
@@ -100,17 +99,8 @@ func (r *UserRepositoryImpl) UpdateAvatarPathByUserId(ctx context.Context, userI
 }
 
 func (r *UserRepositoryImpl) GetUserByID(ctx context.Context, userID uint) (models.UserProfile, error) {
-	queryBuilder := squirrel.Select("login, email, avatar_path").
-		From(`"user"`).
-		Where(squirrel.Eq{"id": userID}).
-		PlaceholderFormat(squirrel.Dollar)
-
-	query, args, err := queryBuilder.ToSql()
-	if err != nil {
-		return models.UserProfile{}, fmt.Errorf("failed to build query: %w", models.ErrInternal)
-	}
-
-	row := r.db.QueryRowContext(ctx, query, args...)
+	query := `SELECT login, email, avatar_path FROM "user" WHERE id = $1`
+	row := r.db.QueryRowContext(ctx, query, userID)
 
 	var userProfile models.UserProfile
 

@@ -1,10 +1,11 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 	"os"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 type Config struct {
@@ -16,11 +17,12 @@ type Config struct {
 }
 
 type Database struct {
-	DbHost string `env:"DB_HOST" env-required:"true"`
-	DbPort int    `env:"DB_PORT" env-required:"true"`
-	DbUser string `env:"DB_USER" env-required:"true"`
-	DbPass string `env:"DB_PASS" env-required:"true"`
-	DbName string `env:"DB_NAME" env-required:"true"`
+	DbHost         string `env:"DB_HOST" env-required:"true"`
+	DbPort         int    `env:"DB_PORT" env-required:"true"`
+	DbUser         string `env:"DB_USER" env-required:"true"`
+	DbPass         string `env:"DB_PASS" env-required:"true"`
+	DbName         string `env:"DB_NAME" env-required:"true"`
+	MaxConnections int    `env:"DB_MAX_CONNECTIONS" env-required:"true"`
 }
 
 type Grpc struct {

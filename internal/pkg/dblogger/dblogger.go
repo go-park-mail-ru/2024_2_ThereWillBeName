@@ -2,29 +2,31 @@ package dblogger
 
 import (
 	"context"
-	"database/sql"
 	"log/slog"
 	"time"
+
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 type DB struct {
-	db     *sql.DB
+	pool   *pgxpool.Pool
 	logger *slog.Logger
 }
 
-func NewDB(db *sql.DB, logger *slog.Logger) *DB {
+func NewDB(pool *pgxpool.Pool, logger *slog.Logger) *DB {
 	return &DB{
-		db:     db,
+		pool:   pool,
 		logger: logger,
 	}
 }
 
-func (d *DB) QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
+func (d *DB) Query(ctx context.Context, query string, args ...interface{}) (pgx.Rows, error) {
 	start := time.Now()
-	rows, err := d.db.QueryContext(ctx, query, args...)
+	rows, err := d.pool.Query(ctx, query, args...)
 	duration := time.Since(start)
 
-	d.logger.DebugContext(ctx, "Executing QueryContext",
+	d.logger.DebugContext(ctx, "Executing Query",
 		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
@@ -34,27 +36,27 @@ func (d *DB) QueryContext(ctx context.Context, query string, args ...interface{}
 	return rows, err
 }
 
-func (d *DB) ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
+func (d *DB) Exec(ctx context.Context, query string, args ...interface{}) (pgx.CommandTag, error) {
 	start := time.Now()
-	result, err := d.db.ExecContext(ctx, query, args...)
+	tag, err := d.pool.Exec(ctx, query, args...)
 	duration := time.Since(start)
 
-	d.logger.DebugContext(ctx, "Executing ExecContext",
+	d.logger.DebugContext(ctx, "Executing Exec",
 		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
 	)
 
-	return result, err
+	return tag, err
 }
 
-func (d *DB) QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row {
+func (d *DB) QueryRow(ctx context.Context, query string, args ...interface{}) pgx.Row {
 	start := time.Now()
-	row := d.db.QueryRowContext(ctx, query, args...)
+	row := d.pool.QueryRow(ctx, query, args...)
 	duration := time.Since(start)
 
-	d.logger.DebugContext(ctx, "Executing QueryRowContext",
+	d.logger.DebugContext(ctx, "Executing QueryRow",
 		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
@@ -63,9 +65,18 @@ func (d *DB) QueryRowContext(ctx context.Context, query string, args ...interfac
 	return row
 }
 
-func (d *DB) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error) {
+func (d *DB) Prepare(ctx context.Context, query string) (*pgxpool.Conn, pgx.PreparedStatement, error) {
 	start := time.Now()
-	stmt, err := d.db.PrepareContext(ctx, query)
+	conn, err := d.pool.Acquire(ctx)
+	if err != nil {
+		d.logger.DebugContext(ctx, "Error acquiring connection",
+			slog.String("query", query),
+			slog.Duration("duration", time.Since(start)),
+			slog.String("error", errToString(err)),
+		)
+		return nil, pgx.PreparedStatement{}, err
+	}
+	stmt, err := conn.Conn().Prepare(ctx, query, query)
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Preparing statement",
@@ -74,11 +85,11 @@ func (d *DB) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error
 		slog.String("error", errToString(err)),
 	)
 
-	return stmt, err
+	return conn, stmt, err
 }
 
-func (d *DB) Close() error {
-	return d.db.Close()
+func (d *DB) Close() {
+	d.pool.Close()
 }
 
 func errToString(err error) string {
