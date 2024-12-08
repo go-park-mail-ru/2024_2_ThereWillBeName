@@ -4,21 +4,26 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	grpcTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	tripRepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripUsecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	_ "github.com/lib/pq"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -28,6 +33,9 @@ func main() {
 	cfg := config.Load()
 
 	logger := setupLogger()
+
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
 	if err != nil {
@@ -42,10 +50,28 @@ func main() {
 
 	wrappedDB := dblogger.NewDB(db, logger)
 
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
+	httpSrv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.TripPort),
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.TripPort))
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
+
 	tripRepo := tripRepo.NewTripRepository(wrappedDB)
 	tripUsecase := tripUsecase.NewTripsUsecase(tripRepo)
 
-	grpcTripsServer := grpc.NewServer()
+	grpcTripsServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
 	tripsHandler := grpcTrips.NewGrpcTripHandler(tripUsecase, logger)
 	gen.RegisterTripsServer(grpcTripsServer, tripsHandler)
 	reflection.Register(grpcTripsServer)
@@ -63,6 +89,20 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("trips")
+			case <-stop:
+				return
+			}
+		}
+	}()
 	<-stop
 
 	log.Println("Shutting down gRPC server...")

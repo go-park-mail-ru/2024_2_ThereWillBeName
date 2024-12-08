@@ -8,5 +8,5 @@ FROM scratch AS runner
 WORKDIR /build
 COPY --from=builder /github.com/go-park-mail-ru/2024_2_ThereWillBeName/gateway/.bin .
 COPY --from=builder /github.com/go-park-mail-ru/2024_2_ThereWillBeName/gateway/config config/
-EXPOSE 8080
+EXPOSE 8081
 ENTRYPOINT ["./.bin"]

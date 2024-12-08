@@ -14,6 +14,8 @@ services:
     restart: unless-stopped
     ports:
       - ${DB_PORT}:5432
+    networks:
+      - my_network
 
   gateway:
     container_name: gateway
@@ -28,9 +30,12 @@ services:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
     ports:
-      - 8080:8080
+      - "8081:8081"
+      - "8094:8094"
     depends_on:
       - tripdb
+    networks:
+      - my_network
     restart: unless-stopped
 
   attractions:
@@ -47,10 +52,13 @@ services:
       - ./assets/photos:/assets/photos
 
     ports:
+      - "8091:8091"
       - "50051:50051"
     depends_on:
       - tripdb
     restart: unless-stopped
+    networks:
+      - my_network
   trips:
     container_name: trips
     build:
@@ -66,9 +74,12 @@ services:
       - ./assets/photos:/assets/photos
     ports:
       - "50053:50053"
+      - "8092:8092"
     depends_on:
       - tripdb
     restart: unless-stopped
+    networks:
+      - my_network
   users:
     container_name: users
     build:
@@ -84,9 +95,12 @@ services:
       - ./assets/photos:/assets/photos
     ports:
       - "50052:50052"
+      - "8093:8093"
     depends_on:
       - tripdb
     restart: unless-stopped
+    networks:
+      - my_network
   survey:
     container_name: survey
     build:
@@ -104,4 +118,58 @@ services:
       - "50054:50054"
     depends_on:
       - tripdb
-    restart: unless-stopped
+    networks:
+      - my_network
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - my_network
+  node_exporter:
+    depends_on:
+      - prometheus
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --collector.filesystem.ignored-mount-points
+      - ^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)
+    hostname: node_exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - my_network
+  grafana:
+    image: grafana/grafana-enterprise
+    volumes:
+      - ./grafana:/var/lib/grafana/
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+    ports:
+      - "8080:3000"
+    networks:
+      - my_network
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - "8088:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:rw
+      - /var/lib/docker/:/var/lib/docker:rw
+    networks:
+      - my_network
+
+networks:
+  my_network:

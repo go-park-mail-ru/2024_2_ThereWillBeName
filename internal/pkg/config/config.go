@@ -11,8 +11,9 @@ type Config struct {
 	ConfigPath     string `env:"CONFIG_PATH" env-default:"config/config.yaml"`
 	Database       Database
 	Grpc           Grpc
-	HttpServer     HttpServer
-	AllowedOrigins []string `env:"ALLOWED_ORIGINS" env-default:"*"`
+	HttpServer     HttpServer `yaml:"HttpServer"`
+	AllowedOrigins []string   `env:"ALLOWED_ORIGINS" env-default:"*"`
+	Metric         Metric
 }
 
 type Database struct {
@@ -37,10 +38,18 @@ type Grpc struct {
 }
 
 type HttpServer struct {
-	Address      string        `yaml:"address" yaml-default:"8080"`
+	Address      int           `yaml:"Address" yaml-default:"8081"`
 	IdleTimeout  time.Duration `yaml:"idle_timeout" yaml-default:"60s"`
 	ReadTimeout  time.Duration `yaml:"read_timeout" yaml-default:"10s"`
 	WriteTimeout time.Duration `yaml:"write_timeout" yaml-default:"10s"`
+}
+
+type Metric struct {
+	UserPort       int `env:"USER_METRIC_PORT" env-default:"8093"`
+	AttractionPort int `env:"ATTRACTIONS_METRIC_PORT" env-default:"8091"`
+	TripPort       int `env:"TRIPS_METRIC_PORT" env-default:"8092"`
+	SurveyPort     int `env:"SURVEYS_METRIC_PORT" env-default:"8095"`
+	GatewayPort    int `env:"GATEWAY_METRIC_PORT" env-default:"8094"`
 }
 
 func Load() *Config {

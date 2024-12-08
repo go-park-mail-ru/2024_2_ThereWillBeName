@@ -16,6 +16,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	reviewRepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
@@ -25,14 +26,19 @@ import (
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -46,17 +52,32 @@ func main() {
 	logger := setupLogger()
 
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
-	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
-	}
-	defer db.Close()
 
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 	wrappedDB := dblogger.NewDB(db, logger)
+
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
+	httpSrv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.AttractionPort),
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.AttractionPort))
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
 
 	reviewsRepo := reviewRepo.NewReviewRepository(wrappedDB)
 	reviewUsecase := reviewUsecase.NewReviewsUsecase(reviewsRepo)
@@ -69,21 +90,18 @@ func main() {
 	searchRepo := searchRepo.NewSearchRepository(wrappedDB)
 	searchUsecase := searchUsecase.NewSearchUsecase(searchRepo)
 
-	grpcAttractionsServer := grpc.NewServer()
-
 	attractionsHandler := grpcAttractions.NewGrpcAttractionsHandler(placeUsecase)
-	genPlaces.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
-
 	citiesHandler := grpcCities.NewGrpcCitiesHandler(citiesUsecase)
-	genCities.RegisterCitiesServer(grpcAttractionsServer, citiesHandler)
-
 	reviewsHandler := grpcReviews.NewGrpcReviewsHandler(reviewUsecase)
-	genReviews.RegisterReviewsServer(grpcAttractionsServer, reviewsHandler)
-
 	categoriesHandler := grpcCategories.NewGrpcCategoriesHandler(categoriesUsecase)
-	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
-
 	searchHandler := grpcSearch.NewGrpcSearchHandler(searchUsecase, logger)
+
+	grpcAttractionsServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
+
+	genPlaces.RegisterAttractionsServer(grpcAttractionsServer, attractionsHandler)
+	genCities.RegisterCitiesServer(grpcAttractionsServer, citiesHandler)
+	genReviews.RegisterReviewsServer(grpcAttractionsServer, reviewsHandler)
+	genCategories.RegisterCategoriesServer(grpcAttractionsServer, categoriesHandler)
 	genSearch.RegisterSearchServer(grpcAttractionsServer, searchHandler)
 
 	reflection.Register(grpcAttractionsServer)
@@ -101,6 +119,20 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("attractions")
+			case <-stop:
+				return
+			}
+		}
+	}()
+
 	<-stop
 
 	log.Println("Shutting down gRPC server...")
