@@ -155,14 +155,14 @@ services:
       - ./grafana:/var/lib/grafana/
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     ports:
-      - "3000:3000"
+      - "8080:3000"
     networks:
       - my_network
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: cadvisor
     ports:
-      - "8080:8080"
+      - "8088:8080"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
