@@ -23,10 +23,26 @@ func NewDB(pool *pgxpool.Pool, logger *slog.Logger) *DB {
 		logger: logger,
 	}
 }
-func SetupDBPool(cfg *config.Config, logger *slog.Logger) (*pgxpool.Pool, error) {
+func SetupDBPool(cfg *config.Config, dbType string, logger *slog.Logger) (*pgxpool.Pool, error) {
+	var dbUser, dbPass string
+
+	switch dbType {
+	case "users":
+		dbUser = cfg.UsersDatabase.DbUser
+		dbPass = cfg.UsersDatabase.DbPass
+	case "trips":
+		dbUser = cfg.TripsDatabase.DbUser
+		dbPass = cfg.TripsDatabase.DbPass
+	case "attractions":
+		dbUser = cfg.AttractionsDatabase.DbUser
+		dbPass = cfg.AttractionsDatabase.DbPass
+	default:
+		return nil, fmt.Errorf("unsupported db type: %s", dbType)
+	}
+
 	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
-		cfg.Database.DbUser,
-		cfg.Database.DbPass,
+		dbUser,
+		dbPass,
 		cfg.Database.DbHost,
 		cfg.Database.DbPort,
 		cfg.Database.DbName,

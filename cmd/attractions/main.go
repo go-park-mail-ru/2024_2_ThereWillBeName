@@ -47,7 +47,7 @@ func main() {
 
 	logger := setupLogger()
 
-	db, err := dblogger.SetupDBPool(cfg, logger)
+	db, err := dblogger.SetupDBPool(cfg, "attractions", logger)
 	if err != nil {
 		log.Fatalf("failed to initialize connection pool: %v", err)
 	}
