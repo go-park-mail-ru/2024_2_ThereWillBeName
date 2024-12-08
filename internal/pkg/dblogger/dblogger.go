@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/jackc/pgconn" // Импорт pgconn для CommandTag
+	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 )
@@ -79,7 +79,6 @@ func (d *DB) Prepare(ctx context.Context, queryName string, query string) (*pgxp
 	)
 
 	if err != nil {
-		// Освобождаем соединение, если произошла ошибка
 		conn.Release()
 		return nil, err
 	}
@@ -131,7 +130,6 @@ func (d *DB) QueryRow(ctx context.Context, query string, args ...interface{}) pg
 	return row
 }
 
-// Закрытие пула соединений
 func (d *DB) Close() {
 	d.pool.Close()
 }
