@@ -156,6 +156,7 @@ func main() {
 	user.Handle("/trips", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripsByUserIDHandler), logger)).Methods(http.MethodGet)
 	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPhotosToTripHandler), logger)).Methods(http.MethodPut)
 	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeletePhotoHandler), logger)).Methods(http.MethodDelete)
+	trips.Handle("/{id}/share", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.CreateSharingLinkHandler), logger)).Methods(http.MethodPost)
 
 	surveyHandler := httpSurvey.NewSurveyHandler(surveyClient, logger)
 	survey := r.PathPrefix("/survey").Subrouter()

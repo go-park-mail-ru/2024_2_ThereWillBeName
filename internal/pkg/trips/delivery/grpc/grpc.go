@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GrpcTripsHandler struct {
@@ -197,4 +199,30 @@ func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen
 
 	h.logger.Info("Photo successfully deleted", slog.String("path", photoPath))
 	return &tripsGen.EmptyResponse{}, nil
+}
+func (h *GrpcTripsHandler) CreateSharingLink(ctx context.Context, in *tripsGen.CreateSharingLinkRequest) (*tripsGen.CreateSharingLinkResponse, error) {
+	token := in.Token
+	err := h.uc.CreateSharingLink(ctx, uint(in.TripId), token)
+	if err != nil {
+		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
+		return nil, err
+	}
+
+	return &tripsGen.CreateSharingLinkResponse{Token: token}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.GetSharingTokenRequest) (*tripsGen.GetSharingTokenResponse, error) {
+	tripID := in.TripId
+	token, err := h.uc.GetSharingToken(ctx, uint(tripID))
+	if err != nil {
+		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingTokenResponse{
+		Token: &tripsGen.Token{
+			Id:        uint32(token.ID),
+			Token:     token.Token,
+			ExpiresAt: timestamppb.New(token.ExpiresAt),
+		},
+	}, nil
 }

@@ -9,6 +9,8 @@ import (
 	"2024_2_ThereWillBeName/internal/validator"
 
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +24,10 @@ import (
 
 type AddPlaceRequest struct {
 	PlaceID uint `json:"place_id"`
+}
+
+type CreateSharingLinkResponse struct {
+	Token string `json:"token"`
 }
 
 type TripData struct {
@@ -41,6 +47,15 @@ type TripHandler struct {
 
 func NewTripHandler(client tripsGen.TripsClient, logger *slog.Logger) *TripHandler {
 	return &TripHandler{client, logger}
+}
+
+func generateToken() (string, error) {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
@@ -575,4 +590,55 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	httpresponse.SendJSONResponse(w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
+}
+
+func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
+	tripIDStr := mux.Vars(r)["id"]
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for creating a sharing link for a trip", slog.String("tripID", tripIDStr))
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		return
+	}
+	req := &tripsGen.GetSharingTokenRequest{
+		TripId: uint32(tripID),
+	}
+	token, err := h.client.GetSharingToken(r.Context(), req)
+	if err != nil {
+		response, status := ErrorCheck(err, "get sharing token", h.logger, context.Background())
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		return
+	}
+	if token.Token != nil {
+		response := CreateSharingLinkResponse{
+			Token: token.Token.Token,
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
+	}
+	newToken, err := generateToken()
+	if err != nil {
+		h.logger.Warn("Failed to generate token", slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request body",
+		}
+		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	newReq := &tripsGen.CreateSharingLinkRequest{
+		TripId: uint32(tripID),
+		Token:  newToken,
+	}
+
+	_, err = h.client.CreateSharingLink(r.Context(), newReq)
+	if err != nil {
+		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Failed to create sharing link"}, http.StatusInternalServerError, h.logger)
+		return
+	}
+	response := CreateSharingLinkResponse{
+		Token: newToken,
+	}
+
+	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }

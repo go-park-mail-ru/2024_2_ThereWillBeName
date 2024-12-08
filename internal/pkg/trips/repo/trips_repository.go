@@ -3,6 +3,7 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"time"
 
 	"context"
 	"database/sql"
@@ -219,4 +220,47 @@ func (r *TripRepository) DeletePhotoFromTrip(ctx context.Context, tripID uint, p
 	}
 
 	return nil
+}
+
+func (r *TripRepository) CreateSharingLink(ctx context.Context, tripID uint, token string) error {
+	query := `
+        INSERT INTO shared_link (trip_id, token, expires_at)
+        VALUES ($1, $2, NOW() + INTERVAL '7 days')
+    `
+	_, err := r.db.ExecContext(ctx, query, tripID, token)
+	if err != nil {
+		return fmt.Errorf("failed to insert sharing link into database: %w", err)
+	}
+	return nil
+}
+
+func (r *TripRepository) GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error) {
+	query := `SELECT token, expires_at FROM sharing_link WHERE trip_id = $1`
+	var token models.SharingToken
+	err := r.db.QueryRowContext(ctx, query, tripID).Scan(
+		&token.Token,
+		&token.ExpiresAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.SharingToken{}, nil
+		}
+		return models.SharingToken{}, fmt.Errorf("failed to retrive sharing token: %w", err)
+	}
+	if token.ExpiresAt.Before(time.Now()) {
+		deleteQuery := `DELETE from shared_link WHERE trip_id = $1`
+		result, err := r.db.ExecContext(ctx, deleteQuery, tripID)
+		if err != nil {
+			return models.SharingToken{}, fmt.Errorf("failed to delete sharing token: %w", models.ErrInternal)
+		}
+
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return models.SharingToken{}, fmt.Errorf("failed to retrieve rows affected %w", models.ErrInternal)
+		}
+		if rowsAffected == 0 {
+			return models.SharingToken{}, fmt.Errorf("no rows were deleted: %w", models.ErrNotFound)
+		}
+	}
+	return token, nil
 }

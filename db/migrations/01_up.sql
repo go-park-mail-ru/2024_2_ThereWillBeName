@@ -117,6 +117,15 @@ CREATE TABLE IF NOT EXISTS user_survey (
     FOREIGN KEY (survey_id) REFERENCES survey(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
 );
+CREATE TABLE IF NOT EXISTS shared_link (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    trip_id INT NOT NULL, -- ID страницы
+    token TEXT NOT NULL UNIQUE, -- Уникальный токен для ссылки
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания записи
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMP, -- Срок действия ссылки (если нужен)
+    CONSTRAINT fk_page FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE
+);
 
 COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
