@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS category
 
 CREATE TABLE IF NOT EXISTS place_category
 (
-     place_id INT NOT NULL,
+    place_id INT NOT NULL,
     category_id INT NOT NULL,
     PRIMARY KEY(place_id, category_id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

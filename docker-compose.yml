@@ -44,6 +44,11 @@ services:
       - .env
     environment:
       - LOG_LEVEL=Debug
+      - DB_USER=${DB_USER_ATTRACTIONS}
+      - DB_PASS=${DB_PASS_ATTRACTIONS}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=tripdb
+      - DB_PORT=${DB_PORT}
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
@@ -63,6 +68,11 @@ services:
     environment:
       - LOG_LEVEL=Debug
       - PHOTO_STORAGE_PATH=/assets/photos
+      - DB_USER=${DB_USER_TRIPS}
+      - DB_PASS=${DB_PASS_TRIPS}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=tripdb
+      - DB_PORT=${DB_PORT}
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
@@ -81,6 +91,11 @@ services:
     environment:
       - AVATAR_STORAGE_PATH=/assets/avatars
       - LOG_LEVEL=Debug
+      - DB_USER=${DB_USER_TRIPS}
+      - DB_PASS=${DB_PASS_TRIPS}
+      - DB_NAME=${DB_NAME}
+      - DB_HOST=tripdb
+      - DB_PORT=${DB_PORT}
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos

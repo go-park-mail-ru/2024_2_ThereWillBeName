@@ -31,6 +31,7 @@ func main() {
 	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
 	db, err := dblogger.SetupDBPool(cfg, logger)
+
 	if err != nil {
 		log.Fatalf("failed to initialize connection pool: %v", err)
 	}

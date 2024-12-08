@@ -9,20 +9,36 @@ import (
 )
 
 type Config struct {
-	ConfigPath     string `env:"CONFIG_PATH" env-default:"config/config.yaml"`
-	Database       Database
-	Grpc           Grpc
-	HttpServer     HttpServer
-	AllowedOrigins []string `env:"ALLOWED_ORIGINS" env-default:"*"`
+	ConfigPath          string `env:"CONFIG_PATH" env-default:"config/config.yaml"`
+	Database            Database
+	UsersDatabase       UsersDatabaseConfig
+	TripsDatabase       TripsDatabaseConfig
+	AttractionsDatabase AttractionsDatabaseConfig
+	Grpc                Grpc
+	HttpServer          HttpServer
+	AllowedOrigins      []string `env:"ALLOWED_ORIGINS" env-default:"*"`
 }
 
 type Database struct {
 	DbHost         string `env:"DB_HOST" env-required:"true"`
 	DbPort         int    `env:"DB_PORT" env-required:"true"`
-	DbUser         string `env:"DB_USER" env-required:"true"`
-	DbPass         string `env:"DB_PASS" env-required:"true"`
 	DbName         string `env:"DB_NAME" env-required:"true"`
 	MaxConnections int    `env:"DB_MAX_CONNECTIONS" env-required:"true"`
+}
+
+type UsersDatabaseConfig struct {
+	DbUser string `env:"DB_USER_USERS" env-required:"true"`
+	DbPass string `env:"DB_PASS_USERS" env-required:"true"`
+}
+
+type TripsDatabaseConfig struct {
+	DbUser string `env:"DB_USER_TRIPS" env-required:"true"`
+	DbPass string `env:"DB_PASS_TRIPS" env-required:"true"`
+}
+
+type AttractionsDatabaseConfig struct {
+	DbUser string `env:"DB_USER_ATTRACTIONS" env-required:"true"`
+	DbPass string `env:"DB_PASS_ATTRACTIONS" env-required:"true"`
 }
 
 type Grpc struct {
