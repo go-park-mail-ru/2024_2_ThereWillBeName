@@ -23,7 +23,7 @@ func (r *CitiesRepository) SearchCitiesByName(ctx context.Context, query string)
 
 	searchQuery := `SELECT id, name, created_at FROM city WHERE name ILIKE $1`
 
-	rows, err := r.db.QueryContext(ctx, searchQuery, query+"%")
+	rows, err := r.db.Query(ctx, searchQuery, query+"%")
 	if err != nil {
 		return nil, fmt.Errorf("failed to search cities: %w", models.ErrInternal)
 	}
@@ -49,7 +49,7 @@ func (r *CitiesRepository) SearchCityByID(ctx context.Context, id uint) (models.
 	var city models.City
 
 	query := `SELECT id, name, created_at FROM city WHERE id = $1`
-	err := r.db.QueryRowContext(ctx, query, id).Scan(&city.ID, &city.Name, &city.CreatedAt)
+	err := r.db.QueryRow(ctx, query, id).Scan(&city.ID, &city.Name, &city.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return city, models.ErrNotFound

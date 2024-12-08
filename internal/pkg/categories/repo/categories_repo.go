@@ -17,7 +17,7 @@ func NewCategoriesRepo(db *dblogger.DB) *CategoriesRepo {
 
 func (r *CategoriesRepo) GetCategories(ctx context.Context, limit, offset int) ([]models.Category, error) {
 	query := "SELECT id, name FROM category ORDER BY id LIMIT $1 OFFSET $2"
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get categories: %w", err)
 	}

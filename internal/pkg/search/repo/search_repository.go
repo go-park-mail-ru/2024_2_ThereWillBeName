@@ -26,7 +26,7 @@ func (r *SearchRepository) SearchCitiesAndPlacesBySubString(ctx context.Context,
         WHERE name ILIKE '%' || $1 || '%'
     `
 
-	rows, err := r.db.QueryContext(ctx, queryStr, query)
+	rows, err := r.db.Query(ctx, queryStr, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute search query: %w", models.ErrInternal)
 	}

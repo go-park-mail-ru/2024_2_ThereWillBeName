@@ -8,7 +8,6 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	tripRepo "2024_2_ThereWillBeName/internal/pkg/trips/repo"
 	tripUsecase "2024_2_ThereWillBeName/internal/pkg/trips/usecase"
-	"database/sql"
 	"fmt"
 	"log"
 	"log/slog"
@@ -29,16 +28,11 @@ func main() {
 
 	logger := setupLogger()
 
-	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
+	db, err := dblogger.SetupDBPool(cfg, logger)
 	if err != nil {
-		log.Fatalf("failed to connect to database: %v", err)
+		log.Fatalf("failed to initialize connection pool: %v", err)
 	}
 	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("failed to ping database: %v", err)
-	}
 
 	wrappedDB := dblogger.NewDB(db, logger)
 

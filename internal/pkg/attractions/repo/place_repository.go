@@ -22,7 +22,7 @@ func NewPLaceRepository(db *dblogger.DB) *PlaceRepository {
 
 func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]models.GetPlace, error) {
 	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, p.latitude, p.longitude, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id GROUP BY p.id, c.name ORDER BY p.id LIMIT $1 OFFSET $2"
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	rows, err := r.db.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get attractions: %w", err)
 	}
@@ -42,7 +42,7 @@ func (r *PlaceRepository) GetPlaces(ctx context.Context, limit, offset int) ([]m
 func (r *PlaceRepository) GetPlace(ctx context.Context, id uint) (models.GetPlace, error) {
 	var place models.GetPlace
 	query := "SELECT p.id, p.name, p.image_path, p.description, p.rating, p.address, p.phone_number, p.latitude, p.longitude, c.name AS city_name, ARRAY_AGG(ca.name) AS categories FROM place p JOIN city c ON p.city_id = c.id JOIN place_category pc ON p.id = pc.place_id JOIN category ca ON pc.category_id = ca.id WHERE p.id = $1 GROUP BY p.id, c.name ORDER BY p.id"
-	row := r.db.QueryRowContext(ctx, query, id)
+	row := r.db.QueryRow(ctx, query, id)
 	err := row.Scan(&place.ID, &place.Name, &place.ImagePath, &place.Description, &place.Rating, &place.Address, &place.PhoneNumber, &place.Latitude, &place.Longitude, &place.City, pq.Array(&place.Categories))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -92,13 +92,18 @@ func (r *PlaceRepository) SearchPlaces(ctx context.Context, name string, categor
 		LIMIT $` + fmt.Sprint(len(args)+1) + ` OFFSET $` + fmt.Sprint(len(args)+2)
 	args = append(args, limit, offset)
 
-	stmt, err := r.db.PrepareContext(ctx, query)
+	conn, err := r.db.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't acquire connection: %w", err)
+	}
+	defer conn.Release()
+
+	_, err = conn.Conn().Prepare(ctx, "search_places", query)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't prepare query: %w", err)
 	}
-	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(ctx, args...)
+	rows, err := conn.Conn().Query(ctx, "search_places", args...)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get places: %w", err)
 	}
@@ -140,7 +145,7 @@ func (r *PlaceRepository) GetPlacesByCategory(ctx context.Context, category stri
 			ORDER BY p.id 
 			LIMIT $2 
 			OFFSET $3`
-	rows, err := r.db.QueryContext(ctx, query, category, limit, offset)
+	rows, err := r.db.Query(ctx, query, category, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't get attractions by category: %w", err)
 	}

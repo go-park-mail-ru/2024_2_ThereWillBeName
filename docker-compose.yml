@@ -8,6 +8,7 @@ services:
       POSTGRES_DB: ${DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASS}
+      PGOPTIONS: "-c listen_addresses='*'"
     volumes:
       - ./db/migrations:/docker-entrypoint-initdb.d
       - ./data:/var/lib/postgresql/data

@@ -24,7 +24,6 @@ import (
 	genSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
-	"context"
 	"fmt"
 	"log"
 	"log/slog"
@@ -33,9 +32,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
-	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -47,7 +44,7 @@ func main() {
 
 	logger := setupLogger()
 
-	db, err := setupDBPool(cfg, logger)
+	db, err := dblogger.SetupDBPool(cfg, logger)
 	if err != nil {
 		log.Fatalf("failed to initialize connection pool: %v", err)
 	}
@@ -122,34 +119,4 @@ func setupLogger() *slog.Logger {
 	handler := logger.NewPrettyHandler(os.Stdout, opts)
 
 	return slog.New(handler)
-}
-
-func setupDBPool(cfg *config.Config, logger *slog.Logger) (*pgxpool.Pool, error) {
-	dbURL := fmt.Sprintf("postgres://%s:%s@%s:%d/%s",
-		cfg.Database.DbUser,
-		cfg.Database.DbPass,
-		cfg.Database.DbHost,
-		cfg.Database.DbPort,
-		cfg.Database.DbName,
-	)
-
-	config, err := pgxpool.ParseConfig(dbURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse database URL: %v", err)
-	}
-
-	// Настройка пула соединений
-	config.MaxConns = int32(cfg.Database.MaxConnections) // Максимальное количество соединений
-	config.MinConns = 2                                  // Минимальное количество соединений
-	config.HealthCheckPeriod = 1 * time.Minute           // Период проверки соединений
-	config.MaxConnIdleTime = 5 * time.Minute             // Максимальное время простоя соединения
-	config.ConnConfig.PreferSimpleProtocol = true        // Упрощенный протокол для производительности
-
-	pool, err := pgxpool.ConnectConfig(context.Background(), config)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create connection pool: %v", err)
-	}
-
-	log.Println("Database connection pool successfully initialized")
-	return pool, nil
 }

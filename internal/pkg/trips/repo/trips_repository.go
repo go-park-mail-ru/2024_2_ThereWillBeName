@@ -23,12 +23,12 @@ func (r *TripRepository) CreateTrip(ctx context.Context, trip models.Trip) error
 	query := `INSERT INTO trip (user_id, name, description, city_id, start_date, end_date, private, created_at) 
               VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`
 
-	result, err := r.db.ExecContext(ctx, query, trip.UserID, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private)
+	result, err := r.db.Exec(ctx, query, trip.UserID, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private)
 	if err != nil {
 		return fmt.Errorf("failed to create a trip: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
 	}
@@ -44,11 +44,11 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
               SET name = $1, description = $2, city_id = $3, start_date = $4, end_date = $5, private = $6, updated_at = NOW() 
               WHERE id = $7`
 
-	result, err := r.db.ExecContext(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
+	result, err := r.db.Exec(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
 	if err != nil {
 		return fmt.Errorf("failed to execute update query: %w", models.ErrInternal)
 	}
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
 	}
@@ -61,12 +61,12 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
 
 func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 	query := `DELETE FROM trip WHERE id = $1`
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := r.db.Exec(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete trip: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve rows affected %w", models.ErrInternal)
 	}
@@ -89,7 +89,7 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 		ORDER BY t.created_at DESC
 		LIMIT $2 OFFSET $3`
 
-	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
+	rows, err := r.db.Query(ctx, query, userID, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve trips: %w", models.ErrInternal)
 	}
@@ -127,7 +127,7 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
         WHERE 
             id = $1
     `
-	err := r.db.QueryRowContext(ctx, query, tripID).Scan(
+	err := r.db.QueryRow(ctx, query, tripID).Scan(
 		&trip.ID,
 		&trip.UserID,
 		&trip.Name,
@@ -150,7 +150,7 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
         FROM trip_photo
         WHERE trip_id = $1
     `
-	rows, err := r.db.QueryContext(ctx, photoQuery, tripID)
+	rows, err := r.db.Query(ctx, photoQuery, tripID)
 	if err != nil {
 		return trip, fmt.Errorf("failed to get trip photos: %w", err)
 	}
@@ -174,13 +174,13 @@ func (r *TripRepository) AddPlaceToTrip(ctx context.Context, tripID uint, placeI
 	query := `INSERT INTO trip_place (trip_id, place_id, created_at) 
               VALUES ($1, $2, NOW())`
 
-	result, err := r.db.ExecContext(ctx, query, tripID, placeID)
+	result, err := r.db.Exec(ctx, query, tripID, placeID)
 
 	if err != nil {
 		return fmt.Errorf("failed to add place to a trip: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	rowsAffected := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
 	}
@@ -196,7 +196,7 @@ func (r *TripRepository) AddPhotoToTrip(ctx context.Context, tripID uint, photoP
         INSERT INTO trip_photo (trip_id, photo_path)
         VALUES ($1, $2)
     `
-	_, err := r.db.ExecContext(ctx, query, tripID, photoPath)
+	_, err := r.db.Exec(ctx, query, tripID, photoPath)
 	if err != nil {
 		return fmt.Errorf("failed to insert photo into database: %w", err)
 	}
@@ -205,15 +205,13 @@ func (r *TripRepository) AddPhotoToTrip(ctx context.Context, tripID uint, photoP
 
 func (r *TripRepository) DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error {
 	query := `DELETE FROM trip_photo WHERE trip_id = $1 AND photo_path = $2`
-	result, err := r.db.ExecContext(ctx, query, tripID, photoPath)
+	result, err := r.db.Exec(ctx, query, tripID, photoPath)
 	if err != nil {
 		return fmt.Errorf("failed to delete photo from database: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to get affected rows: %w", err)
-	}
+	rowsAffected := result.RowsAffected()
+
 	if rowsAffected == 0 {
 		return fmt.Errorf("photo not found in trip: %w", models.ErrNotFound)
 	}
