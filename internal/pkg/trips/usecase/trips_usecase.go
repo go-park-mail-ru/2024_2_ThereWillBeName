@@ -112,8 +112,8 @@ func (u *TripsUsecaseImpl) DeletePhotoFromTrip(ctx context.Context, tripID uint,
 	return nil
 }
 
-func (u *TripsUsecaseImpl) CreateSharingLink(ctx context.Context, tripID uint, token string) error {
-	err := u.tripRepo.CreateSharingLink(ctx, tripID, token)
+func (u *TripsUsecaseImpl) CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error {
+	err := u.tripRepo.CreateSharingLink(ctx, tripID, token, sharingOption)
 	if err != nil {
 		return fmt.Errorf("failed to delete photo from database: %w", err)
 	}

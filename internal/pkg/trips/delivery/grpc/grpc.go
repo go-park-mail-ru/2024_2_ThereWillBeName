@@ -202,7 +202,8 @@ func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen
 }
 func (h *GrpcTripsHandler) CreateSharingLink(ctx context.Context, in *tripsGen.CreateSharingLinkRequest) (*tripsGen.CreateSharingLinkResponse, error) {
 	token := in.Token
-	err := h.uc.CreateSharingLink(ctx, uint(in.TripId), token)
+	sharingOption := in.SharingOption
+	err := h.uc.CreateSharingLink(ctx, uint(in.TripId), token, sharingOption)
 	if err != nil {
 		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
 		return nil, err
@@ -220,9 +221,10 @@ func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.Get
 	}
 	return &tripsGen.GetSharingTokenResponse{
 		Token: &tripsGen.Token{
-			Id:        uint32(token.ID),
-			Token:     token.Token,
-			ExpiresAt: timestamppb.New(token.ExpiresAt),
+			Id:            uint32(token.ID),
+			Token:         token.Token,
+			SharingOption: token.SharingOption,
+			ExpiresAt:     timestamppb.New(token.ExpiresAt),
 		},
 	}, nil
 }

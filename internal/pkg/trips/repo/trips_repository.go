@@ -222,12 +222,12 @@ func (r *TripRepository) DeletePhotoFromTrip(ctx context.Context, tripID uint, p
 	return nil
 }
 
-func (r *TripRepository) CreateSharingLink(ctx context.Context, tripID uint, token string) error {
+func (r *TripRepository) CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error {
 	query := `
-        INSERT INTO shared_link (trip_id, token, expires_at)
-        VALUES ($1, $2, NOW() + INTERVAL '7 days')
+        INSERT INTO sharing_token (trip_id, token, sharing_option, expires_at)
+        VALUES ($1, $2, $3, NOW() + INTERVAL '7 days')
     `
-	_, err := r.db.ExecContext(ctx, query, tripID, token)
+	_, err := r.db.ExecContext(ctx, query, tripID, token, sharingOption)
 	if err != nil {
 		return fmt.Errorf("failed to insert sharing link into database: %w", err)
 	}
@@ -235,10 +235,11 @@ func (r *TripRepository) CreateSharingLink(ctx context.Context, tripID uint, tok
 }
 
 func (r *TripRepository) GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error) {
-	query := `SELECT token, expires_at FROM sharing_link WHERE trip_id = $1`
+	query := `SELECT token, sharing_option, expires_at FROM sharing_token WHERE trip_id = $1`
 	var token models.SharingToken
 	err := r.db.QueryRowContext(ctx, query, tripID).Scan(
 		&token.Token,
+		&token.SharingOption,
 		&token.ExpiresAt,
 	)
 	if err != nil {

@@ -70,6 +70,7 @@ message DeletePhotoRequest {
 message CreateSharingLinkRequest {
     uint32 trip_id = 1;
     string token = 2;
+    string sharing_option = 3;
 }
 
 message CreateSharingLinkResponse {
@@ -103,7 +104,8 @@ message Token {
     uint32 id = 1;
     uint32 trip_id = 2;
     string token = 3;
-    google.protobuf.Timestamp expires_at = 4;
-    google.protobuf.Timestamp created_at = 5;
+    string sharing_option = 4;
+    google.protobuf.Timestamp expires_at = 5;
+    google.protobuf.Timestamp created_at = 6;
 }
 

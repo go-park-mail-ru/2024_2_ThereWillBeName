@@ -594,6 +594,7 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 
 func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
 	tripIDStr := mux.Vars(r)["id"]
+	sharingOption := r.URL.Query().Get("sharing_option")
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating a sharing link for a trip", slog.String("tripID", tripIDStr))
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
@@ -615,6 +616,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 			Token: token.Token.Token,
 		}
 		httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
+		return
 	}
 	newToken, err := generateToken()
 	if err != nil {
@@ -627,8 +629,9 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 	}
 
 	newReq := &tripsGen.CreateSharingLinkRequest{
-		TripId: uint32(tripID),
-		Token:  newToken,
+		TripId:        uint32(tripID),
+		Token:         newToken,
+		SharingOption: sharingOption,
 	}
 
 	_, err = h.client.CreateSharingLink(r.Context(), newReq)
