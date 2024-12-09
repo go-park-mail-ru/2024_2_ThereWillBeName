@@ -12,6 +12,7 @@ import (
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
@@ -26,6 +27,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net/http"
@@ -33,6 +35,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	_ "github.com/lib/pq"
 
@@ -45,6 +48,9 @@ func main() {
 	cfg := config.Load()
 
 	logger := setupLogger()
+
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)
@@ -86,6 +92,24 @@ func main() {
 	corsMiddleware := middleware.NewCORSMiddleware(cfg.AllowedOrigins)
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
+	r.Use(metricMw.MetricsMiddleware)
+	r.Use(corsMiddleware.CorsMiddleware)
+	metricsRouter := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	metricsRouter.Handle("/metrics", promhttp.Handler())
+	httpSrvMw := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.GatewayPort),
+		Handler:           metricsRouter,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.GatewayPort))
+		if err := httpSrvMw.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
 
 	r.Use(middleware.RequestLoggerMiddleware(logger))
 
@@ -105,8 +129,8 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placesHandler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/search", placesHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/category", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placesHandler.GetPlaceHandler).Methods(http.MethodGet)
-	places.HandleFunc("/category/{categoryName}", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 
 	categoriesHandler := httpCategories.NewCategoriesHandler(categoriesClient, logger)
 	categories := r.PathPrefix("/categories").Subrouter()
@@ -165,9 +189,9 @@ func main() {
 	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
 	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
 
-	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", 8080)}
+	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.HttpServer.Address)}
 	go func() {
-		logger.Info("HTTP server listening on :%d", 8080)
+		logger.Info(fmt.Sprintf("HTTP server listening on :%d", cfg.HttpServer.Address))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("failed to serve HTTP: %d", err)
 			os.Exit(1)
@@ -176,6 +200,20 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("gateway")
+			case <-stop:
+				return
+			}
+		}
+	}()
 	<-stop
 
 	logger.Info("Shutting down HTTP server...")

@@ -313,7 +313,8 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *PlacesHandler) GetPlacesByCategoryHandler(w http.ResponseWriter, r *http.Request) {
-	categoryName := mux.Vars(r)["categoryName"]
+	categoryName := r.URL.Query().Get("category")
+	categoryName = template.HTMLEscapeString(categoryName)
 
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for searching attractions by category", slog.String("categoryName", categoryName))

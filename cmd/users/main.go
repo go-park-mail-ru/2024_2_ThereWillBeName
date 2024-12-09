@@ -4,21 +4,26 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	grpcUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc"
 	"2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
 	userRepo "2024_2_ThereWillBeName/internal/pkg/user/repo"
 	userUsecase "2024_2_ThereWillBeName/internal/pkg/user/usecase"
 	"database/sql"
+	"errors"
 	"fmt"
+	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"syscall"
-
-	_ "github.com/lib/pq"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -28,6 +33,9 @@ func main() {
 	cfg := config.Load()
 
 	logger := setupLogger()
+
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 
 	storagePath := os.Getenv("AVATAR_STORAGE_PATH")
 
@@ -44,10 +52,28 @@ func main() {
 
 	wrappedDB := dblogger.NewDB(db, logger)
 
+	r := mux.NewRouter()
+	r.Handle("/metrics", promhttp.Handler())
+	httpSrv := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.UserPort),
+		Handler:           r,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.UserPort))
+		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
+
 	userRepo := userRepo.NewAuthRepository(wrappedDB)
 	userUsecase := userUsecase.NewUserUsecase(userRepo, storagePath)
 
-	grpcUsersServer := grpc.NewServer()
+	grpcUsersServer := grpc.NewServer(grpc.UnaryInterceptor(metricMw.ServerMetricsInterceptor))
 	usersHandler := grpcUsers.NewGrpcUserHandler(userUsecase, logger)
 	gen.RegisterUserServiceServer(grpcUsersServer, usersHandler)
 	reflection.Register(grpcUsersServer)
@@ -65,6 +91,20 @@ func main() {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("users")
+			case <-stop:
+				return
+			}
+		}
+	}()
 	<-stop
 
 	log.Println("Shutting down gRPC server...")
