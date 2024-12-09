@@ -5,6 +5,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgconn"
@@ -53,12 +55,16 @@ func SetupDBPool(cfg *config.Config, dbType string, logger *slog.Logger) (*pgxpo
 		return nil, fmt.Errorf("failed to parse database URL: %v", err)
 	}
 
+	servicesNumber, err := strconv.Atoi((os.Getenv("SERVICES_NUMBER")))
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve services number: %v", err)
+	}
 	// Настройка пула соединений
-	config.MaxConns = int32(cfg.Database.MaxConnections) // Максимальное количество соединений
-	config.MinConns = 2                                  // Минимальное количество соединений
-	config.HealthCheckPeriod = 1 * time.Minute           // Период проверки соединений
-	config.MaxConnIdleTime = 5 * time.Minute             // Максимальное время простоя соединения
-	config.ConnConfig.PreferSimpleProtocol = true        // Упрощенный протокол для производительности
+	config.MaxConns = int32(cfg.Database.MaxConnections) / int32(servicesNumber) // Максимальное количество соединений
+	config.MinConns = 2                                                          // Минимальное количество соединений
+	config.HealthCheckPeriod = 1 * time.Minute                                   // Период проверки соединений
+	config.MaxConnIdleTime = 5 * time.Minute                                     // Максимальное время простоя соединения
+	config.ConnConfig.PreferSimpleProtocol = true                                // Упрощенный протокол для производительности
 
 	pool, err := pgxpool.ConnectConfig(context.Background(), config)
 	if err != nil {
