@@ -31,6 +31,16 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Revie
 		return models.GetReview{}, fmt.Errorf("failed to create review: %w", models.ErrInternal)
 	}
 
+	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
+                    VALUES ($1, $2, 'pending', NOW())`
+
+	payload := fmt.Sprintf(`{"review_id": %d}`, reviewID)
+
+	_, err = r.db.ExecContext(ctx, outboxQuery, "review_created", payload)
+	if err != nil {
+		return models.GetReview{}, fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
+	}
+
 	// Теперь, после успешного создания отзыва, мы можем использовать его ID, чтобы получить полные данные
 	createdReview, err := r.GetReview(ctx, uint(reviewID))
 	if err != nil {
@@ -59,6 +69,17 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound)
 	}
 
+	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
+                    VALUES ($1, $2, 'pending', NOW())`
+
+	payload := fmt.Sprintf(`{"review_id": %d, "rating": %d, "review_text": "%s"}`,
+		review.ID, review.Rating, review.ReviewText)
+
+	_, err = r.db.ExecContext(ctx, outboxQuery, "review_updated", payload)
+	if err != nil {
+		return fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
+	}
+
 	return nil
 }
 
@@ -77,6 +98,16 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("review not found: %w", models.ErrNotFound)
+	}
+
+	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
+                    VALUES ($1, $2, 'pending', NOW())`
+
+	payload := fmt.Sprintf(`{"review_id": %d}`, reviewID)
+
+	_, err = r.db.ExecContext(ctx, outboxQuery, "review_deleted", payload)
+	if err != nil {
+		return fmt.Errorf("failed to insert outbox record: %w", err)
 	}
 
 	return nil
