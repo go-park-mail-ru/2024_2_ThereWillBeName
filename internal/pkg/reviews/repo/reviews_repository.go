@@ -3,6 +3,7 @@ package reviews
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"2024_2_ThereWillBeName/internal/pkg/outbox"
 	"context"
 	"database/sql"
 	"fmt"
@@ -31,12 +32,12 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Revie
 		return models.GetReview{}, fmt.Errorf("failed to create review: %w", models.ErrInternal)
 	}
 
-	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
-                    VALUES ($1, $2, 'pending', NOW())`
+	// outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at)
+	//                 VALUES ($1, $2, 'pending', NOW())`
 
-	payload := fmt.Sprintf(`{"review_id": %d}`, reviewID)
+	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
 
-	_, err = r.db.ExecContext(ctx, outboxQuery, "review_created", payload)
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_created", payload)
 	if err != nil {
 		return models.GetReview{}, fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
 	}
@@ -69,13 +70,17 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound)
 	}
 
-	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
-                    VALUES ($1, $2, 'pending', NOW())`
+	// outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at)
+	//                 VALUES ($1, $2, 'pending', NOW())`
 
-	payload := fmt.Sprintf(`{"review_id": %d, "rating": %d, "review_text": "%s"}`,
-		review.ID, review.Rating, review.ReviewText)
+	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
 
-	_, err = r.db.ExecContext(ctx, outboxQuery, "review_updated", payload)
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_updated", payload)
+
+	// payload := fmt.Sprintf(`{"review_id": %d, "rating": %d, "review_text": "%s"}`,
+	// 	review.ID, review.Rating, review.ReviewText)
+
+	// _, err = r.db.ExecContext(ctx, outboxQuery, "review_updated", payload)
 	if err != nil {
 		return fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
 	}
@@ -84,28 +89,28 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 }
 
 func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) error {
-	query := `DELETE FROM review WHERE id = $1`
+	var placeID int
 
-	result, err := r.db.ExecContext(ctx, query, reviewID)
+	query := `DELETE FROM review WHERE id = $1 RETURNING place_id`
+
+	err := r.db.QueryRowContext(ctx, query, reviewID).Scan(&placeID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("review not found: %w", models.ErrNotFound)
+		}
 		return fmt.Errorf("failed to delete review: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
-	}
+	// outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at)
+	//                 VALUES ($1, $2, 'pending', NOW())`
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("review not found: %w", models.ErrNotFound)
-	}
+	// payload := fmt.Sprintf(`{"review_id": %d}`, reviewID)
 
-	outboxQuery := `INSERT INTO outbox (event_type, payload, "status", created_at) 
-                    VALUES ($1, $2, 'pending', NOW())`
+	// _, err = r.db.ExecContext(ctx, outboxQuery, "review_deleted", payload)
+	payload := fmt.Sprintf(`{"place_id": %d}`, placeID)
 
-	payload := fmt.Sprintf(`{"review_id": %d}`, reviewID)
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_created", payload)
 
-	_, err = r.db.ExecContext(ctx, outboxQuery, "review_deleted", payload)
 	if err != nil {
 		return fmt.Errorf("failed to insert outbox record: %w", err)
 	}

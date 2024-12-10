@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS place
     name TEXT NOT NULL, -- название места
     image_path TEXT NOT NULL DEFAULT '', -- путь к картинке
     description TEXT NOT NULL DEFAULT '', -- описание места
-    rating INT NOT NULL DEFAULT 0, -- рейтинг места
+    average_rating INT NOT NULL DEFAULT 0, -- рейтинг места
     address TEXT NOT NULL DEFAULT '', -- адрес места
     city_id INT NOT NULL, -- город, где находится место
     phone_number TEXT DEFAULT '', -- номер телефона
