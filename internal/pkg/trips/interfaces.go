@@ -16,6 +16,7 @@ type TripsUsecase interface {
 	DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error
 	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
 	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
+	GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, error)
 }
 
 type TripsRepo interface {
@@ -29,4 +30,5 @@ type TripsRepo interface {
 	DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error
 	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
 	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
+	GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, error)
 }

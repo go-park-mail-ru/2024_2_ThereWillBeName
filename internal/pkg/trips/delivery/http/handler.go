@@ -645,3 +645,22 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 
 	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
 }
+
+func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Request) {
+	token := mux.Vars(r)["sharing_token"]
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	req := &tripsGen.GetTripBySharingTokenRequest{
+		Token: token,
+	}
+	trip, err := h.client.GetTripBySharingToken(r.Context(), req)
+	if err != nil {
+		response, status := ErrorCheck(err, "retrieve trip by sharing token", h.logger, logCtx)
+		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		return
+	}
+
+	h.logger.DebugContext(logCtx, "Successfully got trip by sharing token")
+	tripResponse := trip.Trip
+
+	httpresponse.SendJSONResponse(w, tripResponse, http.StatusOK, h.logger)
+}

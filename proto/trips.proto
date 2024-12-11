@@ -13,6 +13,7 @@ service Trips {
     rpc DeletePhotoFromTrip(DeletePhotoRequest) returns (EmptyResponse);
     rpc CreateSharingLink(CreateSharingLinkRequest) returns (CreateSharingLinkResponse);
     rpc GetSharingToken(GetSharingTokenRequest) returns (GetSharingTokenResponse);
+    rpc GetTripBySharingToken(GetTripBySharingTokenRequest) returns (GetTripBySharingTokenResponse);
 }
 
 message CreateTripRequest {
@@ -83,6 +84,14 @@ message GetSharingTokenRequest {
 
 message GetSharingTokenResponse {
     Token token = 1;
+}
+
+message GetTripBySharingTokenRequest {
+    string token = 1;
+}
+
+message GetTripBySharingTokenResponse {
+    Trip trip = 1;
 }
 
 message EmptyResponse {}

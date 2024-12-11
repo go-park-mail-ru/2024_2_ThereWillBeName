@@ -216,7 +216,7 @@ func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.Get
 	tripID := in.TripId
 	token, err := h.uc.GetSharingToken(ctx, uint(tripID))
 	if err != nil {
-		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
+		h.logger.Error("Failed to get sharing token for a trip", slog.Any("error", err))
 		return nil, err
 	}
 	return &tripsGen.GetSharingTokenResponse{
@@ -225,6 +225,28 @@ func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.Get
 			Token:         token.Token,
 			SharingOption: token.SharingOption,
 			ExpiresAt:     timestamppb.New(token.ExpiresAt),
+		},
+	}, nil
+}
+
+func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsGen.GetTripBySharingTokenRequest) (*tripsGen.GetTripBySharingTokenResponse, error) {
+	token := in.Token
+	trip, err := h.uc.GetTripBySharingToken(ctx, token)
+	if err != nil {
+		h.logger.Error("Failed to get trip by sharing token", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetTripBySharingTokenResponse{
+		Trip: &tripsGen.Trip{
+			Id:          uint32(trip.ID),
+			UserId:      uint32(trip.UserID),
+			Name:        trip.Name,
+			Description: trip.Description,
+			CityId:      uint32(trip.CityID),
+			StartDate:   trip.StartDate,
+			EndDate:     trip.EndDate,
+			Private:     trip.Private,
+			Photos:      trip.Photos,
 		},
 	}, nil
 }

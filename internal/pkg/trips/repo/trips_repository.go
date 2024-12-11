@@ -265,3 +265,38 @@ func (r *TripRepository) GetSharingToken(ctx context.Context, tripID uint) (mode
 	}
 	return token, nil
 }
+
+func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
+	tripIdQuery := `SELECT trip_id FROM sharing_token WHERE token = $1`
+	var tripID int
+	err := r.db.QueryRowContext(ctx, tripIdQuery, token).Scan(
+		&tripID,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Trip{}, models.ErrNotFound
+		}
+		return models.Trip{}, fmt.Errorf("failed to retrive trip ID by sharing token: %w", err)
+	}
+
+	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = $1`
+	var trip models.Trip
+	err = r.db.QueryRowContext(ctx, query, tripID).Scan(
+		&trip.ID,
+		&trip.UserID,
+		&trip.Name,
+		&trip.Description,
+		&trip.CityID,
+		&trip.StartDate,
+		&trip.EndDate,
+		&trip.Private,
+		&trip.CreatedAt,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return trip, models.ErrNotFound
+		}
+		return trip, fmt.Errorf("failed to get trip: %w", err)
+	}
+	return trip, nil
+}

@@ -27,7 +27,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net/http"
@@ -36,6 +35,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/lib/pq"
 
@@ -181,6 +182,7 @@ func main() {
 	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPhotosToTripHandler), logger)).Methods(http.MethodPut)
 	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeletePhotoHandler), logger)).Methods(http.MethodDelete)
 	trips.Handle("/{id}/share", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.CreateSharingLinkHandler), logger)).Methods(http.MethodPost)
+	trips.Handle("/{sharing_token}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripBySharingToken), logger)).Methods(http.MethodGet)
 
 	surveyHandler := httpSurvey.NewSurveyHandler(surveyClient, logger)
 	survey := r.PathPrefix("/survey").Subrouter()
