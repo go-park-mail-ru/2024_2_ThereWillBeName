@@ -58,7 +58,7 @@ func (o *OutboxListener) processOutboxEvents(ctx context.Context) error {
 
 func (o *OutboxListener) handleEvent(ctx context.Context, record models.OutboxRecord) error {
 	switch record.EventType {
-	case "review_added", "review_updated", "review_deleted":
+	case "review_created", "review_updated", "review_deleted":
 		return HandleReviewEvent(ctx, o.db, record.Payload)
 	default:
 		return fmt.Errorf("unknown event type: %s", record.EventType)
@@ -129,10 +129,10 @@ func HandleReviewEvent(ctx context.Context, db *dblogger.DB, payload string) err
 
 func RecalculateAverageRating(ctx context.Context, db *dblogger.DB, placeID int) error {
 	query := `
-        UPDATE places
+        UPDATE place
         SET average_rating = (
             SELECT COALESCE(AVG(rating), 0)
-            FROM reviews
+            FROM review
             WHERE place_id = $1
         )
         WHERE id = $1

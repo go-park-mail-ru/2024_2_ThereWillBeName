@@ -16,14 +16,20 @@ CREATE TABLE IF NOT EXISTS city
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания города
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
-
+CREATE TABLE IF NOT EXISTS category
+(
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
 CREATE TABLE IF NOT EXISTS place
 (
     id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL, -- название места
     image_path TEXT NOT NULL DEFAULT '', -- путь к картинке
     description TEXT NOT NULL DEFAULT '', -- описание места
-    average_rating INT NOT NULL DEFAULT 0, -- рейтинг места
+    average_rating DECIMAL(2,1) NOT NULL DEFAULT 0.0, -- рейтинг места
     address TEXT NOT NULL DEFAULT '', -- адрес места
     city_id INT NOT NULL, -- город, где находится место
     phone_number TEXT DEFAULT '', -- номер телефона
@@ -32,7 +38,7 @@ CREATE TABLE IF NOT EXISTS place
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     FOREIGN KEY (city_id) REFERENCES city(id) ON DELETE CASCADE,
-    CONSTRAINT check_place_rating CHECK (rating BETWEEN 0 AND 5), -- Ограничение для rating
+    CONSTRAINT check_place_average_rating CHECK (average_rating BETWEEN 0.0 AND 5.0), -- Ограничение для rating
     CONSTRAINT uq_place_name_city UNIQUE (name, city_id)
 );
 
@@ -50,13 +56,7 @@ CREATE TABLE IF NOT EXISTS review
     CONSTRAINT uq_user_place_review UNIQUE (user_id, place_id)
 );
 
-CREATE TABLE IF NOT EXISTS category
-(
-    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    name TEXT UNIQUE NOT NULL DEFAULT '',
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
+
 
 CREATE TABLE IF NOT EXISTS place_category
 (
@@ -122,7 +122,7 @@ COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);
 
-COPY place(name, image_path, description, rating, address, city_id, phone_number, latitude, longitude)
+COPY place(name, image_path, description, average_rating, address, city_id, phone_number, latitude, longitude)
     FROM '/docker-entrypoint-initdb.d/places.csv'
     WITH (FORMAT csv, HEADER true,  DELIMITER ';');
 
