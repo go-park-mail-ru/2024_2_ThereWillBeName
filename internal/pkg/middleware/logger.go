@@ -41,6 +41,11 @@ func RequestLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 				slog.String("request_id", requestID),
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
+				slog.String("ua", r.UserAgent()),
+				slog.String("host", r.Host),
+				slog.String("ip", r.RemoteAddr),
+				slog.String("uri", r.RequestURI),
+				slog.String("content_length", r.Header.Get("Content-Length")),
 				slog.Time("start_time", startTime),
 			)
 
@@ -54,8 +59,15 @@ func RequestLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 				slog.String("request_id", requestID),
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
+				slog.String("ua", r.UserAgent()),
+				slog.String("host", r.Host),
+				slog.String("ip", r.RemoteAddr),
+				slog.String("uri", r.RequestURI),
+				slog.String("content_length", r.Header.Get("Content-Length")),
+				slog.Time("start_time", startTime),
 				slog.Int("status_code", rw.statusCode),
-				slog.Duration("duration", duration),
+				slog.Int64("latency_ms", duration.Milliseconds()),
+				slog.String("latency_human", duration.String()),
 			)
 		})
 	}
