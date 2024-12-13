@@ -72,27 +72,27 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
 	var review models.Review
 	err := json.NewDecoder(r.Body).Decode(&review)
 	if err != nil {
-		h.logger.ErrorContext(logCtx, "Failed to decode review data",
+		h.logger.WarnContext(logCtx, "Failed to decode review data",
 			slog.Any("error", err.Error()),
 			slog.String("review_data", fmt.Sprintf("%+v", review)))
 
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	v := validator.New()
 	if models.ValidateReview(v, &review); !v.Valid() {
 		h.logger.WarnContext(logCtx, "Review data is not valid")
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusUnprocessableEntity, h.logger)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid rating",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -124,14 +124,14 @@ func (h *ReviewHandler) CreateReviewHandler(w http.ResponseWriter, r *http.Reque
 	createdReview, err := h.client.CreateReview(logCtx, &gen.CreateReviewRequest{Review: reviewRequest})
 	if err != nil {
 		response, status := ErrorCheck(err, "create", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully created a review",
 		slog.Int("review_id", int(createdReview.Review.Id)))
 
-	httpresponse.SendJSONResponse(w, createdReview.Review, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, createdReview.Review, http.StatusCreated, h.logger)
 }
 
 // UpdateReviewHandler godoc
@@ -159,7 +159,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -176,7 +176,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		}
 		h.logger.WarnContext(logCtx, "Failed to parse place ID", slog.Any("error", err.Error()))
 
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	err = json.NewDecoder(r.Body).Decode(&review)
@@ -185,14 +185,14 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review data",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	v := validator.New()
 	if models.ValidateReview(v, &review); !v.Valid() {
 		h.logger.WarnContext(logCtx, "Review data is not valid")
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusUnprocessableEntity, h.logger)
 		return
 	}
 
@@ -213,13 +213,13 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 	res, err := h.client.UpdateReview(r.Context(), &gen.UpdateReviewRequest{Review: reviewRequest})
 	if err != nil {
 		response, status := ErrorCheck(err, "update", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully updated a review")
 
-	httpresponse.SendJSONResponse(w, res.Success, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, res.Success, http.StatusOK, h.logger)
 }
 
 // DeleteReviewHandler godoc
@@ -248,7 +248,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -261,14 +261,14 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	_, err = h.client.DeleteReview(r.Context(), &gen.DeleteReviewRequest{Id: uint32(id)})
 	if err != nil {
 		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
@@ -278,7 +278,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 		"message": "Review deleted successfully",
 	}
 
-	httpresponse.SendJSONResponse(w, response, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
 
 // GetReviewsByPlaceIDHandler godoc
@@ -307,7 +307,7 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid place ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	pageStr := r.URL.Query().Get("page")
@@ -319,7 +319,7 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 			return
 		}
 	}
@@ -328,13 +328,13 @@ func (h *ReviewHandler) GetReviewsByPlaceIDHandler(w http.ResponseWriter, r *htt
 	reviews, err := h.client.GetReviewsByPlaceID(r.Context(), &gen.GetReviewsByPlaceIDRequest{PlaceId: uint32(placeID), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got reviews by place ID", slog.Int("reviews_count", len(reviews.Reviews)))
 
-	httpresponse.SendJSONResponse(w, reviews.Reviews, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, reviews.Reviews, http.StatusOK, h.logger)
 }
 
 // GetReviewsByUserIDHandler godoc
@@ -358,7 +358,7 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -375,7 +375,7 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 			return
 		}
 	}
@@ -384,13 +384,13 @@ func (h *ReviewHandler) GetReviewsByUserIDHandler(w http.ResponseWriter, r *http
 	reviews, err := h.client.GetReviewsByUserID(r.Context(), &gen.GetReviewsByUserIDRequest{UserId: uint32(userID), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got reviews by user ID", slog.Int("reviews_count", len(reviews.Reviews)))
 
-	httpresponse.SendJSONResponse(w, reviews.Reviews, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, reviews.Reviews, http.StatusOK, h.logger)
 }
 
 // GetReviewHandler godoc
@@ -418,18 +418,18 @@ func (h *ReviewHandler) GetReviewHandler(w http.ResponseWriter, r *http.Request)
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid review ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	review, err := h.client.GetReview(r.Context(), &gen.GetReviewRequest{Id: uint32(reviewID)})
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got review by ID")
 
-	httpresponse.SendJSONResponse(w, review.Review, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, review.Review, http.StatusOK, h.logger)
 }

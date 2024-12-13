@@ -33,14 +33,13 @@ func RequestLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 			logCtx := r.Context()
 			logCtx = log.AppendCtx(logCtx, slog.String("request_id", requestID))
 			logCtx = log.AppendCtx(logCtx, slog.String("method", r.Method))
-			logCtx = log.AppendCtx(logCtx, slog.String("path", r.URL.Path))
+			logCtx = log.AppendCtx(logCtx, slog.String("uri", r.RequestURI))
 			r = r.WithContext(logCtx)
 
 			startTime := time.Now()
 			logger.Info("Request started",
 				slog.String("request_id", requestID),
 				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
 				slog.String("ua", r.UserAgent()),
 				slog.String("host", r.Host),
 				slog.String("ip", r.RemoteAddr),
@@ -58,7 +57,6 @@ func RequestLoggerMiddleware(logger *slog.Logger) func(http.Handler) http.Handle
 			logger.Info("Request completed",
 				slog.String("request_id", requestID),
 				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
 				slog.String("ua", r.UserAgent()),
 				slog.String("host", r.Host),
 				slog.String("ip", r.RemoteAddr),
