@@ -293,12 +293,11 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			h.logger.WarnContext(logCtx, "User not found", "userID", userID)
-
+			h.logger.WarnContext(logCtx, "Failed to retrieve user login from context")
 			response := httpresponse.ErrorResponse{
 				Message: "User is not authorized",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 			return
 		}
 
