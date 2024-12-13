@@ -280,32 +280,58 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	login, ok := r.Context().Value(middleware.LoginKey).(string)
-	if !ok {
-		h.logger.Warn("Failed to retrieve user login from context")
+	getProfileRequest := &gen.GetProfileRequest{
+		Id:          uint32(userID),
+		RequesterId: uint32(userID),
+	}
+
+	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			h.logger.Warn("User not found", "userID", userID)
+
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(w, response, http.StatusNotFound, h.logger)
+			return
+		}
+
+		h.logger.Error("Error retrieving profile", "userID", userID, "error", err)
 
 		response := httpresponse.ErrorResponse{
-			Message: "User is not authorized",
+			Message: "Failed to retrieve user profile",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	email, ok := r.Context().Value(middleware.EmailKey).(string)
-	if !ok {
-		h.logger.Warn("Failed to retrieve user email from context")
+	// login, ok := r.Context().Value(middleware.LoginKey).(string)
+	// if !ok {
+	// 	h.logger.Warn("Failed to retrieve user login from context")
 
-		response := httpresponse.ErrorResponse{
-			Message: "User is not authorized",
-		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
-		return
-	}
+	// 	response := httpresponse.ErrorResponse{
+	// 		Message: "User is not authorized",
+	// 	}
+	// 	httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+	// 	return
+	// }
+
+	// email, ok := r.Context().Value(middleware.EmailKey).(string)
+	// if !ok {
+	// 	h.logger.Warn("Failed to retrieve user email from context")
+
+	// 	response := httpresponse.ErrorResponse{
+	// 		Message: "User is not authorized",
+	// 	}
+	// 	httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+	// 	return
+	// }
 
 	response := models.User{
 		ID:    userID,
-		Login: login,
-		Email: email,
+		Login: GetProfileResponse.GetLogin(),
+		Email: GetProfileResponse.GetEmail(),
 	}
 	h.logger.DebugContext(logCtx, "Successfully retrieved current user information", "userID", userID)
 
