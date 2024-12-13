@@ -119,7 +119,7 @@ func main() {
 		response := httpresponses.ErrorResponse{
 			Message: "Not found",
 		}
-		httpresponses.SendJSONResponse(w, response, http.StatusNotFound, logger)
+		httpresponses.SendJSONResponse(r.Context(), w, response, http.StatusNotFound, logger)
 	})
 
 	// Маршрут для healthcheck
@@ -234,7 +234,7 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, logger)
+		httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusBadRequest, logger)
 	}
 }
 
