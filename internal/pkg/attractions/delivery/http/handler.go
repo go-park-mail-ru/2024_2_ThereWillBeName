@@ -311,7 +311,7 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		filterType, err = strconv.Atoi(filterStr)
 		if err != nil {
 			h.logger.Warn("Invalid filter parameter", slog.String("error", err.Error()))
-			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+			httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{
 				Message: "Invalid filter parameter",
 			}, http.StatusBadRequest, h.logger)
 			return
