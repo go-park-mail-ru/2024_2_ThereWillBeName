@@ -18,6 +18,9 @@ type Trip struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
+//easyjson:json
+type TripList []Trip
+
 func ValidateTrip(v *validator.Validator, trip *Trip) {
 	v.Check(trip.Name != "", "name", "must be provided")
 	v.Check(len(trip.Name) <= 255, "name", "must not be more than 255 symbols")

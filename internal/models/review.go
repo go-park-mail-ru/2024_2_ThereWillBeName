@@ -29,6 +29,15 @@ type GetReviewByUserID struct {
 	ReviewText string `json:"review_text"`
 }
 
+//easyjson:json
+type ReviewList []Review
+
+//easyjson:json
+type GetReviewList []GetReview
+
+//easyjson:json
+type GetReviewByUserIDList []GetReviewByUserID
+
 func ValidateReview(v *validator.Validator, review *Review) {
 	v.Check(review.ReviewText != "", "reviewText", "must be provided")
 	v.Check(len(review.ReviewText) <= 255, "reviewText", "must not be more than 255 symbols")

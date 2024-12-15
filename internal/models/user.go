@@ -20,6 +20,21 @@ type UserProfile struct {
 	Email      string `json:"email,omitempty"`
 }
 
+type UserResponseWithToken struct {
+	User  User   `json:"user"`
+	Token string `json:"token"`
+}
+
+type ResponseWithId struct {
+	ID      uint   `json:"id"`
+	Message string `json:"message"`
+}
+
+type Response struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+}
+
 func ValidateUser(v *validator.Validator, user *User) {
 	// v.Check(user.Login != "", "login", "must be provided")
 	v.Check(user.Password != "", "password", "must be provided")
