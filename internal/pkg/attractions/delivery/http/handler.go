@@ -32,34 +32,34 @@ func NewPlacesHandler(client gen.AttractionsClient, logger *slog.Logger) *Places
 // @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
 // @Router /attractions [get]
 func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request) {
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	logCtx := r.Context()
 	h.logger.DebugContext(logCtx, "Handling request for searching attractions")
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid offset parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Invalid offset parameter", slog.String("error", err.Error()))
 		return
 	}
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid limit parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Invalid limit parameter", slog.String("error", err.Error()))
 		return
 	}
 	places, err := h.client.GetPlaces(r.Context(), &gen.GetPlacesRequest{Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
-		h.logger.Error("Couldn't get list of attractions",
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
+		h.logger.ErrorContext(logCtx, "Couldn't get list of attractions",
 			slog.Int("limit", limit),
 			slog.Int("offset", offset),
 			slog.String("error", err.Error()))
 		return
 	}
 
-	h.logger.DebugContext(logCtx, "Successfully retrieved attractions")
+	h.logger.DebugContext(logCtx, "Successfully retrieved attractions", slog.Int("attractions_count", len(places.Places)))
 
-	httpresponse.SendJSONResponse(w, places.Places, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, places.Places, http.StatusOK, h.logger)
 }
 
 // PostPlaceHandler godoc
@@ -215,15 +215,18 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /attractions/{id} [get]
 func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	idStr := mux.Vars(r)["id"]
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for getting a place by ID", slog.String("placeID", idStr))
+	logCtx = log.AppendCtx(logCtx, slog.String("placeID", idStr))
+
+	h.logger.DebugContext(logCtx, "Handling request for getting a place by ID")
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Failed to parse place ID", slog.String("placeID", idStr), slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Failed to parse place ID", slog.String("error", err.Error()))
 		return
 	}
 	place, err := h.client.GetPlace(r.Context(), &gen.GetPlaceRequest{Id: uint32(id)})
@@ -232,17 +235,17 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 			response := httpresponse.ErrorResponse{
 				Message: "place not found",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusNotFound, h.logger)
-			h.logger.Warn("Place not found", slog.String("placeID", idStr), slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
+			h.logger.ErrorContext(logCtx, "Place not found", slog.Any("error", err.Error()))
 			return
 		}
-		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
-		h.logger.Error("Failed to get a place", slog.String("placeID", idStr), slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
+		h.logger.ErrorContext(logCtx, "Failed to get a place", slog.Any("error", err.Error()))
 		return
 	}
-	httpresponse.SendJSONResponse(w, place.Place, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, place.Place, http.StatusOK, h.logger)
 
-	h.logger.DebugContext(logCtx, "Successfully getting place")
+	h.logger.DebugContext(logCtx, "Successfully got place by ID")
 }
 
 // GetPlacesByNameHandler godoc
@@ -255,23 +258,25 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse
 // @Router /attractions/search/{placeName} [get]
 func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
 	placeName := r.URL.Query().Get("placeName")
 	placeName = template.HTMLEscapeString(placeName)
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for searching attractions by place name", slog.String("placeName", placeName))
+	logCtx = log.AppendCtx(logCtx, slog.String("placename", placeName))
+	h.logger.DebugContext(logCtx, "Handling request for searching attractions by place name")
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid offset parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Invalid offset parameter", slog.Int("offset", offset), slog.String("error", err.Error()))
 		return
 	}
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid limit parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.Warn("Invalid limit parameter", slog.Int("limit", limit), slog.String("error", err.Error()))
 		return
 	}
 
@@ -282,8 +287,8 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 	if cityStr != "" {
 		city, err = strconv.Atoi(cityStr)
 		if err != nil {
-			h.logger.Warn("Invalid city parameter", slog.String("error", err.Error()))
-			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+			h.logger.WarnContext(logCtx, "Invalid city parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{
 				Message: "Invalid city parameter",
 			}, http.StatusBadRequest, h.logger)
 			return
@@ -293,8 +298,8 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 	if categoryStr != "" {
 		category, err = strconv.Atoi(categoryStr)
 		if err != nil {
-			h.logger.Warn("Invalid category parameter", slog.String("error", err.Error()))
-			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+			h.logger.WarnContext(logCtx, "Invalid category parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{
 				Message: "Invalid category parameter",
 			}, http.StatusBadRequest, h.logger)
 			return
@@ -303,44 +308,49 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 
 	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
-		h.logger.Error("Failed to search attractions", slog.String("placeName", placeName), slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
+		h.logger.ErrorContext(logCtx, "Failed to search attractions", slog.String("error", err.Error()))
 		return
 	}
-	httpresponse.SendJSONResponse(w, places.Places, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, places.Places, http.StatusOK, h.logger)
 
-	h.logger.DebugContext(logCtx, "Successfully getting attractions by name")
+	h.logger.DebugContext(logCtx, "Successfully getting attractions by name", slog.Int("places_count", len(places.Places)))
 }
 
 func (h *PlacesHandler) GetPlacesByCategoryHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	categoryName := r.URL.Query().Get("category")
 	categoryName = template.HTMLEscapeString(categoryName)
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for searching attractions by category", slog.String("categoryName", categoryName))
+	logCtx = log.AppendCtx(logCtx, slog.String("category_name", categoryName))
+
+	h.logger.DebugContext(logCtx, "Handling request for searching attractions by category")
 
 	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid offset parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Invalid offset parameter", slog.Int("offset", offset), slog.String("error", err.Error()))
 		return
 	}
 	limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
-		h.logger.Warn("Invalid limit parameter", slog.String("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Invalid limit parameter", slog.Int("limit", limit), slog.String("error", err.Error()))
 		return
 	}
 
 	places, err := h.client.GetPlacesByCategory(r.Context(), &gen.GetPlacesByCategoryRequest{Category: categoryName, Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
-		httpresponse.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
-		h.logger.Error("Error getting attractions by category",
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
+		h.logger.ErrorContext(logCtx, "Error getting attractions by category",
 			slog.Int("limit", limit),
 			slog.Int("offset", offset),
-			slog.String("categoryName", categoryName),
 			slog.String("error", err.Error()))
 		return
 	}
-	httpresponse.SendJSONResponse(w, places.Places, http.StatusOK, h.logger)
+
+	h.logger.DebugContext(logCtx, "Successfully got attractions by category name")
+
+	httpresponse.SendJSONResponse(logCtx, w, places.Places, http.StatusOK, h.logger)
 }

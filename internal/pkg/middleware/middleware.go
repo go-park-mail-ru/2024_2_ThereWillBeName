@@ -29,7 +29,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 			if logger != nil {
 				logger.Error("Token is missing")
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusForbidden, logger)
+			httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusForbidden, logger)
 			return
 		}
 		claims, err := jwtService.ParseToken(token)
@@ -41,7 +41,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 			if logger != nil {
 				logger.Error("Invalid token", slog.Any("error", err))
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, logger)
+			httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusUnauthorized, logger)
 			return
 		}
 		userID := uint(claims["userID"].(float64))

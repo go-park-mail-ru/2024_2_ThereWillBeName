@@ -59,18 +59,19 @@ func generateToken() (string, error) {
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
+	logContext := log.AppendCtx(ctx, slog.String("action", action))
+	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
+
 	if errors.Is(err, models.ErrNotFound) {
 
-		logContext := log.AppendCtx(ctx, slog.String("action", action))
-		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action), slog.Any("error", err.Error()))
+		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action))
 
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
 		return response, http.StatusNotFound
 	}
-	logContext := log.AppendCtx(ctx, slog.String("action", action))
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action), slog.Any("error", err.Error()))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action))
 	response := httpresponse.ErrorResponse{
 		Message: fmt.Sprintf("Failed to %s trip", action),
 	}
@@ -93,18 +94,18 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Router /trips [post]
 func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	logCtx := r.Context()
 	h.logger.DebugContext(logCtx, "Handling request for creating a trip")
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -112,13 +113,13 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 	err := json.NewDecoder(r.Body).Decode(&tripData)
 
 	if err != nil {
-		h.logger.Warn("Failed to decode trip data",
+		h.logger.WarnContext(logCtx, "Failed to decode trip data",
 			slog.String("error", err.Error()),
 			slog.String("trip_data", fmt.Sprintf("%+v", tripData)))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	trip := models.Trip{
@@ -133,15 +134,15 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	v := validator.New()
 	if models.ValidateTrip(v, &trip); !v.Valid() {
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		h.logger.WarnContext(logCtx, "Review data is not valid")
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusUnprocessableEntity, h.logger)
 		return
 	}
 
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
-	// err = h.uc.CreateTrip(context.Background(), trip)
-	_, err = h.client.CreateTrip(r.Context(), &tripsGen.CreateTripRequest{Trip: &tripsGen.Trip{
+	tripRequest := &tripsGen.Trip{
 		Id:          uint32(trip.ID),
 		UserId:      uint32(trip.UserID),
 		Name:        trip.Name,
@@ -150,16 +151,20 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 		StartDate:   trip.StartDate,
 		EndDate:     trip.EndDate,
 		Private:     trip.Private,
-	}})
+	}
+
+	h.logger.DebugContext(logCtx, "Trip request details", slog.Any("tripRequest", tripRequest))
+
+	_, err = h.client.CreateTrip(r.Context(), &tripsGen.CreateTripRequest{Trip: tripRequest})
 	if err != nil {
-		response, status := ErrorCheck(err, "create", h.logger, context.Background())
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		response, status := ErrorCheck(err, "create", h.logger, logCtx)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully created a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip created successfully", http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, "Trip created successfully", http.StatusCreated, h.logger)
 }
 
 // UpdateTripHandler godoc
@@ -180,18 +185,17 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Router /trips/{id} [put]
 func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for updating a trip")
+	logCtx := r.Context()
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -199,21 +203,26 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
+
+	logCtx = log.AppendCtx(logCtx, slog.Int("trip_id", tripID))
+	h.logger.DebugContext(logCtx, "Handling request for updating a trip")
+
 	if err != nil || tripID < 0 {
-		h.logger.Warn("Failed to parse trip ID", slog.Int("tripID", tripID), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
+
 	err = json.NewDecoder(r.Body).Decode(&tripData)
 	if err != nil {
-		h.logger.Warn("Failed to decode trip data", slog.String("trip_data", fmt.Sprintf("%+v", tripData)), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to decode trip data", slog.String("trip_data", fmt.Sprintf("%+v", tripData)), slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip data",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	trip := models.Trip{
@@ -229,15 +238,15 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	v := validator.New()
 	if models.ValidateTrip(v, &trip); !v.Valid() {
-		httpresponse.SendJSONResponse(w, nil, http.StatusUnprocessableEntity, h.logger)
+		h.logger.WarnContext(logCtx, "Trip data is not valid")
+		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusUnprocessableEntity, h.logger)
 		return
 	}
 
 	trip.Name = template.HTMLEscapeString(trip.Name)
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
-	// err = h.uc.UpdateTrip(context.Background(), trip)
-	_, err = h.client.UpdateTrip(r.Context(), &tripsGen.UpdateTripRequest{Trip: &tripsGen.Trip{
+	tripRequest := &tripsGen.Trip{
 		Id:          uint32(trip.ID),
 		UserId:      uint32(trip.UserID),
 		Name:        trip.Name,
@@ -246,16 +255,19 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 		StartDate:   trip.StartDate,
 		EndDate:     trip.EndDate,
 		Private:     trip.Private,
-	}})
+	}
+
+	h.logger.DebugContext(logCtx, "Trip request details", slog.Any("tripRequest", tripRequest))
+
+	_, err = h.client.UpdateTrip(r.Context(), &tripsGen.UpdateTripRequest{Trip: tripRequest})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.Int("tripID", tripID))
 		response, status := ErrorCheck(err, "update", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 	h.logger.DebugContext(logCtx, "Successfully updated a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip updated successfully", http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, "Trip updated successfully", http.StatusOK, h.logger)
 }
 
 // DeleteTripHandler godoc
@@ -271,45 +283,45 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to delete trip"
 // @Router /trips/{id} [delete]
 func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	vars := mux.Vars(r)
 	idStr := vars["id"]
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for deleting a trip", slog.String("tripID", idStr))
+	logCtx = log.AppendCtx(logCtx, slog.String("tripID", idStr))
+	h.logger.DebugContext(logCtx, "Handling request for deleting a trip")
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
 	id, err := strconv.ParseUint(idStr, 10, 64)
 	if err != nil {
-		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", idStr), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
-	// err = h.uc.DeleteTrip(context.Background(), uint(id))
 	_, err = h.client.DeleteTrip(r.Context(), &tripsGen.DeleteTripRequest{Id: uint32(id)})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", idStr))
 		response, status := ErrorCheck(err, "delete", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a trip")
 
-	httpresponse.SendJSONResponse(w, "Trip deleted successfully", http.StatusNoContent, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, "Trip deleted successfully", http.StatusNoContent, h.logger)
 }
 
 // GetTripsByUserIDHandler godoc
@@ -326,20 +338,21 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve trips"
 // @Router /users/{userID}/trips [get]
 func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
 
 	userID, ok := r.Context().Value(middleware.IdKey).(uint)
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for getting trips by user ID", slog.Int("placeID", int(userID)))
+	logCtx = log.AppendCtx(logCtx, slog.Int("user_id", int(userID)))
+	h.logger.DebugContext(logCtx, "Handling request for getting trips by user ID")
 
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -352,29 +365,28 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 			response := httpresponse.ErrorResponse{
 				Message: "Invalid page number",
 			}
-			httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 			return
 		}
 	}
 	limit := 10
 	offset := limit * (page - 1)
-	// trip, err := h.uc.GetTripsByUserID(context.Background(), uint(userID), limit, offset)
+
 	trip, err := h.client.GetTripsByUserID(r.Context(), &tripsGen.GetTripsByUserIDRequest{
 		UserId: uint32(userID),
 		Limit:  int32(limit),
 		Offset: int32(offset),
 	})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.Int("userID", int(userID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
-	h.logger.DebugContext(logCtx, "Successfully got trips by user ID")
+	h.logger.DebugContext(logCtx, "Successfully got trips by user ID", slog.Int("trips_count", len(trip.Trips)))
 	tripArr := trip.Trips
 
-	httpresponse.SendJSONResponse(w, tripArr, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, tripArr, http.StatusOK, h.logger)
 }
 
 // GetTripHandler godoc
@@ -388,47 +400,47 @@ func (h *TripHandler) GetTripsByUserIDHandler(w http.ResponseWriter, r *http.Req
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve trip"
 // @Router /trips/{id} [get]
 func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	vars := mux.Vars(r)
 	tripIDStr := vars["id"]
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for getting trip by ID", slog.String("tripID", tripIDStr))
+	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
+	h.logger.DebugContext(logCtx, "Handling request for getting trip by ID")
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
 	if err != nil {
-		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", tripIDStr), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
-	// trip, err := h.uc.GetTrip(context.Background(), uint(tripID))
 	trip, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", tripIDStr))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
 	tripResponse := trip.Trip
 
-	httpresponse.SendJSONResponse(w, tripResponse, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
 }
 
 // AddPlaceToTripHandler godoc
@@ -445,25 +457,31 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 // @Failure 500 {object} httpresponses.ErrorResponse "Failed to add place to trip"
 // @Router /trips/{id} [post]
 func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	vars := mux.Vars(r)
 	tripIDStr, ok := vars["id"]
+
+	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
+	h.logger.DebugContext(logCtx, "Handling request for adding places to trip")
+
 	if !ok {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	_, ok = r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
 
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -472,57 +490,63 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	var req AddPlaceRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", tripIDStr), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid place ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
-	// err = h.uc.AddPlaceToTrip(context.Background(), uint(tripID), req.PlaceID)
+	h.logger.DebugContext(logCtx, "Adding place with ID", slog.Int("place_id", int(req.PlaceID)))
+
 	_, err = h.client.AddPlaceToTrip(r.Context(), &tripsGen.AddPlaceToTripRequest{
 		TripId:  uint32(tripID),
 		PlaceId: uint32(req.PlaceID),
 	})
 	if err != nil {
 		response, status := ErrorCheck(err, "add place", h.logger, context.Background())
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
-	httpresponse.SendJSONResponse(w, "Place added to trip successfully", http.StatusCreated, h.logger)
+	h.logger.DebugContext(logCtx, "Successfully added place to trip")
+
+	httpresponse.SendJSONResponse(logCtx, w, "Place added to trip successfully", http.StatusCreated, h.logger)
 }
 
 func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	vars := mux.Vars(r)
 	tripIDStr := vars["id"]
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for adding photos to a trip", slog.String("tripID", tripIDStr))
+
+	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
+	h.logger.DebugContext(logCtx, "Handling request for adding photos to a trip")
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
-		h.logger.Warn("Failed to retrieve user ID from context")
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
 	if err != nil {
-		h.logger.Warn("Failed to parse trip ID", slog.String("tripID", tripIDStr), slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid trip ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -532,11 +556,11 @@ func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Requ
 
 	err = json.NewDecoder(r.Body).Decode(&photosRequest)
 	if err != nil {
-		h.logger.Warn("Failed to decode photos request body", slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to decode photos request body", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request body",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	resp, err := h.client.AddPhotosToTrip(r.Context(), &tripsGen.AddPhotosToTripRequest{
@@ -544,37 +568,39 @@ func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Requ
 		Photos: photosRequest.Photos,
 	})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.String("tripID", tripIDStr))
 		response, status := ErrorCheck(err, "add photos", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully added photos to the trip")
 
-	httpresponse.SendJSONResponse(w, resp.Photos, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, resp.Photos, http.StatusCreated, h.logger)
 }
 
 func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	tripIDStr := mux.Vars(r)["id"]
 	var photoPath struct {
 		PhotoPath string `json:"photo_path"`
 	}
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 
-	h.logger.DebugContext(logCtx, "Handling request for deleting photo from a trip", slog.String("tripID", tripIDStr))
+	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
+	h.logger.DebugContext(logCtx, "Handling request for deleting photo from a trip")
 	err := json.NewDecoder(r.Body).Decode(&photoPath)
 	if err != nil {
-		h.logger.Warn("Failed to decode photos delete request body", slog.String("error", err.Error()))
+		h.logger.WarnContext(logCtx, "Failed to decode photos delete request body", slog.String("error", err.Error()))
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request body",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
 	if err != nil {
-		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.Any("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -585,11 +611,14 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 
 	_, err = h.client.DeletePhotoFromTrip(r.Context(), req)
 	if err != nil {
-		httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{Message: "Failed to delete photo"}, http.StatusInternalServerError, h.logger)
+		h.logger.ErrorContext(logCtx, "Failed to delete photo from trip", slog.Any("error", err.Error()))
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Failed to delete photo"}, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	httpresponse.SendJSONResponse(w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
+	h.logger.DebugContext(logCtx, "Successfully deleted a photo from trip")
+
+	httpresponse.SendJSONResponse(logCtx, w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
 }
 
 func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {

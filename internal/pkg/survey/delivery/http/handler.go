@@ -58,7 +58,7 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid survey ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -79,13 +79,13 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		logCtx := log.AppendCtx(r.Context(), slog.String("surveyId", surveyIdStr))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got survey by ID")
 
-	httpresponse.SendJSONResponse(w, survey, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, survey, http.StatusOK, h.logger)
 }
 
 func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +97,7 @@ func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Requ
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -108,7 +108,7 @@ func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Requ
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request body",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -120,13 +120,13 @@ func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Requ
 	if err != nil {
 		logCtx := log.AppendCtx(r.Context(), slog.String("surveyID", fmt.Sprint(surveyResponse.SurveyId)))
 		response, status := ErrorCheck(err, "submit", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully submitted survey response")
 
-	httpresponse.SendJSONResponse(w, nil, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusOK, h.logger)
 }
 
 func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +138,7 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -151,7 +151,7 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid survey ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -161,13 +161,13 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 	if err != nil {
 		logCtx := log.AppendCtx(r.Context(), slog.String("surveyId", surveyIdStr))
 		response, status := ErrorCheck(err, "retrieve survey statistics", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved survey statistics by ID")
 
-	httpresponse.SendJSONResponse(w, stats, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, stats, http.StatusOK, h.logger)
 }
 
 func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Request) {
@@ -179,7 +179,7 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 		response := httpresponse.ErrorResponse{
 			Message: "User is not authorized",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid user ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
@@ -202,12 +202,12 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		logCtx := log.AppendCtx(r.Context(), slog.String("userId", userIdStr))
 		response, status := ErrorCheck(err, "retrieve survey statistics by user", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved survey statistics by user ID")
 
-	httpresponse.SendJSONResponse(w, stats, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, stats, http.StatusOK, h.logger)
 
 }

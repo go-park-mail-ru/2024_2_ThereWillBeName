@@ -127,7 +127,7 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"
+      - "8089:9090"
     networks:
       - my_network
   node_exporter:

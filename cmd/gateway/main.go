@@ -119,7 +119,7 @@ func main() {
 		response := httpresponses.ErrorResponse{
 			Message: "Not found",
 		}
-		httpresponses.SendJSONResponse(w, response, http.StatusNotFound, logger)
+		httpresponses.SendJSONResponse(r.Context(), w, response, http.StatusNotFound, logger)
 	})
 
 	// Маршрут для healthcheck
@@ -170,6 +170,7 @@ func main() {
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetProfile), logger)).Methods(http.MethodGet)
 	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdatePassword), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdateProfile), logger)).Methods(http.MethodPut)
+	user.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()
@@ -235,7 +236,7 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 		response := httpresponse.ErrorResponse{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, logger)
+		httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusBadRequest, logger)
 	}
 }
 
