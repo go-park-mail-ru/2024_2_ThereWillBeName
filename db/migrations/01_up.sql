@@ -29,16 +29,17 @@ CREATE TABLE IF NOT EXISTS place
     name TEXT NOT NULL, -- название места
     image_path TEXT NOT NULL DEFAULT '', -- путь к картинке
     description TEXT NOT NULL DEFAULT '', -- описание места
-    average_rating DECIMAL(2,1) NOT NULL DEFAULT 0.0, -- рейтинг места
+    rating DECIMAL(2,1) NOT NULL DEFAULT 0.0, -- рейтинг места
     address TEXT NOT NULL DEFAULT '', -- адрес места
     city_id INT NOT NULL, -- город, где находится место
     phone_number TEXT DEFAULT '', -- номер телефона
+    number_of_reviews INTEGER NOT NULL DEFAULT 0,
     latitude DECIMAL(7,4),
     longitude DECIMAL(7,4), 
     created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     FOREIGN KEY (city_id) REFERENCES city(id) ON DELETE CASCADE,
-    CONSTRAINT check_place_average_rating CHECK (average_rating BETWEEN 0.0 AND 5.0), -- Ограничение для rating
+    CONSTRAINT check_place_rating CHECK (rating BETWEEN 0.0 AND 5.0), -- Ограничение для rating
     CONSTRAINT uq_place_name_city UNIQUE (name, city_id)
 );
 
@@ -122,7 +123,7 @@ COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);
 
-COPY place(name, image_path, description, average_rating, address, city_id, phone_number, latitude, longitude)
+COPY place(name, image_path, description, rating, address, city_id, phone_number, latitude, longitude)
     FROM '/docker-entrypoint-initdb.d/places.csv'
     WITH (FORMAT csv, HEADER true,  DELIMITER ';');
 

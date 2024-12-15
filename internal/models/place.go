@@ -6,7 +6,7 @@ type CreatePlace struct {
 	Name            string  `json:"name"`
 	ImagePath       string  `json:"imagePath"`
 	Description     string  `json:"description"`
-	Rating          int     `json:"rating"`
+	Rating          float64 `json:"rating"`
 	NumberOfReviews int     `json:"numberOfReviews"`
 	Address         string  `json:"address"`
 	CityId          int     `json:"cityId"`
@@ -21,7 +21,7 @@ type GetPlace struct {
 	Name            string   `json:"name"`
 	ImagePath       string   `json:"imagePath"`
 	Description     string   `json:"description"`
-	Rating          int      `json:"rating"`
+	Rating          float64  `json:"rating"`
 	NumberOfReviews int      `json:"numberOfReviews"`
 	Address         string   `json:"address"`
 	City            string   `json:"city"`
@@ -36,7 +36,7 @@ type UpdatePlace struct {
 	Name            string  `json:"name"`
 	ImagePath       string  `json:"imagePath"`
 	Description     string  `json:"description"`
-	Rating          int     `json:"rating"`
+	Rating          float64 `json:"rating"`
 	NumberOfReviews int     `json:"numberOfReviews"`
 	Address         string  `json:"address"`
 	CityId          int     `json:"cityId"`

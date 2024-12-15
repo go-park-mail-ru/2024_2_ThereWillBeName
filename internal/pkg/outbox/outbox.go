@@ -43,11 +43,9 @@ func (o *OutboxListener) processOutboxEvents(ctx context.Context) error {
 	for _, record := range records {
 		if err := o.handleEvent(ctx, record); err != nil {
 			log.Printf("Failed to handle event ID %d: %v", record.ID, err)
-			// Можно залогировать или обновить статус как `failed`, если нужно
 			continue
 		}
 
-		// Обновляем статус записи в `outbox` на `processed`
 		if err := UpdateOutboxRecordStatus(ctx, o.db, record.ID, "processed"); err != nil {
 			log.Printf("Failed to update status for event ID %d: %v", record.ID, err)
 		}
@@ -118,20 +116,24 @@ func HandleReviewEvent(ctx context.Context, db *dblogger.DB, payload string) err
 		return fmt.Errorf("failed to parse payload: %w", err)
 	}
 
-	// Вызов функции пересчёта среднего рейтинга
-	if err := RecalculateAverageRating(ctx, db, data.PlaceID); err != nil {
-		return fmt.Errorf("failed to recalculate average rating for place ID %d: %w", data.PlaceID, err)
+	if err := Recalculate(ctx, db, data.PlaceID); err != nil {
+		return fmt.Errorf("failed to recalculate average rating or reviews for place ID %d: %w", data.PlaceID, err)
 	}
 
-	log.Printf("Successfully recalculated average rating for place ID: %d\n", data.PlaceID)
+	log.Printf("Successfully recalculated average rating and reviews' number for place ID: %d\n", data.PlaceID)
 	return nil
 }
 
-func RecalculateAverageRating(ctx context.Context, db *dblogger.DB, placeID int) error {
+func Recalculate(ctx context.Context, db *dblogger.DB, placeID int) error {
 	query := `
         UPDATE place
-        SET average_rating = (
+        SET rating = (
             SELECT COALESCE(AVG(rating), 0)
+            FROM review
+            WHERE place_id = $1
+        ),
+		 number_of_reviews = (
+            SELECT COUNT(*)
             FROM review
             WHERE place_id = $1
         )
@@ -140,7 +142,7 @@ func RecalculateAverageRating(ctx context.Context, db *dblogger.DB, placeID int)
 
 	_, err := db.ExecContext(ctx, query, placeID)
 	if err != nil {
-		return fmt.Errorf("failed to recalculate average rating: %w", err)
+		return fmt.Errorf("failed to recalculate average rating or reviews' number: %w", err)
 	}
 
 	return nil

@@ -25,17 +25,18 @@ func (s *GrpcAttractionsHandler) GetPlaces(ctx context.Context, req *gen.GetPlac
 	placesResponse := make([]*gen.Place, len(places))
 	for i, place := range places {
 		placesResponse[i] = &gen.Place{
-			Id:          uint32(place.ID),
-			Name:        place.Name,
-			ImagePath:   place.ImagePath,
-			Description: place.Description,
-			Rating:      int32(place.Rating),
-			Address:     place.Address,
-			City:        place.City,
-			PhoneNumber: place.PhoneNumber,
-			Categories:  place.Categories,
-			Latitude:    place.Latitude,
-			Longitude:   place.Longitude,
+			Id:              uint32(place.ID),
+			Name:            place.Name,
+			ImagePath:       place.ImagePath,
+			Description:     place.Description,
+			Rating:          float32(place.Rating),
+			NumberOfReviews: uint32(place.NumberOfReviews),
+			Address:         place.Address,
+			City:            place.City,
+			PhoneNumber:     place.PhoneNumber,
+			Categories:      place.Categories,
+			Latitude:        place.Latitude,
+			Longitude:       place.Longitude,
 		}
 	}
 	return &gen.GetPlacesResponse{Places: placesResponse}, nil
@@ -47,23 +48,24 @@ func (s *GrpcAttractionsHandler) GetPlace(ctx context.Context, req *gen.GetPlace
 		return nil, err
 	}
 	placeResponse := &gen.Place{
-		Id:          uint32(place.ID),
-		Name:        place.Name,
-		ImagePath:   place.ImagePath,
-		Description: place.Description,
-		Rating:      int32(place.Rating),
-		Address:     place.Address,
-		City:        place.City,
-		PhoneNumber: place.PhoneNumber,
-		Categories:  place.Categories,
-		Latitude:    place.Latitude,
-		Longitude:   place.Longitude,
+		Id:              uint32(place.ID),
+		Name:            place.Name,
+		ImagePath:       place.ImagePath,
+		Description:     place.Description,
+		Rating:          float32(place.Rating),
+		NumberOfReviews: uint32(place.NumberOfReviews),
+		Address:         place.Address,
+		City:            place.City,
+		PhoneNumber:     place.PhoneNumber,
+		Categories:      place.Categories,
+		Latitude:        place.Latitude,
+		Longitude:       place.Longitude,
 	}
 	return &gen.GetPlaceResponse{Place: placeResponse}, nil
 }
 
 func (s *GrpcAttractionsHandler) SearchPlaces(ctx context.Context, req *gen.SearchPlacesRequest) (*gen.SearchPlacesResponse, error) {
-	places, err := s.placeUsecase.SearchPlaces(ctx, req.Name, int(req.Category), int(req.City), int(req.Limit), int(req.Offset))
+	places, err := s.placeUsecase.SearchPlaces(ctx, req.Name, int(req.Category), int(req.City), int(req.FilterType), int(req.Limit), int(req.Offset))
 	if err != nil {
 		return nil, err
 	}
@@ -71,17 +73,18 @@ func (s *GrpcAttractionsHandler) SearchPlaces(ctx context.Context, req *gen.Sear
 	placesResponse := make([]*gen.Place, len(places))
 	for i, place := range places {
 		placesResponse[i] = &gen.Place{
-			Id:          uint32(place.ID),
-			Name:        place.Name,
-			ImagePath:   place.ImagePath,
-			Description: place.Description,
-			Rating:      int32(place.Rating),
-			Address:     place.Address,
-			City:        place.City,
-			PhoneNumber: place.PhoneNumber,
-			Categories:  place.Categories,
-			Latitude:    place.Latitude,
-			Longitude:   place.Longitude,
+			Id:              uint32(place.ID),
+			Name:            place.Name,
+			ImagePath:       place.ImagePath,
+			Description:     place.Description,
+			Rating:          float32(place.Rating),
+			NumberOfReviews: uint32(place.NumberOfReviews),
+			Address:         place.Address,
+			City:            place.City,
+			PhoneNumber:     place.PhoneNumber,
+			Categories:      place.Categories,
+			Latitude:        place.Latitude,
+			Longitude:       place.Longitude,
 		}
 	}
 	return &gen.SearchPlacesResponse{Places: placesResponse}, nil
@@ -95,16 +98,17 @@ func (s *GrpcAttractionsHandler) GetPlacesByCategory(ctx context.Context, req *g
 	placesResponse := make([]*gen.Place, len(places))
 	for i, place := range places {
 		placesResponse[i] = &gen.Place{
-			Id:          uint32(place.ID),
-			Name:        place.Name,
-			Description: place.Description,
-			Rating:      int32(place.Rating),
-			Address:     place.Address,
-			City:        place.City,
-			PhoneNumber: place.PhoneNumber,
-			Categories:  place.Categories,
-			Latitude:    place.Latitude,
-			Longitude:   place.Longitude,
+			Id:              uint32(place.ID),
+			Name:            place.Name,
+			Description:     place.Description,
+			Rating:          float32(place.Rating),
+			NumberOfReviews: uint32(place.NumberOfReviews),
+			Address:         place.Address,
+			City:            place.City,
+			PhoneNumber:     place.PhoneNumber,
+			Categories:      place.Categories,
+			Latitude:        place.Latitude,
+			Longitude:       place.Longitude,
 		}
 	}
 	return &gen.GetPlacesByCategoryResponse{Places: placesResponse}, nil
