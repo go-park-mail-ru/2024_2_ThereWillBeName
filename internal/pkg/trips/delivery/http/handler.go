@@ -27,7 +27,7 @@ type AddPlaceRequest struct {
 }
 
 type CreateSharingLinkResponse struct {
-	Token string `json:"token"`
+	URL string `json:"url"`
 }
 
 type TripData struct {
@@ -642,6 +642,7 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
 	tripIDStr := mux.Vars(r)["id"]
 	sharingOption := r.URL.Query().Get("sharing_option")
+	urlBase := "therewillbetrip.ru/trips/"
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 	h.logger.DebugContext(logCtx, "Handling request for creating a sharing link for a trip", slog.String("tripID", tripIDStr))
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
@@ -660,7 +661,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 	}
 	if token.Token.Token != "" {
 		response := CreateSharingLinkResponse{
-			Token: token.Token.Token,
+			URL: token.Token.Token,
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 		return
@@ -687,7 +688,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	response := CreateSharingLinkResponse{
-		Token: newToken,
+		URL: urlBase + newToken,
 	}
 
 	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
