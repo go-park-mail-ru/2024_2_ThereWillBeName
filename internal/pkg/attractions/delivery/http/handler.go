@@ -282,8 +282,9 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 
 	cityStr := r.URL.Query().Get("city")
 	categoryStr := r.URL.Query().Get("category")
+	filterStr := r.URL.Query().Get("filter")
 
-	var city, category int
+	var city, category, filterType int
 	if cityStr != "" {
 		city, err = strconv.Atoi(cityStr)
 		if err != nil {
@@ -306,7 +307,18 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), Limit: int32(limit), Offset: int32(offset)})
+	if filterStr != "" {
+		filterType, err = strconv.Atoi(filterStr)
+		if err != nil {
+			h.logger.Warn("Invalid filter parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(w, httpresponse.ErrorResponse{
+				Message: "Invalid filter parameter",
+			}, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+
+	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), FilterType: int32(filterType), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.ErrorContext(logCtx, "Failed to search attractions", slog.String("error", err.Error()))
