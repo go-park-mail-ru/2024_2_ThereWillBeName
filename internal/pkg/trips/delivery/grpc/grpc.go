@@ -50,6 +50,7 @@ func (h *GrpcTripsHandler) CreateTrip(ctx context.Context, in *tripsGen.CreateTr
 func (h *GrpcTripsHandler) UpdateTrip(ctx context.Context, in *tripsGen.UpdateTripRequest) (*tripsGen.EmptyResponse, error) {
 
 	trip := models.Trip{
+		ID:          uint(in.Trip.Id),
 		UserID:      uint(in.Trip.UserId),
 		Name:        in.Trip.Name,
 		Description: in.Trip.Description,
@@ -248,5 +249,31 @@ func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsG
 			Private:     trip.Private,
 			Photos:      trip.Photos,
 		},
+	}, nil
+}
+
+func (h *GrpcTripsHandler) AddUserToTrip(ctx context.Context, in *tripsGen.AddUserToTripRequest) (*tripsGen.EmptyResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	err := h.uc.AddUserToTrip(ctx, uint(tripId), uint(userId))
+	if err != nil {
+		h.logger.Error("Failed to add user to trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.EmptyResponse{}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingOption(ctx context.Context, in *tripsGen.GetSharingOptionRequest) (*tripsGen.GetSharingOptionResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	sharingOption, err := h.uc.GetSharingOption(ctx, uint(userId), uint(tripId))
+	if err != nil {
+		h.logger.Error("Failed to rettrieve sharing option", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingOptionResponse{
+		SharingOption: sharingOption,
 	}, nil
 }

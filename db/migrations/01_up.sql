@@ -128,6 +128,17 @@ CREATE TABLE IF NOT EXISTS sharing_token (
     CONSTRAINT fk_page FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS user_shared_trip (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    trip_id INT NOT NULL, -- ID страницы
+    user_id INT NOT NULL, -- ID страницы
+    sharing_option TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(), -- Дата создания записи
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_trip FOREIGN KEY (trip_id) REFERENCES trip(id) ON DELETE CASCADE,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
+);
+
 COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);

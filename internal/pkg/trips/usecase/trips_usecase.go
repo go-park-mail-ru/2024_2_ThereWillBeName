@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"path"
 )
 
@@ -33,6 +34,7 @@ func (u *TripsUsecaseImpl) CreateTrip(ctx context.Context, trip models.Trip) err
 }
 
 func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) error {
+	log.Println("debug in usecase", trip.ID)
 	err := u.tripRepo.UpdateTrip(ctx, trip)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -134,4 +136,29 @@ func (u *TripsUsecaseImpl) GetTripBySharingToken(ctx context.Context, token stri
 		return models.Trip{}, fmt.Errorf("failed to retrieve trip by sharing token from database: %w", err)
 	}
 	return trip, nil
+}
+
+func (u *TripsUsecaseImpl) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+	err := u.tripRepo.AddUserToTrip(ctx, tripId, userId)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		} else {
+			return fmt.Errorf("internal error: %w", models.ErrInternal)
+		}
+	}
+
+	return nil
+}
+
+func (u *TripsUsecaseImpl) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {
+	sharingOption, err := u.tripRepo.GetSharingOption(ctx, userId, tripId)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return "", fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		} else {
+			return "", fmt.Errorf("internal error: %w", models.ErrInternal)
+		}
+	}
+	return sharingOption, nil
 }

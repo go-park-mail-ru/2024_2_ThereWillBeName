@@ -3,6 +3,7 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"log"
 	"time"
 
 	"context"
@@ -44,6 +45,7 @@ func (r *TripRepository) UpdateTrip(ctx context.Context, trip models.Trip) error
 	query := `UPDATE trip 
               SET name = $1, description = $2, city_id = $3, start_date = $4, end_date = $5, private = $6, updated_at = NOW() 
               WHERE id = $7`
+	log.Println("debug trip update:", trip.ID)
 
 	result, err := r.db.ExecContext(ctx, query, trip.Name, trip.Description, trip.CityID, trip.StartDate, trip.EndDate, trip.Private, trip.ID)
 	if err != nil {
@@ -79,16 +81,29 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 
 func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
 	query := `
-		SELECT 
-			t.id, t.user_id, t.name, t.description, t.city_id, 
-			t.start_date, t.end_date, t.private, t.created_at, 
-			COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
-		FROM trip t
-		LEFT JOIN trip_photo tp ON t.id = tp.trip_id
-		WHERE t.user_id = $1
-		GROUP BY t.id
-		ORDER BY t.created_at DESC
-		LIMIT $2 OFFSET $3`
+    SELECT 
+        t.id, t.user_id, t.name, t.description, t.city_id, 
+        t.start_date, t.end_date, t.private, t.created_at, 
+        COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
+    FROM trip t
+    LEFT JOIN trip_photo tp ON t.id = tp.trip_id
+    WHERE t.user_id = $1
+
+    UNION
+
+    SELECT 
+        t.id, t.user_id, t.name, t.description, t.city_id, 
+        t.start_date, t.end_date, t.private, t.created_at, 
+        COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
+    FROM trip t
+    LEFT JOIN trip_photo tp ON t.id = tp.trip_id
+    WHERE t.id IN (
+        SELECT trip_id FROM user_shared_trip WHERE user_id = $1
+    )
+    GROUP BY t.id
+    ORDER BY created_at DESC
+    LIMIT $2 OFFSET $3
+`
 
 	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
 	if err != nil {
@@ -113,7 +128,11 @@ func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limi
 	if len(trips) == 0 {
 		return nil, fmt.Errorf("no trips found: %w", models.ErrNotFound)
 	}
-
+	// sharedTripsQuery := `SELECT trip_id FROM user_shared_trip WHERE user_id = $1`
+	// tripIds, err := r.db.QueryContext(ctx, sharedTripsQuery, userID)
+	// for tripIds.Next() {
+	// 	findTripQuery := `SELECT `
+	// }
 	return trips, nil
 }
 
@@ -299,4 +318,50 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 		return trip, fmt.Errorf("failed to get trip: %w", err)
 	}
 	return trip, nil
+}
+
+func (r *TripRepository) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+	findOptionQuery := `SELECT sharing_option FROM sharing_token WHERE trip_id = $1`
+	var sharingOption string
+	err := r.db.QueryRowContext(ctx, findOptionQuery, tripId).Scan(&sharingOption)
+	if err != nil {
+		return fmt.Errorf("failed to find sharing option: %w", err)
+	}
+	findUserQuery := `SELECT COUNT(*) FROM user_shared_trip WHERE user_id = $1 AND trip_id = $2 and sharing_option = $3`
+	var count int
+	err = r.db.QueryRowContext(ctx, findUserQuery, userId, tripId, sharingOption).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to find shared trip for this user: %w", err)
+	}
+	if count > 0 {
+		return nil
+	}
+
+	query := `INSERT INTO user_shared_trip (trip_id, user_id, sharing_option, created_at)
+        VALUES ($1, $2, $3, NOW())`
+	_, err = r.db.ExecContext(ctx, query, tripId, userId, sharingOption)
+	if err != nil {
+		return fmt.Errorf("failed to add user to a trip: %w", err)
+	}
+	return nil
+}
+
+func (r *TripRepository) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {
+	tripQuery := `SELECT user_id FROM trip WHERE id = $1`
+	var owner int
+	var sharingOption string
+	err := r.db.QueryRowContext(ctx, tripQuery, tripId).Scan(&owner)
+	if err != nil {
+		return "", fmt.Errorf("failed to find sharing option: %w", err)
+	}
+	if owner == int(userId) {
+		sharingOption = "editing"
+		return sharingOption, nil
+	}
+	query := `SELECT sharing_option FROM user_shared_trip WHERE user_id = $1 AND trip_id = $2`
+	err = r.db.QueryRowContext(ctx, query, userId, tripId).Scan(&sharingOption)
+	if err != nil {
+		return "", fmt.Errorf("failed to find sharing option: %w", err)
+	}
+	return sharingOption, nil
 }

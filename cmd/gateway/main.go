@@ -174,7 +174,7 @@ func main() {
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()
-	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripHandler), logger)).Methods(http.MethodGet)
+	trips.Handle("/{id:[0-9]+}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripHandler), logger)).Methods(http.MethodGet)
 	trips.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.UpdateTripHandler), logger)).Methods(http.MethodPut)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeleteTripHandler), logger)).Methods(http.MethodDelete)
