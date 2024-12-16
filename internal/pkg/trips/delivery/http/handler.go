@@ -9,6 +9,8 @@ import (
 	"2024_2_ThereWillBeName/internal/validator"
 
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -22,6 +24,10 @@ import (
 
 type AddPlaceRequest struct {
 	PlaceID uint `json:"place_id"`
+}
+
+type CreateSharingLinkResponse struct {
+	URL string `json:"url"`
 }
 
 type TripData struct {
@@ -41,6 +47,15 @@ type TripHandler struct {
 
 func NewTripHandler(client tripsGen.TripsClient, logger *slog.Logger) *TripHandler {
 	return &TripHandler{client, logger}
+}
+
+func generateToken() (string, error) {
+	bytes := make([]byte, 32)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
@@ -188,7 +203,6 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	vars := mux.Vars(r)
 	tripID, err := strconv.Atoi(vars["id"])
-
 	logCtx = log.AppendCtx(logCtx, slog.Int("trip_id", tripID))
 	h.logger.DebugContext(logCtx, "Handling request for updating a trip")
 
@@ -198,6 +212,25 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 			Message: "Invalid trip ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	optionRequest := &tripsGen.GetSharingOptionRequest{
+		TripId: uint32(tripID),
+		UserId: uint32(r.Context().Value(middleware.IdKey).(uint)),
+	}
+	sharingOption, err := h.client.GetSharingOption(r.Context(), optionRequest)
+	if err != nil {
+		response, status := ErrorCheck(err, "retrieve sharing option", h.logger, logCtx)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
+		return
+	}
+
+	if sharingOption.SharingOption != "editing" {
+		response := httpresponse.ErrorResponse{
+			Message: "User cannot edit this trip",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusForbidden, h.logger)
 		return
 	}
 
@@ -232,7 +265,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	trip.Description = template.HTMLEscapeString(trip.Description)
 
 	tripRequest := &tripsGen.Trip{
-		Id:          uint32(trip.ID),
+		Id:          uint32(tripID),
 		UserId:      uint32(trip.UserID),
 		Name:        trip.Name,
 		Description: trip.Description,
@@ -604,4 +637,99 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 	h.logger.DebugContext(logCtx, "Successfully deleted a photo from trip")
 
 	httpresponse.SendJSONResponse(logCtx, w, map[string]string{"message": "Photo deleted successfully"}, http.StatusOK, h.logger)
+}
+
+func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
+	tripIDStr := mux.Vars(r)["id"]
+	sharingOption := r.URL.Query().Get("sharing_option")
+	urlBase := "therewillbetrip.ru/trips/"
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	h.logger.DebugContext(logCtx, "Handling request for creating a sharing link for a trip", slog.String("tripID", tripIDStr))
+	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
+	if err != nil {
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		return
+	}
+	req := &tripsGen.GetSharingTokenRequest{
+		TripId: uint32(tripID),
+	}
+	token, err := h.client.GetSharingToken(r.Context(), req)
+	if err != nil {
+		response, status := ErrorCheck(err, "get sharing token", h.logger, context.Background())
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
+		return
+	}
+	if token.Token.Token != "" {
+		response := CreateSharingLinkResponse{
+			URL: token.Token.Token,
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
+		return
+	}
+	newToken, err := generateToken()
+	if err != nil {
+		h.logger.Warn("Failed to generate token", slog.String("error", err.Error()))
+		response := httpresponse.ErrorResponse{
+			Message: "Invalid request body",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+
+	newReq := &tripsGen.CreateSharingLinkRequest{
+		TripId:        uint32(tripID),
+		Token:         newToken,
+		SharingOption: sharingOption,
+	}
+
+	_, err = h.client.CreateSharingLink(r.Context(), newReq)
+	if err != nil {
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Failed to create sharing link"}, http.StatusInternalServerError, h.logger)
+		return
+	}
+	response := CreateSharingLinkResponse{
+		URL: urlBase + newToken,
+	}
+
+	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
+}
+
+func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Request) {
+	token := mux.Vars(r)["sharing_token"]
+	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+
+	req := &tripsGen.GetTripBySharingTokenRequest{
+		Token: token,
+	}
+	trip, err := h.client.GetTripBySharingToken(r.Context(), req)
+	if err != nil {
+		response, status := ErrorCheck(err, "retrieve trip by sharing token", h.logger, logCtx)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
+		return
+	}
+	userID, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
+
+		response := httpresponse.ErrorResponse{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+	addUserReq := &tripsGen.AddUserToTripRequest{
+		TripId: trip.Trip.Id,
+		UserId: uint32(userID),
+	}
+	_, err = h.client.AddUserToTrip(r.Context(), addUserReq)
+	if err != nil {
+		response, status := ErrorCheck(err, "add user to trip", h.logger, logCtx)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
+		return
+	}
+	h.logger.DebugContext(logCtx, "Successfully got trip by sharing token")
+	tripResponse := trip.Trip
+
+	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
 }

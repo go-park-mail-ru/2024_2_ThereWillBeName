@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GrpcTripsHandler struct {
@@ -48,6 +50,7 @@ func (h *GrpcTripsHandler) CreateTrip(ctx context.Context, in *tripsGen.CreateTr
 func (h *GrpcTripsHandler) UpdateTrip(ctx context.Context, in *tripsGen.UpdateTripRequest) (*tripsGen.EmptyResponse, error) {
 
 	trip := models.Trip{
+		ID:          uint(in.Trip.Id),
 		UserID:      uint(in.Trip.UserId),
 		Name:        in.Trip.Name,
 		Description: in.Trip.Description,
@@ -197,4 +200,80 @@ func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen
 
 	h.logger.Info("Photo successfully deleted", slog.String("path", photoPath))
 	return &tripsGen.EmptyResponse{}, nil
+}
+func (h *GrpcTripsHandler) CreateSharingLink(ctx context.Context, in *tripsGen.CreateSharingLinkRequest) (*tripsGen.CreateSharingLinkResponse, error) {
+	token := in.Token
+	sharingOption := in.SharingOption
+	err := h.uc.CreateSharingLink(ctx, uint(in.TripId), token, sharingOption)
+	if err != nil {
+		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
+		return nil, err
+	}
+
+	return &tripsGen.CreateSharingLinkResponse{Token: token}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.GetSharingTokenRequest) (*tripsGen.GetSharingTokenResponse, error) {
+	tripID := in.TripId
+	token, err := h.uc.GetSharingToken(ctx, uint(tripID))
+	if err != nil {
+		h.logger.Error("Failed to get sharing token for a trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingTokenResponse{
+		Token: &tripsGen.Token{
+			Id:            uint32(token.ID),
+			Token:         token.Token,
+			SharingOption: token.SharingOption,
+			ExpiresAt:     timestamppb.New(token.ExpiresAt),
+		},
+	}, nil
+}
+
+func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsGen.GetTripBySharingTokenRequest) (*tripsGen.GetTripBySharingTokenResponse, error) {
+	token := in.Token
+	trip, err := h.uc.GetTripBySharingToken(ctx, token)
+	if err != nil {
+		h.logger.Error("Failed to get trip by sharing token", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetTripBySharingTokenResponse{
+		Trip: &tripsGen.Trip{
+			Id:          uint32(trip.ID),
+			UserId:      uint32(trip.UserID),
+			Name:        trip.Name,
+			Description: trip.Description,
+			CityId:      uint32(trip.CityID),
+			StartDate:   trip.StartDate,
+			EndDate:     trip.EndDate,
+			Private:     trip.Private,
+			Photos:      trip.Photos,
+		},
+	}, nil
+}
+
+func (h *GrpcTripsHandler) AddUserToTrip(ctx context.Context, in *tripsGen.AddUserToTripRequest) (*tripsGen.EmptyResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	err := h.uc.AddUserToTrip(ctx, uint(tripId), uint(userId))
+	if err != nil {
+		h.logger.Error("Failed to add user to trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.EmptyResponse{}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingOption(ctx context.Context, in *tripsGen.GetSharingOptionRequest) (*tripsGen.GetSharingOptionResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	sharingOption, err := h.uc.GetSharingOption(ctx, uint(userId), uint(tripId))
+	if err != nil {
+		h.logger.Error("Failed to rettrieve sharing option", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingOptionResponse{
+		SharingOption: sharingOption,
+	}, nil
 }
