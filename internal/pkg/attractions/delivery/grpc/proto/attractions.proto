@@ -24,8 +24,8 @@ message Place {
   string city = 8;
   string phoneNumber = 9;
   repeated string categories = 10;
-  double latitude = 11;
-  double longitude = 12;
+  float latitude = 11;
+  float longitude = 12;
 }
 
 message GetPlacesRequest {

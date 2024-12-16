@@ -310,20 +310,23 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userProfile := models.UserProfile{
+		Login:      getProfileResponse.Login,
+		AvatarPath: getProfileResponse.AvatarPath,
+		Email:      getProfileResponse.Email,
+	}
+
 	type UserResponse struct {
-		ID      uint32      `json:"id"`
-		Profile interface{} `json:"profile"`
+		ID      uint32             `json:"id"`
+		Profile models.UserProfile `json:"profile"`
 	}
 
 	userResponse := UserResponse{
-		ID:      uint32(userID),
-		Profile: getProfileResponse,
+		ID: uint32(userID), Profile: userProfile,
 	}
+
 	h.logger.DebugContext(logCtx, "Successfully retrieved current user information")
-
 	httpresponse.SendJSONResponse(logCtx, w, userResponse, http.StatusOK, h.logger)
-
-
 }
 
 // UploadAvatar godoc
@@ -501,7 +504,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		RequesterId: uint32(requesterID),
 	}
 
-	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
+	getProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
@@ -521,9 +524,16 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
+
+	userProfile := models.UserProfile{
+		Login:      getProfileResponse.Login,
+		Email:      getProfileResponse.Email,
+		AvatarPath: getProfileResponse.AvatarPath,
+	}
+
 	h.logger.DebugContext(logCtx, "User profile retrieved successfully")
 
-	httpresponse.SendJSONResponse(logCtx, w, GetProfileResponse, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, userProfile, http.StatusOK, h.logger)
 }
 
 func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {

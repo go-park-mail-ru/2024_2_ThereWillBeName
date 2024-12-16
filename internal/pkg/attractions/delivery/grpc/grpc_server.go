@@ -6,6 +6,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/attractions"
 	"2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	"context"
+	"log"
 )
 
 type GrpcAttractionsHandler struct {
@@ -83,9 +84,10 @@ func (s *GrpcAttractionsHandler) SearchPlaces(ctx context.Context, req *gen.Sear
 			City:            place.City,
 			PhoneNumber:     place.PhoneNumber,
 			Categories:      place.Categories,
-			Latitude:        place.Latitude,
-			Longitude:       place.Longitude,
+			Latitude:        float32(place.Latitude),
+			Longitude:       float32(place.Longitude),
 		}
+		log.Println("logging, latitude", place.Latitude, " ", float32(place.Latitude))
 	}
 	return &gen.SearchPlacesResponse{Places: placesResponse}, nil
 }
