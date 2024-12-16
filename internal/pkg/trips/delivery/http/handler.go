@@ -661,7 +661,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 	}
 	if token.Token.Token != "" {
 		response := CreateSharingLinkResponse{
-			URL: token.Token.Token,
+			URL: urlBase + token.Token.Token,
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 		return
