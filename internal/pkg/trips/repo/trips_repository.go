@@ -82,27 +82,32 @@ func (r *TripRepository) DeleteTrip(ctx context.Context, id uint) error {
 func (r *TripRepository) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
 	query := `
     SELECT 
-        t.id, t.user_id, t.name, t.description, t.city_id, 
-        t.start_date, t.end_date, t.private, t.created_at, 
-        COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
-    FROM trip t
-    LEFT JOIN trip_photo tp ON t.id = tp.trip_id
-    WHERE t.user_id = $1
+    t.id, t.user_id, t.name, t.description, t.city_id, 
+    t.start_date, t.end_date, t.private, t.created_at, 
+    COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
+FROM trip t
+LEFT JOIN trip_photo tp ON t.id = tp.trip_id
+WHERE t.user_id = $1
+GROUP BY t.id, t.user_id, t.name, t.description, t.city_id, 
+         t.start_date, t.end_date, t.private, t.created_at
 
-    UNION
+UNION
 
-    SELECT 
-        t.id, t.user_id, t.name, t.description, t.city_id, 
-        t.start_date, t.end_date, t.private, t.created_at, 
-        COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
-    FROM trip t
-    LEFT JOIN trip_photo tp ON t.id = tp.trip_id
-    WHERE t.id IN (
-        SELECT trip_id FROM user_shared_trip WHERE user_id = $1
-    )
-    GROUP BY t.id
-    ORDER BY created_at DESC
-    LIMIT $2 OFFSET $3
+SELECT 
+    t.id, t.user_id, t.name, t.description, t.city_id, 
+    t.start_date, t.end_date, t.private, t.created_at, 
+    COALESCE(ARRAY_AGG(tp.photo_path) FILTER (WHERE tp.photo_path IS NOT NULL), '{}') AS photos
+FROM trip t
+LEFT JOIN trip_photo tp ON t.id = tp.trip_id
+WHERE t.id IN (
+    SELECT trip_id FROM user_shared_trip WHERE user_id = $1
+)
+GROUP BY t.id, t.user_id, t.name, t.description, t.city_id, 
+         t.start_date, t.end_date, t.private, t.created_at
+
+ORDER BY created_at DESC
+LIMIT $2 OFFSET $3;
+
 `
 
 	rows, err := r.db.QueryContext(ctx, query, userID, limit, offset)
