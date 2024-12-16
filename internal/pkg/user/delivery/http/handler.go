@@ -284,37 +284,66 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
+	getProfileRequest := &gen.GetProfileRequest{
+		Id:          uint32(userID),
+		RequesterId: uint32(userID),
+	}
 
-	login, ok := r.Context().Value(middleware.LoginKey).(string)
-	if !ok {
-		h.logger.WarnContext(logCtx, "Failed to retrieve user login from context")
+	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			h.logger.ErrorContext(logCtx, "User not found")
+
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
+			return
+		}
+
+		h.logger.ErrorContext(logCtx, "Error retrieving profile", "error", err)
 
 		response := httpresponse.ErrorResponse{
-			Message: "User is not authorized",
+			Message: "Failed to retrieve user current user information",
 		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	email, ok := r.Context().Value(middleware.EmailKey).(string)
-	if !ok {
-		h.logger.WarnContext(logCtx, "Failed to retrieve user email from context")
+	h.logger.DebugContext(logCtx, "Successfully retrieved current user information")
 
-		response := httpresponse.ErrorResponse{
-			Message: "User is not authorized",
-		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
-		return
-	}
+	httpresponse.SendJSONResponse(logCtx, w, GetProfileResponse, http.StatusOK, h.logger)
 
-	response := models.User{
-		ID:    userID,
-		Login: login,
-		Email: email,
-	}
-	h.logger.DebugContext(logCtx, "Successfully retrieved current user information", "userID", userID)
+	// 	login, ok := r.Context().Value(middleware.LoginKey).(string)
+	// 	if !ok {
+	// 		h.logger.WarnContext(logCtx, "Failed to retrieve user login from context")
 
-	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
+	// 		response := httpresponse.ErrorResponse{
+	// 			Message: "User is not authorized",
+	// 		}
+	// 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+	// 		return
+	// 	}
+
+	// 	email, ok := r.Context().Value(middleware.EmailKey).(string)
+	// 	if !ok {
+	// 		h.logger.WarnContext(logCtx, "Failed to retrieve user email from context")
+
+	// 		response := httpresponse.ErrorResponse{
+	// 			Message: "User is not authorized",
+	// 		}
+	// 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+	// 		return
+	// 	}
+
+	// 	response := models.User{
+	// 		ID:    userID,
+	// 		Login: login,
+	// 		Email: email,
+	// 	}
+	// 	h.logger.DebugContext(logCtx, "Successfully retrieved current user information", "userID", userID)
+
+	// httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
 
 // UploadAvatar godoc
