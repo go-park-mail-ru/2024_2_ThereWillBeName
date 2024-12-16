@@ -17,6 +17,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
 	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
+	"2024_2_ThereWillBeName/internal/pkg/outbox"
 	grpcReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	reviewRepo "2024_2_ThereWillBeName/internal/pkg/reviews/repo"
@@ -25,11 +26,10 @@ import (
 	genSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
 	searchRepo "2024_2_ThereWillBeName/internal/pkg/search/repo"
 	searchUsecase "2024_2_ThereWillBeName/internal/pkg/search/usecase"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/gorilla/mux"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"log/slog"
 	"net"
@@ -39,6 +39,9 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -61,6 +64,8 @@ func main() {
 	metricMw := metricsMw.Create()
 	metricMw.RegisterMetrics()
 	wrappedDB := dblogger.NewDB(db, logger)
+
+	outboxListener := outbox.NewOutboxListener(wrappedDB)
 
 	r := mux.NewRouter()
 	r.Handle("/metrics", promhttp.Handler())
@@ -117,6 +122,16 @@ func main() {
 		}
 	}()
 
+	// Создание контекста для управления процессами
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go func() {
+		logger.Info("Starting OutboxListener")
+		outboxListener.StartListening(ctx)
+		logger.Info("OutboxListener stopped")
+	}()
+
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -137,6 +152,7 @@ func main() {
 
 	log.Println("Shutting down gRPC server...")
 	grpcAttractionsServer.GracefulStop()
+	cancel()
 	log.Println("gRPC server gracefully stopped")
 }
 
