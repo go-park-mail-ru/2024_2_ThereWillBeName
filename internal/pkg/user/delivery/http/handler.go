@@ -310,9 +310,18 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	type UserResponse struct {
+		ID      uint32      `json:"id"`
+		Profile interface{} `json:"profile"`
+	}
+
+	userResponse := UserResponse{
+		ID:      uint32(userID),
+		Profile: getProfileResponse,
+	}
 	h.logger.DebugContext(logCtx, "Successfully retrieved current user information")
 
-	httpresponse.SendJSONResponse(logCtx, w, getProfileResponse, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, userResponse, http.StatusOK, h.logger)
 
 }
 
