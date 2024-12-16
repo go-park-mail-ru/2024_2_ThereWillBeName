@@ -323,6 +323,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 	httpresponse.SendJSONResponse(logCtx, w, userResponse, http.StatusOK, h.logger)
 
+
 }
 
 // UploadAvatar godoc
