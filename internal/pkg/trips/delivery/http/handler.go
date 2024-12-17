@@ -40,6 +40,11 @@ type TripData struct {
 	Private     bool   `json:"private_trip"`
 }
 
+type TripResponse struct {
+	Trip  *tripsGen.Trip          `json:"trip"`
+	Users []*tripsGen.UserProfile `json:"users"`
+}
+
 type TripHandler struct {
 	client tripsGen.TripsClient
 	logger *slog.Logger
@@ -426,18 +431,6 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
 	h.logger.DebugContext(logCtx, "Handling request for getting trip by ID")
 
-	_, ok := r.Context().Value(middleware.IdKey).(uint)
-	if !ok {
-
-		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
-
-		response := httpresponse.ErrorResponse{
-			Message: "User is not authorized",
-		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
-		return
-	}
-
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
 	if err != nil {
 		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
@@ -448,7 +441,7 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trip, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
+	tripResponse, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
 		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
@@ -456,9 +449,13 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
-	tripResponse := trip.Trip
 
-	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
+	// Ответ с данными поездки и пользователей
+	response := TripResponse{
+		Trip:  tripResponse.Trip,
+		Users: tripResponse.Users,
+	}
+	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
 
 // AddPlaceToTripHandler godoc

@@ -63,6 +63,34 @@ func (mr *MockTripsUsecaseMockRecorder) AddPlaceToTrip(ctx, tripID, placeID inte
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlaceToTrip", reflect.TypeOf((*MockTripsUsecase)(nil).AddPlaceToTrip), ctx, tripID, placeID)
 }
 
+// AddUserToTrip mocks base method.
+func (m *MockTripsUsecase) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserToTrip", ctx, tripId, userId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserToTrip indicates an expected call of AddUserToTrip.
+func (mr *MockTripsUsecaseMockRecorder) AddUserToTrip(ctx, tripId, userId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToTrip", reflect.TypeOf((*MockTripsUsecase)(nil).AddUserToTrip), ctx, tripId, userId)
+}
+
+// CreateSharingLink mocks base method.
+func (m *MockTripsUsecase) CreateSharingLink(ctx context.Context, tripID uint, token, sharingOption string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSharingLink", ctx, tripID, token, sharingOption)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSharingLink indicates an expected call of CreateSharingLink.
+func (mr *MockTripsUsecaseMockRecorder) CreateSharingLink(ctx, tripID, token, sharingOption interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSharingLink", reflect.TypeOf((*MockTripsUsecase)(nil).CreateSharingLink), ctx, tripID, token, sharingOption)
+}
+
 // CreateTrip mocks base method.
 func (m *MockTripsUsecase) CreateTrip(ctx context.Context, trip models.Trip) error {
 	m.ctrl.T.Helper()
@@ -105,6 +133,36 @@ func (mr *MockTripsUsecaseMockRecorder) DeleteTrip(ctx, id interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTrip", reflect.TypeOf((*MockTripsUsecase)(nil).DeleteTrip), ctx, id)
 }
 
+// GetSharingOption mocks base method.
+func (m *MockTripsUsecase) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSharingOption", ctx, userId, tripId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSharingOption indicates an expected call of GetSharingOption.
+func (mr *MockTripsUsecaseMockRecorder) GetSharingOption(ctx, userId, tripId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSharingOption", reflect.TypeOf((*MockTripsUsecase)(nil).GetSharingOption), ctx, userId, tripId)
+}
+
+// GetSharingToken mocks base method.
+func (m *MockTripsUsecase) GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSharingToken", ctx, tripID)
+	ret0, _ := ret[0].(models.SharingToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSharingToken indicates an expected call of GetSharingToken.
+func (mr *MockTripsUsecaseMockRecorder) GetSharingToken(ctx, tripID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSharingToken", reflect.TypeOf((*MockTripsUsecase)(nil).GetSharingToken), ctx, tripID)
+}
+
 // GetTrip mocks base method.
 func (m *MockTripsUsecase) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
 	m.ctrl.T.Helper()
@@ -120,6 +178,21 @@ func (mr *MockTripsUsecaseMockRecorder) GetTrip(ctx, tripID interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrip", reflect.TypeOf((*MockTripsUsecase)(nil).GetTrip), ctx, tripID)
 }
 
+// GetTripBySharingToken mocks base method.
+func (m *MockTripsUsecase) GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTripBySharingToken", ctx, troken)
+	ret0, _ := ret[0].(models.Trip)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTripBySharingToken indicates an expected call of GetTripBySharingToken.
+func (mr *MockTripsUsecaseMockRecorder) GetTripBySharingToken(ctx, troken interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTripBySharingToken", reflect.TypeOf((*MockTripsUsecase)(nil).GetTripBySharingToken), ctx, troken)
+}
+
 // GetTripsByUserID mocks base method.
 func (m *MockTripsUsecase) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
 	m.ctrl.T.Helper()
@@ -133,6 +206,21 @@ func (m *MockTripsUsecase) GetTripsByUserID(ctx context.Context, userID uint, li
 func (mr *MockTripsUsecaseMockRecorder) GetTripsByUserID(ctx, userID, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTripsByUserID", reflect.TypeOf((*MockTripsUsecase)(nil).GetTripsByUserID), ctx, userID, limit, offset)
+}
+
+// GetUsersByTripID mocks base method.
+func (m *MockTripsUsecase) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersByTripID", ctx, tripId)
+	ret0, _ := ret[0].([]models.UserProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByTripID indicates an expected call of GetUsersByTripID.
+func (mr *MockTripsUsecaseMockRecorder) GetUsersByTripID(ctx, tripId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByTripID", reflect.TypeOf((*MockTripsUsecase)(nil).GetUsersByTripID), ctx, tripId)
 }
 
 // UpdateTrip mocks base method.
@@ -200,6 +288,34 @@ func (mr *MockTripsRepoMockRecorder) AddPlaceToTrip(ctx, tripID, placeID interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddPlaceToTrip", reflect.TypeOf((*MockTripsRepo)(nil).AddPlaceToTrip), ctx, tripID, placeID)
 }
 
+// AddUserToTrip mocks base method.
+func (m *MockTripsRepo) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddUserToTrip", ctx, tripId, userId)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddUserToTrip indicates an expected call of AddUserToTrip.
+func (mr *MockTripsRepoMockRecorder) AddUserToTrip(ctx, tripId, userId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUserToTrip", reflect.TypeOf((*MockTripsRepo)(nil).AddUserToTrip), ctx, tripId, userId)
+}
+
+// CreateSharingLink mocks base method.
+func (m *MockTripsRepo) CreateSharingLink(ctx context.Context, tripID uint, token, sharingOption string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateSharingLink", ctx, tripID, token, sharingOption)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateSharingLink indicates an expected call of CreateSharingLink.
+func (mr *MockTripsRepoMockRecorder) CreateSharingLink(ctx, tripID, token, sharingOption interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSharingLink", reflect.TypeOf((*MockTripsRepo)(nil).CreateSharingLink), ctx, tripID, token, sharingOption)
+}
+
 // CreateTrip mocks base method.
 func (m *MockTripsRepo) CreateTrip(ctx context.Context, user models.Trip) error {
 	m.ctrl.T.Helper()
@@ -242,6 +358,36 @@ func (mr *MockTripsRepoMockRecorder) DeleteTrip(ctx, id interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteTrip", reflect.TypeOf((*MockTripsRepo)(nil).DeleteTrip), ctx, id)
 }
 
+// GetSharingOption mocks base method.
+func (m *MockTripsRepo) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSharingOption", ctx, userId, tripId)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSharingOption indicates an expected call of GetSharingOption.
+func (mr *MockTripsRepoMockRecorder) GetSharingOption(ctx, userId, tripId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSharingOption", reflect.TypeOf((*MockTripsRepo)(nil).GetSharingOption), ctx, userId, tripId)
+}
+
+// GetSharingToken mocks base method.
+func (m *MockTripsRepo) GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSharingToken", ctx, tripID)
+	ret0, _ := ret[0].(models.SharingToken)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSharingToken indicates an expected call of GetSharingToken.
+func (mr *MockTripsRepoMockRecorder) GetSharingToken(ctx, tripID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSharingToken", reflect.TypeOf((*MockTripsRepo)(nil).GetSharingToken), ctx, tripID)
+}
+
 // GetTrip mocks base method.
 func (m *MockTripsRepo) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
 	m.ctrl.T.Helper()
@@ -257,6 +403,21 @@ func (mr *MockTripsRepoMockRecorder) GetTrip(ctx, tripID interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTrip", reflect.TypeOf((*MockTripsRepo)(nil).GetTrip), ctx, tripID)
 }
 
+// GetTripBySharingToken mocks base method.
+func (m *MockTripsRepo) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTripBySharingToken", ctx, token)
+	ret0, _ := ret[0].(models.Trip)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTripBySharingToken indicates an expected call of GetTripBySharingToken.
+func (mr *MockTripsRepoMockRecorder) GetTripBySharingToken(ctx, token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTripBySharingToken", reflect.TypeOf((*MockTripsRepo)(nil).GetTripBySharingToken), ctx, token)
+}
+
 // GetTripsByUserID mocks base method.
 func (m *MockTripsRepo) GetTripsByUserID(ctx context.Context, userID uint, limit, offset int) ([]models.Trip, error) {
 	m.ctrl.T.Helper()
@@ -270,6 +431,21 @@ func (m *MockTripsRepo) GetTripsByUserID(ctx context.Context, userID uint, limit
 func (mr *MockTripsRepoMockRecorder) GetTripsByUserID(ctx, userID, limit, offset interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTripsByUserID", reflect.TypeOf((*MockTripsRepo)(nil).GetTripsByUserID), ctx, userID, limit, offset)
+}
+
+// GetUsersByTripID mocks base method.
+func (m *MockTripsRepo) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetUsersByTripID", ctx, tripId)
+	ret0, _ := ret[0].([]models.UserProfile)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetUsersByTripID indicates an expected call of GetUsersByTripID.
+func (mr *MockTripsRepoMockRecorder) GetUsersByTripID(ctx, tripId interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsersByTripID", reflect.TypeOf((*MockTripsRepo)(nil).GetUsersByTripID), ctx, tripId)
 }
 
 // UpdateTrip mocks base method.
