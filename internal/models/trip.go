@@ -21,6 +21,14 @@ type Trip struct {
 //easyjson:json
 type TripList []Trip
 
+type AddPlaceRequest struct {
+	PlaceID uint `json:"place_id"`
+}
+
+type CreateSharingLinkResponse struct {
+	URL string `json:"url"`
+}
+
 func ValidateTrip(v *validator.Validator, trip *Trip) {
 	v.Check(trip.Name != "", "name", "must be provided")
 	v.Check(len(trip.Name) <= 255, "name", "must not be more than 255 symbols")

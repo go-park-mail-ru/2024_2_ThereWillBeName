@@ -66,7 +66,7 @@ func (h *PlacesHandler) GetPlacesHandler(w http.ResponseWriter, r *http.Request)
 			Name:        place.Name,
 			ImagePath:   place.ImagePath,
 			Description: place.Description,
-			Rating:      int(place.Rating),
+			Rating:      place.Rating,
 			Address:     place.Address,
 			City:        place.City,
 			PhoneNumber: place.PhoneNumber,
@@ -343,7 +343,7 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		filterType, err = strconv.Atoi(filterStr)
 		if err != nil {
 			h.logger.Warn("Invalid filter parameter", slog.String("error", err.Error()))
-			httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{
+			httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{
 				Message: "Invalid filter parameter",
 			}, http.StatusBadRequest, h.logger)
 			return
@@ -359,12 +359,12 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 
 	placeResponse := make(models.GetPLaceList, len(places.Places))
 	for i, place := range places.Places {
-		responsePlaces[i] = models.GetPlace{
+		placeResponse[i] = models.GetPlace{
 			ID:              int(place.Id),
 			Name:            place.Name,
 			ImagePath:       place.ImagePath,
 			Description:     place.Description,
-			Rating:          float32(place.Rating),
+			Rating:          place.Rating,
 			NumberOfReviews: int(place.NumberOfReviews),
 			Address:         place.Address,
 			City:            place.City,
@@ -373,7 +373,7 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	httpresponse.SendJSONResponse(logCtx, w, responsePlaces, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, placeResponse, http.StatusOK, h.logger)
 	h.logger.DebugContext(logCtx, "Successfully getting attractions by name", slog.Int("places_count", len(places.Places)))
 
 }
@@ -412,7 +412,7 @@ func (h *PlacesHandler) GetPlacesByCategoryHandler(w http.ResponseWriter, r *htt
 	}
 	placeResponse := make(models.GetPLaceList, len(places.Places))
 	for i, place := range places.Places {
-		responsePlaces[i] = models.GetPlace{
+		placeResponse[i] = models.GetPlace{
 			ID:              int(place.Id),
 			Name:            place.Name,
 			ImagePath:       place.ImagePath,

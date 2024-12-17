@@ -35,6 +35,11 @@ type Response struct {
 	Email    string `json:"email"`
 }
 
+type UserResponse struct {
+	ID      uint32      `json:"id"`
+	Profile UserProfile `json:"profile"`
+}
+
 func ValidateUser(v *validator.Validator, user *User) {
 	// v.Check(user.Login != "", "login", "must be provided")
 	v.Check(user.Password != "", "password", "must be provided")

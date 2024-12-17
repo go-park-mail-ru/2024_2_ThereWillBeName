@@ -22,14 +22,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type AddPlaceRequest struct {
-	PlaceID uint `json:"place_id"`
-}
-
-type CreateSharingLinkResponse struct {
-	URL string `json:"url"`
-}
-
 type TripData struct {
 	UserID      uint   `json:"user_id"`
 	Name        string `json:"name"`
@@ -58,7 +50,7 @@ func generateToken() (string, error) {
 	return base64.URLEncoding.EncodeToString(bytes), nil
 }
 
-func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
+func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.Response, int) {
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
 
@@ -227,7 +219,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if sharingOption.SharingOption != "editing" {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User cannot edit this trip",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusForbidden, h.logger)
@@ -536,7 +528,7 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
-	var req AddPlaceRequest
+	var req models.AddPlaceRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
@@ -679,7 +671,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 	h.logger.DebugContext(logCtx, "Handling request for creating a sharing link for a trip", slog.String("tripID", tripIDStr))
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 32)
 	if err != nil {
-		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Invalid trip ID"}, http.StatusBadRequest, h.logger)
 		return
 	}
 	req := &tripsGen.GetSharingTokenRequest{
@@ -692,7 +684,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 	if token.Token.Token != "" {
-		response := CreateSharingLinkResponse{
+		response := models.CreateSharingLinkResponse{
 			URL: urlBase + token.Token.Token,
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
@@ -701,7 +693,7 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 	newToken, err := generateToken()
 	if err != nil {
 		h.logger.Warn("Failed to generate token", slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request body",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -716,10 +708,10 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 
 	_, err = h.client.CreateSharingLink(r.Context(), newReq)
 	if err != nil {
-		httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{Message: "Failed to create sharing link"}, http.StatusInternalServerError, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Failed to create sharing link"}, http.StatusInternalServerError, h.logger)
 		return
 	}
-	response := CreateSharingLinkResponse{
+	response := models.CreateSharingLinkResponse{
 		URL: urlBase + newToken,
 	}
 
@@ -744,7 +736,7 @@ func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Reque
 
 		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -761,7 +753,18 @@ func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	h.logger.DebugContext(logCtx, "Successfully got trip by sharing token")
-	tripResponse := trip.Trip
+	tripResponse := models.Trip{
+		ID:          uint(trip.Trip.Id),
+		UserID:      userID,
+		Name:        trip.Trip.Name,
+		Description: trip.Trip.Description,
+		CityID:      uint(trip.Trip.CityId),
+		StartDate:   trip.Trip.StartDate,
+		EndDate:     trip.Trip.EndDate,
+		Private:     trip.Trip.Private,
+		Photos:      trip.Trip.Photos,
+		CreatedAt:   trip.Trip.CreatedAt.AsTime(),
+	}
 
 	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
 }

@@ -289,7 +289,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "User not found",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
@@ -298,7 +298,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.ErrorContext(logCtx, "Error retrieving profile", "error", err)
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to retrieve user current user information",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -311,12 +311,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		Email:      getProfileResponse.Email,
 	}
 
-	type UserResponse struct {
-		ID      uint32             `json:"id"`
-		Profile models.UserProfile `json:"profile"`
-	}
-
-	userResponse := UserResponse{
+	userResponse := models.UserResponse{
 		ID: uint32(userID), Profile: userProfile,
 	}
 

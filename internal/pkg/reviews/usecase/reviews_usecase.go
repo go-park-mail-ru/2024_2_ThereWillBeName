@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 )
 
 type reviewsUsecaseImpl struct {
@@ -56,11 +57,13 @@ func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID ui
 	reviewsFound, err := u.repo.GetReviewsByPlaceID(ctx, placeID, limit, offset)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
+			log.Print("1")
 			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		}
+		log.Print("3")
 		return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
-
+	log.Print("4")
 	return reviewsFound, nil
 }
 

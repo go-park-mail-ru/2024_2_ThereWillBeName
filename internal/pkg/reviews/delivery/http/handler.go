@@ -8,12 +8,11 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 	"context"
+	"errors"
+	"fmt"
 	"github.com/mailru/easyjson"
 	"html/template"
 	"log/slog"
-
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
@@ -32,10 +31,8 @@ func NewReviewHandler(client gen.ReviewsClient, logger *slog.Logger) *ReviewHand
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.Response, int) {
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
-
 	if errors.Is(err, models.ErrNotFound) {
-
-		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action))
+		logger.WarnContext(logContext, fmt.Sprintf("Error during %s operation", action))
 		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
