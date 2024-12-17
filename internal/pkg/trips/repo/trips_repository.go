@@ -3,7 +3,6 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
-	"errors"
 	"log"
 	"time"
 
@@ -405,47 +404,4 @@ func (r *TripRepository) GetSharingOption(ctx context.Context, userId, tripId ui
 		return "", fmt.Errorf("failed to find sharing option: %w", err)
 	}
 	return sharingOption, nil
-}
-
-func (r *TripRepository) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
-	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
-	rows, err := r.db.QueryContext(ctx, userIDQuery, tripId)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get users by trip ID: %w", err)
-	}
-	defer rows.Close()
-
-	query := `SELECT login, email, avatar_path FROM "user" WHERE id = $1`
-	var users []models.UserProfile
-
-	for rows.Next() {
-		var userID uint
-		var user models.UserProfile
-
-		// Сканируем user_id из user_shared_trip
-		if err := rows.Scan(&userID); err != nil {
-			return nil, fmt.Errorf("failed to scan user id: %w", err)
-		}
-
-		// Получаем данные пользователя по user_id
-		err := r.db.QueryRowContext(ctx, query, userID).Scan(&user.Login, &user.Email, &user.AvatarPath)
-		if err != nil {
-			// Если запись не найдена, логируем предупреждение и продолжаем цикл
-			if errors.Is(err, sql.ErrNoRows) {
-				log.Printf("User with ID %d not found", userID)
-				continue
-			}
-			return nil, fmt.Errorf("failed to scan user: %w", err)
-		}
-
-		users = append(users, user)
-	}
-
-	// Проверяем на наличие ошибок при итерировании
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
-	}
-
-	log.Println("Fetched users:", users)
-	return users, nil
 }
