@@ -3,6 +3,7 @@ package reviews
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"2024_2_ThereWillBeName/internal/pkg/outbox"
 	"context"
 	"database/sql"
 	"fmt"
@@ -29,6 +30,13 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Revie
 			return models.GetReview{}, fmt.Errorf("no rows were created for the review: %w", models.ErrNotFound)
 		}
 		return models.GetReview{}, fmt.Errorf("failed to create review: %w", models.ErrInternal)
+	}
+
+	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
+
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_created", payload)
+	if err != nil {
+		return models.GetReview{}, fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
 	}
 
 	// Теперь, после успешного создания отзыва, мы можем использовать его ID, чтобы получить полные данные
@@ -59,24 +67,36 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound)
 	}
 
+	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
+
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_updated", payload)
+
+	if err != nil {
+		return fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
+	}
+
 	return nil
 }
 
 func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) error {
-	query := `DELETE FROM review WHERE id = $1`
+	var placeID int
 
-	result, err := r.db.ExecContext(ctx, query, reviewID)
+	query := `DELETE FROM review WHERE id = $1 RETURNING place_id`
+
+	err := r.db.QueryRowContext(ctx, query, reviewID).Scan(&placeID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return fmt.Errorf("review not found: %w", models.ErrNotFound)
+		}
 		return fmt.Errorf("failed to delete review: %w", models.ErrInternal)
 	}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return fmt.Errorf("failed to retrieve rows affected: %w", models.ErrInternal)
-	}
+	payload := fmt.Sprintf(`{"place_id": %d}`, placeID)
 
-	if rowsAffected == 0 {
-		return fmt.Errorf("review not found: %w", models.ErrNotFound)
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_deleted", payload)
+
+	if err != nil {
+		return fmt.Errorf("failed to insert outbox record: %w", err)
 	}
 
 	return nil

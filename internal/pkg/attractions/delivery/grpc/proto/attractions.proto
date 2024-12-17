@@ -18,13 +18,14 @@ message Place {
   string name = 2;
   string imagePath = 3;
   string description = 4;
-  int32 rating = 5;
-  string address = 6;
-  string city = 7;
-  string phoneNumber = 8;
-  repeated string categories = 9;
-  double latitude = 10;
-  double longitude = 11;
+  float rating = 5;
+  uint32 number_of_reviews = 6;
+  string address = 7;
+  string city = 8;
+  string phoneNumber = 9;
+  repeated string categories = 10;
+  float latitude = 11;
+  float longitude = 12;
 }
 
 message GetPlacesRequest {
@@ -48,8 +49,9 @@ message SearchPlacesRequest {
   string name = 1;
   int32 category = 2;
   int32 city = 3;
-  int32 limit = 4;
-  int32 offset = 5;
+  int32 filter_type = 4;
+  int32 limit = 5;
+  int32 offset = 6;
 }
 
 message SearchPlacesResponse {

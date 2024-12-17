@@ -33,3 +33,30 @@ jobs:
         run: go build -v ./cmd/main.go
       - name: Test
         run: go test -v -race ./...
+  deploy:
+    name: Deploy 2024_2_ThereWillBeName
+    needs: tests-act 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pull code 
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }} 
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: cd /home/ubuntu/2024_2_ThereWillBeName && git pull 
+      - name: Build containers 
+        uses: appleboy/ssh-action@master
+        with:
+          timeout: 10m
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose build
+      - name: Restart service 
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: ${{ secrets.PRIVATE_KEY }}
+          script: cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose down && sudo docker-compose up -d 

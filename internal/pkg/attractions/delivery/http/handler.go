@@ -259,20 +259,23 @@ func (h *PlacesHandler) GetPlaceHandler(w http.ResponseWriter, r *http.Request) 
 		h.logger.ErrorContext(logCtx, "Failed to get a place", slog.Any("error", err.Error()))
 		return
 	}
-	placeResponse := models.GetPlace{
-		ID:          int(place.Place.Id),
-		Name:        place.Place.Name,
-		ImagePath:   place.Place.ImagePath,
-		Description: place.Place.Description,
-		Rating:      int(place.Place.Rating),
-		Address:     place.Place.Address,
-		City:        place.Place.City,
-		PhoneNumber: place.Place.PhoneNumber,
-		Categories:  place.Place.Categories,
-		Latitude:    place.Place.Latitude,
-		Longitude:   place.Place.Longitude,
+
+	responsePlace := models.GetPlace{
+		ID:              int(place.Place.Id),
+		Name:            place.Place.Name,
+		ImagePath:       place.Place.ImagePath,
+		Description:     place.Place.Description,
+		Rating:          float32(place.Place.Rating),
+		NumberOfReviews: int(place.Place.NumberOfReviews),
+		Address:         place.Place.Address,
+		City:            place.Place.City,
+		PhoneNumber:     place.Place.PhoneNumber,
+		Categories:      place.Place.Categories,
+		Latitude:        float32(place.Place.Latitude),
+		Longitude:       float32(place.Place.Longitude),
 	}
-	httpresponse.SendJSONResponse(logCtx, w, placeResponse, http.StatusOK, h.logger)
+
+	httpresponse.SendJSONResponse(logCtx, w, responsePlace, http.StatusOK, h.logger)
 
 	h.logger.DebugContext(logCtx, "Successfully got place by ID")
 }
@@ -311,8 +314,9 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 
 	cityStr := r.URL.Query().Get("city")
 	categoryStr := r.URL.Query().Get("category")
+	filterStr := r.URL.Query().Get("filter")
 
-	var city, category int
+	var city, category, filterType int
 	if cityStr != "" {
 		city, err = strconv.Atoi(cityStr)
 		if err != nil {
@@ -335,31 +339,43 @@ func (h *PlacesHandler) SearchPlacesHandler(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), Limit: int32(limit), Offset: int32(offset)})
+	if filterStr != "" {
+		filterType, err = strconv.Atoi(filterStr)
+		if err != nil {
+			h.logger.Warn("Invalid filter parameter", slog.String("error", err.Error()))
+			httpresponse.SendJSONResponse(logCtx, w, httpresponse.ErrorResponse{
+				Message: "Invalid filter parameter",
+			}, http.StatusBadRequest, h.logger)
+			return
+		}
+	}
+
+	places, err := h.client.SearchPlaces(r.Context(), &gen.SearchPlacesRequest{Name: placeName, Category: int32(category), City: int32(city), FilterType: int32(filterType), Limit: int32(limit), Offset: int32(offset)})
 	if err != nil {
 		httpresponse.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
 		h.logger.ErrorContext(logCtx, "Failed to search attractions", slog.String("error", err.Error()))
 		return
 	}
+
 	placeResponse := make(models.GetPLaceList, len(places.Places))
 	for i, place := range places.Places {
-		placeResponse[i] = models.GetPlace{
-			ID:          int(place.Id),
-			Name:        place.Name,
-			ImagePath:   place.ImagePath,
-			Description: place.Description,
-			Rating:      int(place.Rating),
-			Address:     place.Address,
-			City:        place.City,
-			PhoneNumber: place.PhoneNumber,
-			Categories:  place.Categories,
-			Latitude:    place.Latitude,
-			Longitude:   place.Longitude,
+		responsePlaces[i] = models.GetPlace{
+			ID:              int(place.Id),
+			Name:            place.Name,
+			ImagePath:       place.ImagePath,
+			Description:     place.Description,
+			Rating:          float32(place.Rating),
+			NumberOfReviews: int(place.NumberOfReviews),
+			Address:         place.Address,
+			City:            place.City,
+			PhoneNumber:     place.PhoneNumber,
+			Categories:      place.Categories,
 		}
 	}
-	httpresponse.SendJSONResponse(logCtx, w, placeResponse, http.StatusOK, h.logger)
 
+	httpresponse.SendJSONResponse(logCtx, w, responsePlaces, http.StatusOK, h.logger)
 	h.logger.DebugContext(logCtx, "Successfully getting attractions by name", slog.Int("places_count", len(places.Places)))
+
 }
 
 func (h *PlacesHandler) GetPlacesByCategoryHandler(w http.ResponseWriter, r *http.Request) {
@@ -396,18 +412,17 @@ func (h *PlacesHandler) GetPlacesByCategoryHandler(w http.ResponseWriter, r *htt
 	}
 	placeResponse := make(models.GetPLaceList, len(places.Places))
 	for i, place := range places.Places {
-		placeResponse[i] = models.GetPlace{
-			ID:          int(place.Id),
-			Name:        place.Name,
-			ImagePath:   place.ImagePath,
-			Description: place.Description,
-			Rating:      int(place.Rating),
-			Address:     place.Address,
-			City:        place.City,
-			PhoneNumber: place.PhoneNumber,
-			Categories:  place.Categories,
-			Latitude:    place.Latitude,
-			Longitude:   place.Longitude,
+		responsePlaces[i] = models.GetPlace{
+			ID:              int(place.Id),
+			Name:            place.Name,
+			ImagePath:       place.ImagePath,
+			Description:     place.Description,
+			Rating:          float32(place.Rating),
+			NumberOfReviews: int(place.NumberOfReviews),
+			Address:         place.Address,
+			City:            place.City,
+			PhoneNumber:     place.PhoneNumber,
+			Categories:      place.Categories,
 		}
 	}
 	h.logger.DebugContext(logCtx, "Successfully got attractions by category name")

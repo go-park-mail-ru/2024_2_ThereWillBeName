@@ -279,37 +279,49 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
 		return
 	}
+	getProfileRequest := &gen.GetProfileRequest{
+		Id:          uint32(userID),
+		RequesterId: uint32(userID),
+	}
 
-	login, ok := r.Context().Value(middleware.LoginKey).(string)
-	if !ok {
-		h.logger.WarnContext(logCtx, "Failed to retrieve user login from context")
+	getProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			h.logger.ErrorContext(logCtx, "User not found")
 
-		response := httpresponse.Response{
-			Message: "User is not authorized",
+			response := httpresponse.ErrorResponse{
+				Message: "User not found",
+			}
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
+			return
 		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+
+		h.logger.ErrorContext(logCtx, "Error retrieving profile", "error", err)
+
+		response := httpresponse.ErrorResponse{
+			Message: "Failed to retrieve user current user information",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	email, ok := r.Context().Value(middleware.EmailKey).(string)
-	if !ok {
-		h.logger.WarnContext(logCtx, "Failed to retrieve user email from context")
-
-		response := httpresponse.Response{
-			Message: "User is not authorized",
-		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
-		return
+	userProfile := models.UserProfile{
+		Login:      getProfileResponse.Login,
+		AvatarPath: getProfileResponse.AvatarPath,
+		Email:      getProfileResponse.Email,
 	}
 
-	response := models.User{
-		ID:    userID,
-		Login: login,
-		Email: email,
+	type UserResponse struct {
+		ID      uint32             `json:"id"`
+		Profile models.UserProfile `json:"profile"`
 	}
-	h.logger.DebugContext(logCtx, "Successfully retrieved current user information", "userID", userID)
 
-	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
+	userResponse := UserResponse{
+		ID: uint32(userID), Profile: userProfile,
+	}
+
+	h.logger.DebugContext(logCtx, "Successfully retrieved current user information")
+	httpresponse.SendJSONResponse(logCtx, w, userResponse, http.StatusOK, h.logger)
 }
 
 // UploadAvatar godoc
@@ -486,7 +498,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		RequesterId: uint32(requesterID),
 	}
 
-	GetProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
+	getProfileResponse, err := h.client.GetProfile(r.Context(), getProfileRequest)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
@@ -506,15 +518,15 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
-	h.logger.DebugContext(logCtx, "User profile retrieved successfully")
 
-	userProfileResponse := models.UserProfile{
-		Login:      GetProfileResponse.Login,
-		AvatarPath: GetProfileResponse.AvatarPath,
-		Email:      GetProfileResponse.Email,
+	userProfile := models.UserProfile{
+		Login:      getProfileResponse.Login,
+		Email:      getProfileResponse.Email,
+		AvatarPath: getProfileResponse.AvatarPath,
 	}
 
-	httpresponse.SendJSONResponse(logCtx, w, userProfileResponse, http.StatusOK, h.logger)
+	h.logger.DebugContext(logCtx, "User profile retrieved successfully")
+	httpresponse.SendJSONResponse(logCtx, w, userProfile, http.StatusOK, h.logger)
 }
 
 func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {

@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"path"
 )
 
@@ -33,6 +34,7 @@ func (u *TripsUsecaseImpl) CreateTrip(ctx context.Context, trip models.Trip) err
 }
 
 func (u *TripsUsecaseImpl) UpdateTrip(ctx context.Context, trip models.Trip) error {
+	log.Println("debug in usecase", trip.ID)
 	err := u.tripRepo.UpdateTrip(ctx, trip)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
@@ -110,4 +112,53 @@ func (u *TripsUsecaseImpl) DeletePhotoFromTrip(ctx context.Context, tripID uint,
 	}
 
 	return nil
+}
+
+func (u *TripsUsecaseImpl) CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error {
+	err := u.tripRepo.CreateSharingLink(ctx, tripID, token, sharingOption)
+	if err != nil {
+		return fmt.Errorf("failed to delete photo from database: %w", err)
+	}
+	return nil
+}
+
+func (u *TripsUsecaseImpl) GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error) {
+	token, err := u.tripRepo.GetSharingToken(ctx, tripID)
+	if err != nil {
+		return models.SharingToken{}, fmt.Errorf("failed to retrieve token from database: %w", err)
+	}
+	return token, nil
+}
+
+func (u *TripsUsecaseImpl) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
+	trip, err := u.tripRepo.GetTripBySharingToken(ctx, token)
+	if err != nil {
+		return models.Trip{}, fmt.Errorf("failed to retrieve trip by sharing token from database: %w", err)
+	}
+	return trip, nil
+}
+
+func (u *TripsUsecaseImpl) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+	err := u.tripRepo.AddUserToTrip(ctx, tripId, userId)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		} else {
+			return fmt.Errorf("internal error: %w", models.ErrInternal)
+		}
+	}
+
+	return nil
+}
+
+func (u *TripsUsecaseImpl) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {
+	sharingOption, err := u.tripRepo.GetSharingOption(ctx, userId, tripId)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return "", fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		} else {
+			return "", fmt.Errorf("internal error: %w", models.ErrInternal)
+		}
+	}
+	return sharingOption, nil
 }

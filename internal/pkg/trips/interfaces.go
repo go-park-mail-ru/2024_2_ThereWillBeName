@@ -14,6 +14,11 @@ type TripsUsecase interface {
 	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
 	AddPhotosToTrip(ctx context.Context, tripID uint, photos []string) error
 	DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error
+	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
+	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
+	GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, error)
+	AddUserToTrip(ctx context.Context, tripId, userId uint) error
+	GetSharingOption(ctx context.Context, userId, tripId uint) (string, error)
 }
 
 type TripsRepo interface {
@@ -25,4 +30,9 @@ type TripsRepo interface {
 	AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error
 	AddPhotoToTrip(ctx context.Context, tripID uint, photoPath string) error
 	DeletePhotoFromTrip(ctx context.Context, tripID uint, photoPath string) error
+	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
+	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
+	GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error)
+	AddUserToTrip(ctx context.Context, tripId, userId uint) error
+	GetSharingOption(ctx context.Context, userId, tripId uint) (string, error)
 }

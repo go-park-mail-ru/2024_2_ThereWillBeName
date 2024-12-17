@@ -6,7 +6,7 @@ type CreatePlace struct {
 	Name            string  `json:"name"`
 	ImagePath       string  `json:"imagePath"`
 	Description     string  `json:"description"`
-	Rating          int     `json:"rating"`
+	Rating          float64 `json:"rating"`
 	NumberOfReviews int     `json:"numberOfReviews"`
 	Address         string  `json:"address"`
 	CityId          int     `json:"cityId"`
@@ -21,14 +21,14 @@ type GetPlace struct {
 	Name            string   `json:"name"`
 	ImagePath       string   `json:"imagePath"`
 	Description     string   `json:"description"`
-	Rating          int      `json:"rating"`
+	Rating          float32  `json:"rating"`
 	NumberOfReviews int      `json:"numberOfReviews"`
 	Address         string   `json:"address"`
 	City            string   `json:"city"`
 	PhoneNumber     string   `json:"phoneNumber"`
 	Categories      []string `json:"categories"`
-	Latitude        float64  `json:"latitude"`
-	Longitude       float64  `json:"longitude"`
+	Latitude        float32  `json:"latitude"`
+	Longitude       float32  `json:"longitude"`
 }
 
 //easyjson:json
@@ -39,7 +39,7 @@ type UpdatePlace struct {
 	Name            string  `json:"name"`
 	ImagePath       string  `json:"imagePath"`
 	Description     string  `json:"description"`
-	Rating          int     `json:"rating"`
+	Rating          float64 `json:"rating"`
 	NumberOfReviews int     `json:"numberOfReviews"`
 	Address         string  `json:"address"`
 	CityId          int     `json:"cityId"`
