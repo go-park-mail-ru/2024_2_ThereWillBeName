@@ -57,5 +57,13 @@ func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.DebugContext(logCtx, "Search completed successfully", slog.Int("resultCount", len(results.SearchResult)))
 
-	httpresponses.SendJSONResponse(logCtx, w, results.SearchResult, http.StatusOK, h.logger)
+	searchResponse := make(models.SearchResultList, len(results.SearchResult))
+	for i, res := range results.SearchResult {
+		searchResponse[i] = models.SearchResult{
+			Id:   uint(res.Id),
+			Name: res.Name,
+			Type: res.Type,
+		}
+	}
+	httpresponses.SendJSONResponse(logCtx, w, searchResponse, http.StatusOK, h.logger)
 }

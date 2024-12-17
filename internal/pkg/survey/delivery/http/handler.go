@@ -29,20 +29,20 @@ func NewSurveyHandler(client surveysGen.SurveyServiceClient, logger *slog.Logger
 	}
 }
 
-func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
+func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.Response, int) {
 	if errors.Is(err, models.ErrNotFound) {
 
 		logContext := log.AppendCtx(ctx, slog.String("action", action))
 		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action), slog.Any("error", err.Error()))
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		return response, http.StatusNotFound
 	}
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s survey", action), slog.Any("error", err.Error()))
-	response := httpresponse.ErrorResponse{
+	response := httpresponse.Response{
 		Message: fmt.Sprintf("Failed to %s survey", action),
 	}
 	return response, http.StatusInternalServerError
@@ -55,7 +55,7 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 
 	if !ok {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -68,7 +68,7 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 	surveyId, err := strconv.ParseUint(surveyIdStr, 10, 64)
 	if err != nil {
 		h.logger.Warn("Failed to parse survey ID", slog.String("surveyID", surveyIdStr), slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid survey ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -85,7 +85,13 @@ func (h *SurveyHandler) GetSurveyById(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.DebugContext(logCtx, "Successfully got survey by ID")
 
-	httpresponse.SendJSONResponse(logCtx, w, survey, http.StatusOK, h.logger)
+	surveyResponse := models.Survey{
+		Id:         uint(survey.Survey.Id),
+		SurveyText: survey.Survey.SurveyText,
+		MaxRating:  int(survey.Survey.MaxRating),
+	}
+
+	httpresponse.SendJSONResponse(logCtx, w, surveyResponse, http.StatusOK, h.logger)
 }
 
 func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Request) {
@@ -94,7 +100,7 @@ func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Requ
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -105,7 +111,7 @@ func (h *SurveyHandler) CreateSurveyResponse(w http.ResponseWriter, r *http.Requ
 	err := json.NewDecoder(r.Body).Decode(&surveyResponse)
 	if err != nil {
 		h.logger.Warn("Failed to decode survey response", slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request body",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -135,7 +141,7 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -148,7 +154,7 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 	surveyId, err := strconv.ParseUint(surveyIdStr, 10, 64)
 	if err != nil {
 		h.logger.Warn("Failed to parse survey ID", slog.String("surveyID", surveyIdStr), slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid survey ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -167,7 +173,12 @@ func (h *SurveyHandler) GetSurveyStatsBySurveyId(w http.ResponseWriter, r *http.
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved survey statistics by ID")
 
-	httpresponse.SendJSONResponse(logCtx, w, stats, http.StatusOK, h.logger)
+	surveyStats := models.SurveyStatsBySurvey{
+		SurveyId:   uint(stats.SurveyStatsBySurvey.ServeyId),
+		SurveyText: stats.SurveyStatsBySurvey.ServeyText,
+		AvgRating:  float64(stats.SurveyStatsBySurvey.AvgRating),
+	}
+	httpresponse.SendJSONResponse(logCtx, w, surveyStats, http.StatusOK, h.logger)
 }
 
 func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Request) {
@@ -176,7 +187,7 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 
 	_, ok := r.Context().Value(middleware.IdKey).(uint)
 	if !ok {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -189,7 +200,7 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 	userId, err := strconv.ParseUint(userIdStr, 10, 64)
 	if err != nil {
 		h.logger.Warn("Failed to parse user ID", slog.String("userID", userIdStr), slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid user ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -208,6 +219,14 @@ func (h *SurveyHandler) GetSurveyStatsByUserId(w http.ResponseWriter, r *http.Re
 
 	h.logger.DebugContext(logCtx, "Successfully retrieved survey statistics by user ID")
 
-	httpresponse.SendJSONResponse(logCtx, w, stats, http.StatusOK, h.logger)
+	userSurveyStatsList := make(models.UserSurveyStatsList, len(stats.UserServeyStats))
+	for i, stat := range stats.UserServeyStats {
+		userSurveyStatsList[i] = models.UserSurveyStats{
+			SurveyId:   uint(stat.ServeyId),
+			SurveyText: stat.ServeyText,
+			Answered:   stat.Answered,
+		}
+	}
+	httpresponse.SendJSONResponse(logCtx, w, userSurveyStatsList, http.StatusOK, h.logger)
 
 }

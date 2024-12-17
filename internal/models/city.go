@@ -7,3 +7,6 @@ type City struct {
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+//easyjson:json
+type CityList []City

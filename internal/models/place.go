@@ -31,6 +31,9 @@ type GetPlace struct {
 	Longitude       float32  `json:"longitude"`
 }
 
+//easyjson:json
+type GetPLaceList []GetPlace
+
 type UpdatePlace struct {
 	ID              int     `json:"id"`
 	Name            string  `json:"name"`

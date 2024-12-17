@@ -23,7 +23,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 		token := r.Header.Get("X-Access-Token")
 
 		if token == "" {
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "Token is missing",
 			}
 			if logger != nil {
@@ -34,7 +34,7 @@ func MiddlewareAuth(jwtService jwt.JWTInterface, next http.Handler, logger *slog
 		}
 		claims, err := jwtService.ParseToken(token)
 		if err != nil {
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "Invalid token",
 			}
 

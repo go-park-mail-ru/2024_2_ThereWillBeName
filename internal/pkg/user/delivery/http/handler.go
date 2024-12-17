@@ -35,11 +35,6 @@ type Handler struct {
 	logger *slog.Logger
 }
 
-type UserResponseWithToken struct {
-	User  models.User `json:"user"`
-	Token string      `json:"token"`
-}
-
 func NewUserHandler(client gen.UserServiceClient, jwt jwt.JWTInterface, logger *slog.Logger) *Handler {
 	return &Handler{
 		client: client,
@@ -55,8 +50,8 @@ func NewUserHandler(client gen.UserServiceClient, jwt jwt.JWTInterface, logger *
 // @Produce json
 // @Param credentials body Credentials true "User credentials"
 // @Success 201 {object} models.User "User created successfully"
-// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
-// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} httpresponses.Response "Bad Request"
+// @Failure 500 {object} httpresponses.Response "Internal Server Error"
 // @Router /signup [post]
 func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
@@ -67,7 +62,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		h.logger.WarnContext(logCtx, "Failed to decode credentials", slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -105,7 +100,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if errors.Is(err, models.ErrAlreadyExists) {
 			h.logger.WarnContext(logCtx, "User already exists")
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "user already exists",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusConflict, h.logger)
@@ -114,7 +109,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.ErrorContext(logCtx, "Failed to sign up user", slog.String("error", err.Error()))
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Registration failed",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -128,7 +123,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
 	if err != nil {
 		h.logger.ErrorContext(logCtx, "Token generation failed", slog.String("userID", strconv.Itoa(int(user.ID))), slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Token generation failed",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -137,7 +132,7 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.DebugContext(logCtx, "Token generated")
 
-	response := UserResponseWithToken{
+	response := models.UserResponseWithToken{
 		User: models.User{
 			ID:    user.ID,
 			Login: user.Login,
@@ -158,8 +153,8 @@ func (h *Handler) SignUp(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param credentials body Credentials true "User credentials"
 // @Success 200 {string} string "Token"
-// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
-// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
+// @Failure 400 {object} httpresponses.Response "Bad Request"
+// @Failure 401 {object} httpresponses.Response "Unauthorized"
 // @Router /login [post]
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self';")
@@ -173,7 +168,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		h.logger.WarnContext(logCtx, "Failed to decode credentials", slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -194,7 +189,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.ErrorContext(logCtx, "Login failed: invalid email or password")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid email or password",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -215,7 +210,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.jwt.GenerateToken(user.ID, user.Email, user.Login)
 	if err != nil {
 		h.logger.ErrorContext(logCtx, "Token generation failed", slog.String("error", err.Error()))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Token generation failed",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -223,7 +218,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	h.logger.DebugContext(logCtx, "Token generated", slog.String("login", user.Login))
 
-	response := UserResponseWithToken{
+	response := models.UserResponseWithToken{
 		User:  user,
 		Token: token,
 	}
@@ -249,7 +244,7 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -266,8 +261,8 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 // @Description Retrieve the current authenticated user information
 // @Produce json
 // @Success 200 {object} models.User "Current user"
-// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
-// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} httpresponses.Response "Unauthorized"
+// @Failure 500 {object} httpresponses.Response "Internal Server Error"
 // @Router /users/me [get]
 func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 	logCtx := r.Context()
@@ -278,7 +273,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -294,7 +289,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "User not found",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
@@ -303,7 +298,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.ErrorContext(logCtx, "Error retrieving profile", "error", err)
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to retrieve user current user information",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -316,12 +311,7 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 		Email:      getProfileResponse.Email,
 	}
 
-	type UserResponse struct {
-		ID      uint32             `json:"id"`
-		Profile models.UserProfile `json:"profile"`
-	}
-
-	userResponse := UserResponse{
+	userResponse := models.UserResponse{
 		ID: uint32(userID), Profile: userProfile,
 	}
 
@@ -336,9 +326,9 @@ func (h *Handler) CurrentUser(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param avatar formData file true "Avatar file"
 // @Success 200 {string} string "Avatar uploaded successfully"
-// @Failure 400 {object} httpresponses.ErrorResponse "Bad Request"
-// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
-// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Failure 400 {object} httpresponses.Response "Bad Request"
+// @Failure 401 {object} httpresponses.Response "Unauthorized"
+// @Failure 500 {object} httpresponses.Response "Internal Server Error"
 // @Router /users/{userID}/avatar [put]
 func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	logCtx := r.Context()
@@ -350,7 +340,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	logCtx = log.AppendCtx(logCtx, slog.Int("user_id", int(userID)))
 	if err != nil {
 		h.logger.WarnContext(logCtx, "Invalid user ID format", "error", err)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid user ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -362,7 +352,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	if !ok || authUserID != uint(userID) {
 		h.logger.WarnContext(logCtx, "Unauthorized access attempt", "authUserID", authUserID)
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized to upload avatar for this ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -375,7 +365,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&requestData); err != nil {
 		h.logger.WarnContext(logCtx, "Invalid JSON format", "error", err)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request format",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -388,7 +378,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 			requestData.Avatar = requestData.Avatar[index+1:]
 		} else {
 			h.logger.Error("Invalid base64 image format", "error", "missing ',' separator")
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "Invalid base64 image format",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -399,7 +389,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	avatarData, err := base64.StdEncoding.DecodeString(requestData.Avatar)
 	if err != nil {
 		h.logger.Error("Failed to decode base64 image", "error", err)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid base64 image data",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -411,7 +401,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	if !strings.HasPrefix(fileType, "image/") {
 		h.logger.ErrorContext(logCtx, "Invalid file type", "fileType", fileType)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Only image files are allowed",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -421,7 +411,7 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	ext, err := mime.ExtensionsByType(fileType)
 	if err != nil || len(ext) == 0 {
 		h.logger.ErrorContext(logCtx, "Unable to determine file extension", "mimeType", fileType)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Unable to determine file extension",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -441,21 +431,20 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 	uploadAvatarResponse, err := h.client.UploadAvatar(r.Context(), uploadAvatarRequest)
 	if err != nil {
 		h.logger.ErrorContext(logCtx, "Failed to upload avatar", "error", err)
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to upload avatar",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	response := map[string]string{
-		"message":    "Avatar uploaded successfully",
-		"avatarPath": uploadAvatarResponse.AvatarPath,
+	photoResponce := models.Photo{
+		Path: uploadAvatarResponse.AvatarPath,
 	}
 
 	h.logger.DebugContext(logCtx, "Avatar uploaded successfully", "avatarPath", uploadAvatarResponse.AvatarPath)
 
-	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, photoResponce, http.StatusOK, h.logger)
 }
 
 // GetProfile godoc
@@ -464,9 +453,9 @@ func (h *Handler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 // @Produce json
 // @Param userID path int true "User ID"
 // @Success 200 {object} models.UserProfile "User profile"
-// @Failure 401 {object} httpresponses.ErrorResponse "Unauthorized"
-// @Failure 404 {object} httpresponses.ErrorResponse "Not Found"
-// @Failure 500 {object} httpresponses.ErrorResponse "Internal Server Error"
+// @Failure 401 {object} httpresponses.Response "Unauthorized"
+// @Failure 404 {object} httpresponses.Response "Not Found"
+// @Failure 500 {object} httpresponses.Response "Internal Server Error"
 // @Router /users/{userID}/profile [get]
 func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	logCtx := r.Context()
@@ -479,7 +468,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.logger.WarnContext(logCtx, "Invalid user ID format", "error", err)
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid user ID",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -490,7 +479,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		h.logger.WarnContext(logCtx, "Unauthorized access attempt")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -509,7 +498,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "User not found",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
@@ -518,7 +507,7 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 
 		h.logger.ErrorContext(logCtx, "Error retrieving profile", "error", err)
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to retrieve user profile",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -532,7 +521,6 @@ func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.logger.DebugContext(logCtx, "User profile retrieved successfully")
-
 	httpresponse.SendJSONResponse(logCtx, w, userProfile, http.StatusOK, h.logger)
 }
 
@@ -543,7 +531,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -555,7 +543,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		h.logger.WarnContext(logCtx, "Failed to retrieve login from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -566,7 +554,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		h.logger.WarnContext(logCtx, "Failed to retrieve email from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -578,7 +566,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		NewPassword string `json:"new_password"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -600,7 +588,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "User not found",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
@@ -608,7 +596,7 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		} else if errors.Is(err, models.ErrMismatch) {
 			h.logger.ErrorContext(logCtx, "Passwords mismatch")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "Invalid old password",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -616,17 +604,14 @@ func (h *Handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		}
 		h.logger.ErrorContext(logCtx, "Failed to update password", slog.Any("error", err.Error()))
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to update password",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
 		return
 	}
 
-	response := struct {
-		ID      uint   `json:"id"`
-		Message string `json:"message"`
-	}{
+	response := models.ResponseWithId{
 		ID:      userID,
 		Message: "User's password updated successfully",
 	}
@@ -644,7 +629,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "User is not authorized",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
@@ -657,7 +642,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		Email string `json:"email"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&userData); err != nil {
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
@@ -677,7 +662,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, models.ErrNotFound) {
 			h.logger.ErrorContext(logCtx, "User not found")
 
-			response := httpresponse.ErrorResponse{
+			response := httpresponse.Response{
 				Message: "User not found",
 			}
 			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
@@ -685,7 +670,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		}
 		h.logger.ErrorContext(logCtx, "User not found", slog.Any("error", err.Error()))
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Failed to update profile",
 		}
 		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
@@ -694,10 +679,7 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 
 	h.logger.DebugContext(logCtx, "User profile updated successfully")
 
-	response := struct {
-		Username string `json:"username"`
-		Email    string `json:"email"`
-	}{
+	response := models.Response{
 		Username: userData.Login,
 		Email:    userData.Email,
 	}

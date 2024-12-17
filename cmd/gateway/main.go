@@ -116,7 +116,7 @@ func main() {
 
 	// Обработка ненайденных маршрутов
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := httpresponses.ErrorResponse{
+		response := httpresponses.Response{
 			Message: "Not found",
 		}
 		httpresponses.SendJSONResponse(r.Context(), w, response, http.StatusNotFound, logger)
@@ -233,7 +233,7 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		logger.Error("Failed to write healthcheck response", slog.Any("error", err))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusBadRequest, logger)

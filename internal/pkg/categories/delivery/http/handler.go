@@ -1,6 +1,7 @@
 package http
 
 import (
+	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
@@ -45,6 +46,13 @@ func (h *CategoriesHandler) GetCategoriesHandler(w http.ResponseWriter, r *http.
 		h.logger.ErrorContext(logCtx, "Error getting categories", slog.String("error", err.Error()))
 		return
 	}
+	categoryResponse := make(models.CategoryList, len(categories.Categories))
+	for i, category := range categories.Categories {
+		categoryResponse[i] = models.Category{
+			ID:   int(category.Id),
+			Name: category.Name,
+		}
+	}
 	h.logger.DebugContext(logCtx, "Successfully retrieved categories", slog.Any("categories", categories.Categories))
-	httpresponse.SendJSONResponse(logCtx, w, categories.Categories, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, categoryResponse, http.StatusOK, h.logger)
 }
