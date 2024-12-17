@@ -29,6 +29,11 @@ type CreateSharingLinkResponse struct {
 	URL string `json:"url"`
 }
 
+type TripResponse struct {
+	Trip  `json:"trip"`
+	Users []UserProfile `json:"users"`
+}
+
 func ValidateTrip(v *validator.Validator, trip *Trip) {
 	v.Check(trip.Name != "", "name", "must be provided")
 	v.Check(len(trip.Name) <= 255, "name", "must not be more than 255 symbols")

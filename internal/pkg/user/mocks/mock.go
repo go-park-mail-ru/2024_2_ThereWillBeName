@@ -220,21 +220,6 @@ func (mr *MockUserRepoMockRecorder) GetUserByID(ctx, userID interface{}) *gomock
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserByID", reflect.TypeOf((*MockUserRepo)(nil).GetUserByID), ctx, userID)
 }
 
-// GetUsers mocks base method.
-func (m *MockUserRepo) GetUsers(ctx context.Context, count, offset int64) ([]models.User, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUsers", ctx, count, offset)
-	ret0, _ := ret[0].([]models.User)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetUsers indicates an expected call of GetUsers.
-func (mr *MockUserRepoMockRecorder) GetUsers(ctx, count, offset interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsers", reflect.TypeOf((*MockUserRepo)(nil).GetUsers), ctx, count, offset)
-}
-
 // UpdateAvatarPathByUserId mocks base method.
 func (m *MockUserRepo) UpdateAvatarPathByUserId(ctx context.Context, userID uint, avatarPath string) error {
 	m.ctrl.T.Helper()

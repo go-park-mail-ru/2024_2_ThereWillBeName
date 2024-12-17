@@ -32,6 +32,11 @@ type TripData struct {
 	Private     bool   `json:"private_trip"`
 }
 
+type TripResponse struct {
+	Trip  *tripsGen.Trip          `json:"trip"`
+	Users []*tripsGen.UserProfile `json:"users"`
+}
+
 type TripHandler struct {
 	client tripsGen.TripsClient
 	logger *slog.Logger
@@ -431,18 +436,6 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	logCtx = log.AppendCtx(logCtx, slog.String("tripID", tripIDStr))
 	h.logger.DebugContext(logCtx, "Handling request for getting trip by ID")
 
-	_, ok := r.Context().Value(middleware.IdKey).(uint)
-	if !ok {
-
-		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
-
-		response := httpresponse.Response{
-			Message: "User is not authorized",
-		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
-		return
-	}
-
 	tripID, err := strconv.ParseUint(tripIDStr, 10, 64)
 	if err != nil {
 		h.logger.WarnContext(logCtx, "Failed to parse trip ID", slog.String("error", err.Error()))
@@ -453,29 +446,42 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	trip, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
+	tripResponse, err := h.client.GetTrip(r.Context(), &tripsGen.GetTripRequest{TripId: uint32(tripID)})
 	if err != nil {
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
 		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
-	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
-
-	tripResponse := models.Trip{
-		ID:          uint(trip.Trip.Id),
-		UserID:      uint(trip.Trip.UserId),
-		Name:        trip.Trip.Name,
-		Description: trip.Trip.Description,
-		CityID:      uint(trip.Trip.CityId),
-		StartDate:   trip.Trip.StartDate,
-		EndDate:     trip.Trip.EndDate,
-		Private:     trip.Trip.Private,
-		Photos:      trip.Trip.Photos,
-		CreatedAt:   trip.Trip.CreatedAt.AsTime(),
+	trip := models.Trip{
+		ID:          uint(tripResponse.Trip.Id),
+		UserID:      uint(tripResponse.Trip.UserId),
+		Name:        tripResponse.Trip.Name,
+		Description: tripResponse.Trip.Description,
+		CityID:      uint(tripResponse.Trip.CityId),
+		StartDate:   tripResponse.Trip.StartDate,
+		EndDate:     tripResponse.Trip.EndDate,
+		Private:     tripResponse.Trip.Private,
+		Photos:      tripResponse.Trip.Photos,
 	}
 
-	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
+	var users []models.UserProfile
+	for _, user := range tripResponse.Users {
+		users = append(users, models.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
+	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
+
+	// Ответ с данными поездки и пользователей
+	response := models.TripResponse{
+		Trip:  trip,
+		Users: users,
+	}
+	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
 
 // AddPlaceToTripHandler godoc
