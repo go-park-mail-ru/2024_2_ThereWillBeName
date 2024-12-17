@@ -3,9 +3,6 @@ package metrics
 import (
 	"2024_2_ThereWillBeName/internal/pkg/metrics"
 	"context"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/disk"
-	"github.com/shirou/gopsutil/mem"
 	"log"
 	"net/http"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
@@ -26,10 +27,10 @@ type SystemMetrics struct {
 }
 
 type GrpcMiddleware struct {
-	hits         *prometheus.CounterVec
-	errors       *prometheus.CounterVec
-	durations    *prometheus.HistogramVec
-	statusCodes  *prometheus.CounterVec // Добавляем метрику для статусов кодов
+	hits      *prometheus.CounterVec
+	errors    *prometheus.CounterVec
+	durations *prometheus.HistogramVec
+	// statusCodes  *prometheus.CounterVec // Добавляем метрику для статусов кодов
 	systemMetric *SystemMetrics
 	mu           sync.Mutex
 }

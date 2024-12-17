@@ -429,11 +429,10 @@ func TestAddPhotoToTrip(t *testing.T) {
 
 	logger := slog.New(handler)
 	loggerDB := dblogger.NewDB(db, logger)
-
+	const photoPath = "photo1.jpg"
 	repo := NewTripRepository(loggerDB)
 	t.Run("Success", func(t *testing.T) {
 		tripID := uint(1)
-		photoPath := "photo1.jpg"
 
 		query := `
         INSERT INTO trip_photo \(trip_id, photo_path\)
@@ -453,8 +452,6 @@ func TestAddPhotoToTrip(t *testing.T) {
 
 	t.Run("Database Error", func(t *testing.T) {
 		tripID := uint(1)
-		photoPath := "photo1.jpg"
-
 		query := `
         INSERT INTO trip_photo \(trip_id, photo_path\)
         VALUES \(\$1, \$2\)`
@@ -474,6 +471,7 @@ func TestAddPhotoToTrip(t *testing.T) {
 }
 
 func TestDeletePhotoFromTrip(t *testing.T) {
+	const photoPath = "photo1.jpg"
 	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("unexpected error when opening stub database connection: %v", err)
@@ -486,15 +484,13 @@ func TestDeletePhotoFromTrip(t *testing.T) {
 
 	logger := slog.New(handler)
 	loggerDB := dblogger.NewDB(db, logger)
+	const delQuery = `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
 
 	repo := NewTripRepository(loggerDB)
 	t.Run("Success", func(t *testing.T) {
 		tripID := uint(1)
-		photoPath := "photo1.jpg"
 
-		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
-
-		mock.ExpectExec(query).
+		mock.ExpectExec(delQuery).
 			WithArgs(tripID, photoPath).
 			WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -508,11 +504,8 @@ func TestDeletePhotoFromTrip(t *testing.T) {
 
 	t.Run("Photo Not Found", func(t *testing.T) {
 		tripID := uint(1)
-		photoPath := "photo1.jpg"
 
-		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
-
-		mock.ExpectExec(query).
+		mock.ExpectExec(delQuery).
 			WithArgs(tripID, photoPath).
 			WillReturnResult(sqlmock.NewResult(0, 0))
 
@@ -527,11 +520,8 @@ func TestDeletePhotoFromTrip(t *testing.T) {
 
 	t.Run("Database Error", func(t *testing.T) {
 		tripID := uint(1)
-		photoPath := "photo1.jpg"
 
-		query := `DELETE FROM trip_photo WHERE trip_id = \$1 AND photo_path = \$2`
-
-		mock.ExpectExec(query).
+		mock.ExpectExec(delQuery).
 			WithArgs(tripID, photoPath).
 			WillReturnError(fmt.Errorf("database error"))
 
