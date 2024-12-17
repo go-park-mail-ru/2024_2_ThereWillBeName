@@ -159,15 +159,3 @@ func (u *TripsUsecaseImpl) GetSharingOption(ctx context.Context, userId, tripId 
 	}
 	return sharingOption, nil
 }
-
-// func (u *TripsUsecaseImpl) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
-// 	users, err := u.tripRepo.GetUsersByTripID(ctx, tripId)
-// 	if err != nil {
-// 		if errors.Is(err, models.ErrNotFound) {
-// 			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
-// 		} else {
-// 			return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
-// 		}
-// 	}
-// 	return users, nil
-// }
