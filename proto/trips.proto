@@ -46,6 +46,7 @@ message GetTripRequest {
 
 message GetTripResponse {
     Trip trip = 1;
+    repeated UserProfile users = 2;
 }
 
 message AddPlaceToTripRequest {
@@ -134,3 +135,8 @@ message Token {
     google.protobuf.Timestamp created_at = 6;
 }
 
+message UserProfile {
+    string login = 1;
+    string email = 2;
+    string avatar_path = 3;
+}

@@ -70,15 +70,12 @@ func (u *TripsUsecaseImpl) GetTripsByUserID(ctx context.Context, userID uint, li
 	return tripsFound, nil
 }
 
-func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
-	trip, err := u.tripRepo.GetTrip(ctx, tripID)
+func (u *TripsUsecaseImpl) GetTrip(ctx context.Context, tripID uint) (models.Trip, []models.UserProfile, error) {
+	trip, userProfiles, err := u.tripRepo.GetTrip(ctx, tripID)
 	if err != nil {
-		if errors.Is(err, models.ErrNotFound) {
-			return models.Trip{}, fmt.Errorf("invalid request: %w", models.ErrNotFound)
-		}
-		return models.Trip{}, fmt.Errorf("internal error: %w", models.ErrInternal)
+		return models.Trip{}, nil, err
 	}
-	return trip, nil
+	return trip, userProfiles, nil
 }
 
 func (u *TripsUsecaseImpl) AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error {
@@ -162,3 +159,15 @@ func (u *TripsUsecaseImpl) GetSharingOption(ctx context.Context, userId, tripId 
 	}
 	return sharingOption, nil
 }
+
+// func (u *TripsUsecaseImpl) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
+// 	users, err := u.tripRepo.GetUsersByTripID(ctx, tripId)
+// 	if err != nil {
+// 		if errors.Is(err, models.ErrNotFound) {
+// 			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
+// 		} else {
+// 			return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
+// 		}
+// 	}
+// 	return users, nil
+// }

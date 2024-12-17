@@ -102,22 +102,35 @@ func (h *GrpcTripsHandler) GetTripsByUserID(ctx context.Context, in *tripsGen.Ge
 }
 
 func (h *GrpcTripsHandler) GetTrip(ctx context.Context, in *tripsGen.GetTripRequest) (*tripsGen.GetTripResponse, error) {
-	trip, err := h.uc.GetTrip(context.Background(), uint(in.TripId))
+	trip, userProfiles, err := h.uc.GetTrip(context.Background(), uint(in.TripId))
 	if err != nil {
 		return nil, err
 	}
+
+	tripResponse := &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+		Photos:      trip.Photos,
+	}
+
+	var usersResponse []*tripsGen.UserProfile
+	for _, user := range userProfiles {
+		usersResponse = append(usersResponse, &tripsGen.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
 	return &tripsGen.GetTripResponse{
-		Trip: &tripsGen.Trip{
-			Id:          uint32(trip.ID),
-			UserId:      uint32(trip.UserID),
-			Name:        trip.Name,
-			Description: trip.Description,
-			CityId:      uint32(trip.CityID),
-			StartDate:   trip.StartDate,
-			EndDate:     trip.EndDate,
-			Private:     trip.Private,
-			Photos:      trip.Photos,
-		},
+		Trip:  tripResponse,
+		Users: usersResponse,
 	}, nil
 }
 

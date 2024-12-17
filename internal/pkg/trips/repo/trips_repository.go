@@ -3,6 +3,7 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"errors"
 	"log"
 	"time"
 
@@ -141,9 +142,10 @@ LIMIT $2 OFFSET $3;
 	return trips, nil
 }
 
-func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, error) {
+func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip, []models.UserProfile, error) {
 	var trip models.Trip
 
+	// Получение информации о поездке
 	query := `
         SELECT 
             id, user_id, name, description, city_id, start_date, end_date, private, created_at 
@@ -165,11 +167,12 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return trip, models.ErrNotFound
+			return trip, nil, models.ErrNotFound
 		}
-		return trip, fmt.Errorf("failed to get trip: %w", err)
+		return trip, nil, fmt.Errorf("failed to get trip: %w", err)
 	}
 
+	// Получение фотографий поездки
 	photoQuery := `
         SELECT photo_path 
         FROM trip_photo
@@ -177,7 +180,7 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
     `
 	rows, err := r.db.QueryContext(ctx, photoQuery, tripID)
 	if err != nil {
-		return trip, fmt.Errorf("failed to get trip photos: %w", err)
+		return trip, nil, fmt.Errorf("failed to get trip photos: %w", err)
 	}
 	defer rows.Close()
 
@@ -185,14 +188,47 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 	for rows.Next() {
 		var photoPath string
 		if err := rows.Scan(&photoPath); err != nil {
-			return trip, fmt.Errorf("failed to scan photo: %w", err)
+			return trip, nil, fmt.Errorf("failed to scan photo: %w", err)
 		}
 		photos = append(photos, photoPath)
 	}
 
 	trip.Photos = photos
 
-	return trip, nil
+	// Получение списка user_id, которые участвуют в поездке
+	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
+	rows, err = r.db.QueryContext(ctx, userIDQuery, tripID)
+	if err != nil {
+		return trip, nil, fmt.Errorf("failed to get user ids for trip: %w", err)
+	}
+	defer rows.Close()
+
+	var userIDs []uint
+	for rows.Next() {
+		var userID uint
+		if err := rows.Scan(&userID); err != nil {
+			return trip, nil, fmt.Errorf("failed to scan user_id: %w", err)
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	// Для каждого user_id получить информацию о пользователе
+	var userProfiles []models.UserProfile
+	for _, userID := range userIDs {
+		userQuery := `SELECT login, avatar_path, email FROM "user" WHERE id = $1`
+		var userProfile models.UserProfile
+		err := r.db.QueryRowContext(ctx, userQuery, userID).Scan(
+			&userProfile.Login,
+			&userProfile.AvatarPath,
+			&userProfile.Email,
+		)
+		if err != nil {
+			return trip, nil, fmt.Errorf("failed to get user profile for user_id %d: %w", userID, err)
+		}
+		userProfiles = append(userProfiles, userProfile)
+	}
+
+	return trip, userProfiles, nil
 }
 
 func (r *TripRepository) AddPlaceToTrip(ctx context.Context, tripID uint, placeID uint) error {
@@ -369,4 +405,47 @@ func (r *TripRepository) GetSharingOption(ctx context.Context, userId, tripId ui
 		return "", fmt.Errorf("failed to find sharing option: %w", err)
 	}
 	return sharingOption, nil
+}
+
+func (r *TripRepository) GetUsersByTripID(ctx context.Context, tripId uint) ([]models.UserProfile, error) {
+	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
+	rows, err := r.db.QueryContext(ctx, userIDQuery, tripId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get users by trip ID: %w", err)
+	}
+	defer rows.Close()
+
+	query := `SELECT login, email, avatar_path FROM "user" WHERE id = $1`
+	var users []models.UserProfile
+
+	for rows.Next() {
+		var userID uint
+		var user models.UserProfile
+
+		// Сканируем user_id из user_shared_trip
+		if err := rows.Scan(&userID); err != nil {
+			return nil, fmt.Errorf("failed to scan user id: %w", err)
+		}
+
+		// Получаем данные пользователя по user_id
+		err := r.db.QueryRowContext(ctx, query, userID).Scan(&user.Login, &user.Email, &user.AvatarPath)
+		if err != nil {
+			// Если запись не найдена, логируем предупреждение и продолжаем цикл
+			if errors.Is(err, sql.ErrNoRows) {
+				log.Printf("User with ID %d not found", userID)
+				continue
+			}
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+
+		users = append(users, user)
+	}
+
+	// Проверяем на наличие ошибок при итерировании
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+
+	log.Println("Fetched users:", users)
+	return users, nil
 }
