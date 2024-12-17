@@ -196,7 +196,7 @@ func main() {
 	go func() {
 		logger.Info(fmt.Sprintf("HTTP server listening on :%d", cfg.HttpServer.Address))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("failed to serve HTTP: %d", err)
+			logger.Error("failed to serve HTTP", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 	}()
@@ -221,7 +221,7 @@ func main() {
 
 	logger.Info("Shutting down HTTP server...")
 	if err := httpSrv.Shutdown(context.Background()); err != nil {
-		logger.Error("HTTP server shutdown failed: %v", err)
+		logger.Error("HTTP server shutdown failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 	logger.Info("HTTP server gracefully stopped")

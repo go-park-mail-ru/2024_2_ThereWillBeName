@@ -10,11 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/mailru/easyjson"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/mailru/easyjson"
 
 	"github.com/gorilla/mux"
 )
@@ -223,7 +224,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully updated a review")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Successfully updated a review"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Successfully updated a review"}, http.StatusOK, h.logger)
 }
 
 // DeleteReviewHandler godoc
@@ -278,7 +279,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully deleted a review")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Review deleted successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Review deleted successfully"}, http.StatusOK, h.logger)
 }
 
 // GetReviewsByPlaceIDHandler godoc

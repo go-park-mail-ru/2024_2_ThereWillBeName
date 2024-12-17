@@ -161,7 +161,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	h.logger.DebugContext(logCtx, "Successfully created a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip created successfully"}, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip created successfully"}, http.StatusCreated, h.logger)
 }
 
 // UpdateTripHandler godoc
