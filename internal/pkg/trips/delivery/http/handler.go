@@ -282,7 +282,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully updated a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip updated successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip updated successfully"}, http.StatusOK, h.logger)
 }
 
 // DeleteTripHandler godoc
@@ -336,7 +336,7 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip deleted successfully"}, http.StatusNoContent, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip deleted successfully"}, http.StatusNoContent, h.logger)
 }
 
 // GetTripsByUserIDHandler godoc
@@ -559,7 +559,7 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully added place to trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Place added to trip successfully"}, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Place added to trip successfully"}, http.StatusCreated, h.logger)
 }
 
 func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Request) {
@@ -666,7 +666,7 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 
 	h.logger.DebugContext(logCtx, "Successfully deleted a photo from trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Photo deleted successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Photo deleted successfully"}, http.StatusOK, h.logger)
 }
 
 func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
