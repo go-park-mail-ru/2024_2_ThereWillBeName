@@ -15,7 +15,7 @@ linters-settings:
 
 linters:
   enable:
-    - all
+    - gosimple
     - bodyclose
     - noctx
     - errcheck
