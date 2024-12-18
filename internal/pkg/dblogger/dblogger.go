@@ -41,8 +41,6 @@ func (d *DB) ExecContext(ctx context.Context, query string, args ...interface{})
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing ExecContext",
-		slog.Any("args", args),
-		slog.String("query", query),
 		slog.Any("args", argsInfo(args)),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
