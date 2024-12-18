@@ -11,7 +11,7 @@ linters-settings:
     min-complexity: 60
   golint:
     skip-dirs:
-      - "./internal/models"
+      - "internal/models"
 
 linters:
   enable:
