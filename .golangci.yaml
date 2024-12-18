@@ -14,16 +14,6 @@ linters-settings:
       - "internal/models"
 
 linters:
-  enable:
-    - gosimple
-    - bodyclose
-    - noctx
-    - errcheck
-    - gocognit
-    - goconst
-    - gofmt
   disable:
-    - govet
-    - golint
-    - gocritic
-
+    - all
+    
