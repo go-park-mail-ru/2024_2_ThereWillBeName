@@ -25,7 +25,6 @@ func (d *DB) QueryContext(ctx context.Context, query string, args ...interface{}
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing QueryContext",
-		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
@@ -40,7 +39,6 @@ func (d *DB) ExecContext(ctx context.Context, query string, args ...interface{})
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing ExecContext",
-		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
@@ -55,7 +53,6 @@ func (d *DB) QueryRowContext(ctx context.Context, query string, args ...interfac
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing QueryRowContext",
-		slog.String("query", query),
 		slog.Any("args", args),
 		slog.Duration("duration", duration),
 	)
@@ -69,7 +66,6 @@ func (d *DB) PrepareContext(ctx context.Context, query string) (*sql.Stmt, error
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Preparing statement",
-		slog.String("query", query),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
 	)
