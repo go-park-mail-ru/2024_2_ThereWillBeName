@@ -34,6 +34,12 @@ type TripResponse struct {
 	Users []UserProfile `json:"users"`
 }
 
+type SharedTripResponse struct {
+	Trip      `json:"trip"`
+	Users     []UserProfile `json:"users"`
+	AddedUser bool          `json:"user_added"`
+}
+
 func ValidateTrip(v *validator.Validator, trip *Trip) {
 	v.Check(trip.Name != "", "name", "must be provided")
 	v.Check(len(trip.Name) <= 255, "name", "must not be more than 255 symbols")

@@ -245,23 +245,36 @@ func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.Get
 
 func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsGen.GetTripBySharingTokenRequest) (*tripsGen.GetTripBySharingTokenResponse, error) {
 	token := in.Token
-	trip, err := h.uc.GetTripBySharingToken(ctx, token)
+	trip, userProfiles, err := h.uc.GetTripBySharingToken(ctx, token)
 	if err != nil {
 		h.logger.Error("Failed to get trip by sharing token", slog.Any("error", err))
 		return nil, err
 	}
+
+	tripResponse := &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+		Photos:      trip.Photos,
+	}
+
+	var usersResponse []*tripsGen.UserProfile
+	for _, user := range userProfiles {
+		usersResponse = append(usersResponse, &tripsGen.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
 	return &tripsGen.GetTripBySharingTokenResponse{
-		Trip: &tripsGen.Trip{
-			Id:          uint32(trip.ID),
-			UserId:      uint32(trip.UserID),
-			Name:        trip.Name,
-			Description: trip.Description,
-			CityId:      uint32(trip.CityID),
-			StartDate:   trip.StartDate,
-			EndDate:     trip.EndDate,
-			Private:     trip.Private,
-			Photos:      trip.Photos,
-		},
+		Trip:  tripResponse,
+		Users: usersResponse,
 	}, nil
 }
 
