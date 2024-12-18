@@ -68,11 +68,11 @@ jobs:
       - name: Test
         run: go test -v -race ./...
 
-  deploy:
-    name: Deploy 2024_2_ThereWillBeName
-    needs: tests-act 
+  build-containers:
+    name: Build Docker Containers
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    needs: tests-act
     steps:
       - name: Pull code 
         uses: appleboy/ssh-action@master
@@ -80,7 +80,7 @@ jobs:
           host: ${{ secrets.HOST }} 
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
-          script: cd /home/ubuntu/2024_2_ThereWillBeName && git pull 
+          script: cd /home/ubuntu/2024_2_ThereWillBeName && git pull
 
       - name: Cache Docker layers
         uses: actions/cache@v3
@@ -93,13 +93,19 @@ jobs:
       - name: Build containers 
         uses: appleboy/ssh-action@master
         with:
-          timeout: 20m
+          timeout: 60m  # Таймаут для более длительного билда
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose build --no-cache
 
+  deploy:
+    name: Deploy 2024_2_ThereWillBeName
+    needs: tests-act 
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
       - name: Restart service 
         uses: appleboy/ssh-action@master
         with:
