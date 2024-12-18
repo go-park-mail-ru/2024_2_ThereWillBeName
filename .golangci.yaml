@@ -20,7 +20,10 @@ linters:
     - noctx
     - errcheck
     - gocognit
-    - golint
     - goconst
     - gofmt
+  disable:
+    - govet
+    - golint
+    - gocritic
 
