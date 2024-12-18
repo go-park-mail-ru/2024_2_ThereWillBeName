@@ -14,7 +14,7 @@ linters-settings:
       - "internal/models"
 
 linters:
-  disable:
+  enable:
     - all
     - bodyclose
     - noctx
