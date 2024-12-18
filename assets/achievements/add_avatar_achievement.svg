@@ -1,0 +1,17 @@
+<svg width="61" height="61" viewBox="0 0 61 61" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M17 36L18.9999 40.5H23.4999L30.9999 36L34.9999 38.25L38.9999 40.5H43.5L46 36" stroke="#FFDB58" stroke-width="3"/>
+<line x1="10.5" y1="39.5" x2="10.5" y2="12.5" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<path d="M10.5 12.5001C26.424 5.0596 35.1812 5.07382 50.5 12.5001" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<line x1="50.5" y1="39.5" x2="50.5" y2="12.5" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<line x1="38.8076" y1="52.0711" x2="50.4749" y2="40.4038" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<line x1="10.9289" y1="40.0503" x2="22.9498" y2="52.0711" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<line x1="23.3787" y1="52.6213" x2="38.3787" y2="52.6213" stroke="#FFDB58" stroke-width="3" stroke-linecap="round"/>
+<path d="M28.8787 51.6213C28.8787 53.002 29.998 54.1213 31.3787 54.1213C32.7594 54.1213 33.8787 53.002 33.8787 51.6213H28.8787ZM33.8787 46.6213V44.1213H28.8787V46.6213H33.8787ZM33.8787 51.6213V46.6213H28.8787V51.6213H33.8787Z" fill="#FFDB58"/>
+<path d="M30 19.5L32.5 17.5L30 14.5L31.75 13.25L33.5 12L33 8" stroke="#FFDB58" stroke-linecap="square"/>
+<path d="M37.5 30L39.5 32.5L42.5 30L43.75 31.75L45 33.5L49 33" stroke="#FFDB58" stroke-linecap="square"/>
+<path d="M11.5 29L13.5 31.5L16.5 29L17.75 30.75L19 32.5L23 32" stroke="#FFDB58" stroke-linecap="square"/>
+<ellipse cx="22" cy="26" rx="4" ry="2" fill="#FFDB58"/>
+<ellipse cx="40" cy="26" rx="4" ry="2" fill="#FFDB58"/>
+<path d="M18 20.5C21.125 19.2396 22.8766 19.2625 26 20.5M18 20.5C21.125 19.2396 22.8766 19.2625 26 20.5" stroke="#FFDB58" stroke-width="3"/>
+<path d="M36 20.5C39.125 19.2396 40.8766 19.2625 44 20.5M36 20.5C39.125 19.2396 40.8766 19.2625 44 20.5" stroke="#FFDB58" stroke-width="3"/>
+</svg>

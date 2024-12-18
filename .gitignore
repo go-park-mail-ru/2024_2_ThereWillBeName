@@ -5,4 +5,3 @@ data/
 .env
 grafana/
 grafana.db
-assets/
