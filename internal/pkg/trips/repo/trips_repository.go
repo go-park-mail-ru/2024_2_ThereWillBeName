@@ -194,7 +194,18 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 
 	trip.Photos = photos
 
-	// Получение списка user_id, которые участвуют в поездке
+	ownerQuery := `SELECT login, email, avatar_path FROM "user" WHERE id = $1`
+
+	var owner models.UserProfile
+	err = r.db.QueryRowContext(ctx, ownerQuery, trip.UserID).Scan(
+		&owner.Login,
+		&owner.Email,
+		&owner.AvatarPath,
+	)
+	if err != nil {
+		return trip, nil, fmt.Errorf("failed to get user owner for trip: %w", err)
+	}
+
 	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
 	rows, err = r.db.QueryContext(ctx, userIDQuery, tripID)
 	if err != nil {
@@ -211,8 +222,8 @@ func (r *TripRepository) GetTrip(ctx context.Context, tripID uint) (models.Trip,
 		userIDs = append(userIDs, userID)
 	}
 
-	// Для каждого user_id получить информацию о пользователе
 	var userProfiles []models.UserProfile
+	userProfiles = append(userProfiles, owner)
 	for _, userID := range userIDs {
 		userQuery := `SELECT login, avatar_path, email FROM "user" WHERE id = $1`
 		var userProfile models.UserProfile
@@ -358,6 +369,18 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 		return trip, nil, fmt.Errorf("failed to get trip: %w", err)
 	}
 
+	ownerQuery := `SELECT login, email, avatar_path FROM "user" WHERE id = $1`
+
+	var owner models.UserProfile
+	err = r.db.QueryRowContext(ctx, ownerQuery, trip.UserID).Scan(
+		&owner.Login,
+		&owner.Email,
+		&owner.AvatarPath,
+	)
+	if err != nil {
+		return trip, nil, fmt.Errorf("failed to get user owner for trip: %w", err)
+	}
+
 	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
 	usersRows, err := r.db.QueryContext(ctx, userIDQuery, tripID)
 	if err != nil {
@@ -374,8 +397,8 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 		userIDs = append(userIDs, userID)
 	}
 
-	// Для каждого user_id получить информацию о пользователе
 	var userProfiles []models.UserProfile
+	userProfiles = append(userProfiles, owner)
 	for _, userID := range userIDs {
 		userQuery := `SELECT login, avatar_path, email FROM "user" WHERE id = $1`
 		var userProfile models.UserProfile
