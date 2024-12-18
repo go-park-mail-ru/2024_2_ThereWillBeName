@@ -71,6 +71,7 @@ jobs:
     name: Deploy 2024_2_ThereWillBeName
     needs: tests-act 
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - name: Pull code 
         uses: appleboy/ssh-action@master
