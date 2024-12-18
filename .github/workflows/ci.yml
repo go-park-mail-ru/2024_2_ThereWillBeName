@@ -15,33 +15,58 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-      - uses: actions/checkout@v3 
+      
+      - uses: actions/checkout@v3
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-mod-
+
+      - name: Install dependencies
+        run: go mod tidy
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v6
-  
+
   tests-act:
     name: tests 
     needs: linters-act 
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.mod', '**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-mod-
+
       - name: Build gateway
         run: go build -v ./cmd/gateway/main.go
+
       - name: Build attraction
         run: go build -v ./cmd/attractions/main.go
-      - name: Build survey
-        run: go build -v ./cmd/survey/main.go
+
       - name: Build trips
         run: go build -v ./cmd/trips/main.go
+
       - name: Build users
         run: go build -v ./cmd/users/main.go
+
       - name: Test
         run: go test -v -race ./...
-      
+
   deploy:
     name: Deploy 2024_2_ThereWillBeName
     needs: tests-act 
@@ -54,6 +79,15 @@ jobs:
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
           script: cd /home/ubuntu/2024_2_ThereWillBeName && git pull 
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+
       - name: Build containers 
         uses: appleboy/ssh-action@master
         with:
@@ -61,11 +95,14 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
-          script: cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose build
+          script: |
+            cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose build --no-cache
+
       - name: Restart service 
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
           key: ${{ secrets.PRIVATE_KEY }}
-          script: cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose down && sudo docker-compose up -d 
+          script: |
+            cd /home/ubuntu/2024_2_ThereWillBeName && sudo docker-compose down && sudo docker-compose up -d
