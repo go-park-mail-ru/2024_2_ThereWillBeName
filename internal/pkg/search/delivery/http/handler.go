@@ -5,6 +5,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	log "2024_2_ThereWillBeName/internal/pkg/logger"
 	searchGen "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
+
 	"errors"
 	"log/slog"
 	"net/http"
@@ -22,37 +23,47 @@ func NewSearchHandler(client searchGen.SearchClient, logger *slog.Logger) *Searc
 }
 
 func (h *SearchHandler) Search(w http.ResponseWriter, r *http.Request) {
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
+	logCtx := r.Context()
 	h.logger.DebugContext(logCtx, "Handling request for global searching places and cities")
 
 	query := r.URL.Query().Get("query")
 	if query == "" {
-		h.logger.Warn("Query parameter can't be empty")
-		httpresponses.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Query parameter can't be empty")
+		httpresponses.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	decodedQuery, err := url.QueryUnescape(query)
 	if err != nil {
-		h.logger.Warn("Error decoding query", slog.String("error", err.Error()))
-		httpresponses.SendJSONResponse(w, nil, http.StatusBadRequest, h.logger)
+		h.logger.WarnContext(logCtx, "Error decoding query", slog.String("error", err.Error()))
+		httpresponses.SendJSONResponse(logCtx, w, nil, http.StatusBadRequest, h.logger)
 		return
 	}
+
+	logCtx = log.AppendCtx(logCtx, slog.String("decoded_query", decodedQuery))
 
 	results, err := h.client.Search(r.Context(), &searchGen.SearchRequest{DecodedQuery: decodedQuery})
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			h.logger.WarnContext(logCtx, "No results found for query", slog.String("decodedQuery", decodedQuery))
+			h.logger.WarnContext(logCtx, "No results found for query")
 
-			httpresponses.SendJSONResponse(w, nil, http.StatusNotFound, h.logger)
+			httpresponses.SendJSONResponse(logCtx, w, nil, http.StatusNotFound, h.logger)
 		}
 
-		h.logger.ErrorContext(logCtx, "Failed to search", slog.String("decodedQuery", decodedQuery), slog.String("error", err.Error()))
+		h.logger.ErrorContext(logCtx, "Failed to search", slog.String("error", err.Error()))
 
-		httpresponses.SendJSONResponse(w, nil, http.StatusInternalServerError, h.logger)
+		httpresponses.SendJSONResponse(logCtx, w, nil, http.StatusInternalServerError, h.logger)
 		return
 	}
-	h.logger.InfoContext(logCtx, "Search completed successfully", slog.Int("resultCount", len(results.SearchResult)))
+	h.logger.DebugContext(logCtx, "Search completed successfully", slog.Int("resultCount", len(results.SearchResult)))
 
-	httpresponses.SendJSONResponse(w, results.SearchResult, http.StatusOK, h.logger)
+	searchResponse := make(models.SearchResultList, len(results.SearchResult))
+	for i, res := range results.SearchResult {
+		searchResponse[i] = models.SearchResult{
+			Id:   uint(res.Id),
+			Name: res.Name,
+			Type: res.Type,
+		}
+	}
+	httpresponses.SendJSONResponse(logCtx, w, searchResponse, http.StatusOK, h.logger)
 }

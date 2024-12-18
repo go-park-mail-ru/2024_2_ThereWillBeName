@@ -1,31 +1,29 @@
 package main
 
 import (
-	"2024_2_ThereWillBeName/internal/models"
 	genAttractions "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/grpc/gen"
 	httpPlaces "2024_2_ThereWillBeName/internal/pkg/attractions/delivery/http"
 	genCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/grpc/gen"
 	httpCategories "2024_2_ThereWillBeName/internal/pkg/categories/delivery/http"
 	genCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/grpc/gen"
 	httpCities "2024_2_ThereWillBeName/internal/pkg/cities/delivery/http"
+	"2024_2_ThereWillBeName/internal/pkg/config"
 	"2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	httpresponse "2024_2_ThereWillBeName/internal/pkg/httpresponses"
 	"2024_2_ThereWillBeName/internal/pkg/jwt"
 	"2024_2_ThereWillBeName/internal/pkg/logger"
+	metricsMw "2024_2_ThereWillBeName/internal/pkg/metrics/middleware"
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	genReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	httpReviews "2024_2_ThereWillBeName/internal/pkg/reviews/delivery/http"
 	genSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/grpc/gen"
 	httpSearch "2024_2_ThereWillBeName/internal/pkg/search/delivery/http"
-	genSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/grpc/gen"
-	httpSurvey "2024_2_ThereWillBeName/internal/pkg/survey/delivery/http"
 	genTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	httpTrips "2024_2_ThereWillBeName/internal/pkg/trips/delivery/http"
 	genUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
 	httpUsers "2024_2_ThereWillBeName/internal/pkg/user/delivery/http"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"log/slog"
@@ -34,6 +32,9 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	_ "github.com/lib/pq"
 
@@ -43,18 +44,17 @@ import (
 )
 
 func main() {
-	var cfg models.Config
-	flag.IntVar(&cfg.Port, "port", 8080, "API server port")
-	flag.StringVar(&cfg.Env, "env", "production", "Environment")
-	flag.StringVar(&cfg.AllowedOrigin, "allowed-origin", "*", "Allowed origin")
-	flag.Parse()
+	cfg := config.Load()
 
 	logger := setupLogger()
+
+	metricMw := metricsMw.Create()
+	metricMw.RegisterMetrics()
 
 	jwtSecret := os.Getenv("JWT_SECRET")
 	jwtHandler := jwt.NewJWT(jwtSecret, logger)
 
-	attractionsConn, err := grpc.Dial("attractions:8081", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	attractionsConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.AttractionContainerIp, cfg.Grpc.AttractionPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to attractions service: %v", err)
 	}
@@ -66,40 +66,51 @@ func main() {
 	reviewsClient := genReviews.NewReviewsClient(attractionsConn)
 	searchClient := genSearch.NewSearchClient(attractionsConn)
 
-	usersConn, err := grpc.NewClient("users:50052", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	usersConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.UserContainerIp, cfg.Grpc.UserPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to users service: %v", err)
 	}
 	defer usersConn.Close()
 	usersClient := genUsers.NewUserServiceClient(usersConn)
 
-	tripsConn, err := grpc.NewClient("trips:50053", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	tripsConn, err := grpc.NewClient(fmt.Sprintf("%s:%d", cfg.Grpc.TripContainerIp, cfg.Grpc.TripPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("did not connect to trips service: %v", err)
 	}
 	defer tripsConn.Close()
 	tripsClient := genTrips.NewTripsClient(tripsConn)
 
-	surveyConn, err := grpc.NewClient("survey:50054", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		log.Fatalf("did not connect to survey service: %v", err)
-	}
-	defer surveyConn.Close()
-	surveyClient := genSurvey.NewSurveyServiceClient(surveyConn)
-
 	// Инициализация HTTP сервера
-	corsMiddleware := middleware.NewCORSMiddleware([]string{cfg.AllowedOrigin})
+	corsMiddleware := middleware.NewCORSMiddleware(cfg.AllowedOrigins)
 	r := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
 	r.Use(corsMiddleware.CorsMiddleware)
+	r.Use(metricMw.MetricsMiddleware)
+	r.Use(corsMiddleware.CorsMiddleware)
+	metricsRouter := mux.NewRouter().PathPrefix("/api/v1").Subrouter()
+	metricsRouter.Handle("/metrics", promhttp.Handler())
+	httpSrvMw := &http.Server{
+		Addr:              fmt.Sprintf(":%d", cfg.Metric.GatewayPort),
+		Handler:           metricsRouter,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      10 * time.Second,
+	}
+
+	go func() {
+		logger.Info(fmt.Sprintf("Starting HTTP server for metrics on :%d", cfg.Metric.GatewayPort))
+		if err := httpSrvMw.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			logger.Error(fmt.Sprintf("HTTP server listen: %s\n", err))
+		}
+	}()
 
 	r.Use(middleware.RequestLoggerMiddleware(logger))
 
 	// Обработка ненайденных маршрутов
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		response := httpresponses.ErrorResponse{
+		response := httpresponses.Response{
 			Message: "Not found",
 		}
-		httpresponses.SendJSONResponse(w, response, http.StatusNotFound, logger)
+		httpresponses.SendJSONResponse(r.Context(), w, response, http.StatusNotFound, logger)
 	})
 
 	// Маршрут для healthcheck
@@ -110,8 +121,8 @@ func main() {
 	places := r.PathPrefix("/places").Subrouter()
 	places.HandleFunc("", placesHandler.GetPlacesHandler).Methods(http.MethodGet)
 	places.HandleFunc("/search", placesHandler.SearchPlacesHandler).Methods(http.MethodGet)
+	places.HandleFunc("/category", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 	places.HandleFunc("/{id}", placesHandler.GetPlaceHandler).Methods(http.MethodGet)
-	places.HandleFunc("/category/{categoryName}", placesHandler.GetPlacesByCategoryHandler).Methods(http.MethodGet)
 
 	categoriesHandler := httpCategories.NewCategoriesHandler(categoriesClient, logger)
 	categories := r.PathPrefix("/categories").Subrouter()
@@ -150,41 +161,52 @@ func main() {
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetProfile), logger)).Methods(http.MethodGet)
 	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdatePassword), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdateProfile), logger)).Methods(http.MethodPut)
+	user.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
+	user.Handle("/achievements", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetAchievements), logger)).Methods(http.MethodGet)
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()
-	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripHandler), logger)).Methods(http.MethodGet)
+	trips.HandleFunc("/{id:[0-9]+}", tripsHandler.GetTripHandler).Methods(http.MethodGet)
 	trips.Handle("", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.CreateTripHandler), logger)).Methods(http.MethodPost)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.UpdateTripHandler), logger)).Methods(http.MethodPut)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeleteTripHandler), logger)).Methods(http.MethodDelete)
 	trips.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPlaceToTripHandler), logger)).Methods(http.MethodPost)
 	user.Handle("/trips", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.GetTripsByUserIDHandler), logger)).Methods(http.MethodGet)
-	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPhotosToTripHandler), logger)).Methods(http.MethodPut)
+	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.AddPhotosToTripHandler), logger)).Methods(http.MethodPost)
 	trips.Handle("/{id}/photos", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.DeletePhotoHandler), logger)).Methods(http.MethodDelete)
+	trips.Handle("/{id}/share", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(tripsHandler.CreateSharingLinkHandler), logger)).Methods(http.MethodPost)
+	trips.HandleFunc("/{sharing_token}", tripsHandler.GetTripBySharingToken).Methods(http.MethodGet)
 
-	surveyHandler := httpSurvey.NewSurveyHandler(surveyClient, logger)
-	survey := r.PathPrefix("/survey").Subrouter()
-	survey.Handle("/stats/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsBySurveyId), logger)).Methods(http.MethodGet)
-	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyById), logger)).Methods(http.MethodGet)
-	survey.Handle("/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.CreateSurveyResponse), logger)).Methods(http.MethodPost)
-	survey.Handle("/users/{id}", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(surveyHandler.GetSurveyStatsByUserId), logger)).Methods(http.MethodGet)
-
-	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.Port)}
+	httpSrv := &http.Server{Handler: r, Addr: fmt.Sprintf(":%d", cfg.HttpServer.Address)}
 	go func() {
-		logger.Info("HTTP server listening on :%d", cfg.Port)
+		logger.Info(fmt.Sprintf("HTTP server listening on :%d", cfg.HttpServer.Address))
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Error("failed to serve HTTP: %d", err)
+			logger.Error("failed to serve HTTP", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 	}()
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				metricMw.TrackSystemMetrics("gateway")
+			case <-stop:
+				return
+			}
+		}
+	}()
 	<-stop
 
 	logger.Info("Shutting down HTTP server...")
 	if err := httpSrv.Shutdown(context.Background()); err != nil {
-		logger.Error("HTTP server shutdown failed: %v", err)
+		logger.Error("HTTP server shutdown failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 	logger.Info("HTTP server gracefully stopped")
@@ -196,10 +218,10 @@ func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
 	_, err := fmt.Fprintf(w, "STATUS: OK")
 	if err != nil {
 		logger.Error("Failed to write healthcheck response", slog.Any("error", err))
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, logger)
+		httpresponse.SendJSONResponse(r.Context(), w, response, http.StatusBadRequest, logger)
 	}
 }
 

@@ -19,14 +19,19 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Trips_CreateTrip_FullMethodName          = "/trips.Trips/CreateTrip"
-	Trips_UpdateTrip_FullMethodName          = "/trips.Trips/UpdateTrip"
-	Trips_DeleteTrip_FullMethodName          = "/trips.Trips/DeleteTrip"
-	Trips_GetTripsByUserID_FullMethodName    = "/trips.Trips/GetTripsByUserID"
-	Trips_GetTrip_FullMethodName             = "/trips.Trips/GetTrip"
-	Trips_AddPlaceToTrip_FullMethodName      = "/trips.Trips/AddPlaceToTrip"
-	Trips_AddPhotosToTrip_FullMethodName     = "/trips.Trips/AddPhotosToTrip"
-	Trips_DeletePhotoFromTrip_FullMethodName = "/trips.Trips/DeletePhotoFromTrip"
+	Trips_CreateTrip_FullMethodName            = "/trips.Trips/CreateTrip"
+	Trips_UpdateTrip_FullMethodName            = "/trips.Trips/UpdateTrip"
+	Trips_DeleteTrip_FullMethodName            = "/trips.Trips/DeleteTrip"
+	Trips_GetTripsByUserID_FullMethodName      = "/trips.Trips/GetTripsByUserID"
+	Trips_GetTrip_FullMethodName               = "/trips.Trips/GetTrip"
+	Trips_AddPlaceToTrip_FullMethodName        = "/trips.Trips/AddPlaceToTrip"
+	Trips_AddPhotosToTrip_FullMethodName       = "/trips.Trips/AddPhotosToTrip"
+	Trips_DeletePhotoFromTrip_FullMethodName   = "/trips.Trips/DeletePhotoFromTrip"
+	Trips_CreateSharingLink_FullMethodName     = "/trips.Trips/CreateSharingLink"
+	Trips_GetSharingToken_FullMethodName       = "/trips.Trips/GetSharingToken"
+	Trips_GetTripBySharingToken_FullMethodName = "/trips.Trips/GetTripBySharingToken"
+	Trips_AddUserToTrip_FullMethodName         = "/trips.Trips/AddUserToTrip"
+	Trips_GetSharingOption_FullMethodName      = "/trips.Trips/GetSharingOption"
 )
 
 // TripsClient is the client API for Trips service.
@@ -41,6 +46,11 @@ type TripsClient interface {
 	AddPlaceToTrip(ctx context.Context, in *AddPlaceToTripRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
 	AddPhotosToTrip(ctx context.Context, in *AddPhotosToTripRequest, opts ...grpc.CallOption) (*AddPhotosToTripResponse, error)
 	DeletePhotoFromTrip(ctx context.Context, in *DeletePhotoRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	CreateSharingLink(ctx context.Context, in *CreateSharingLinkRequest, opts ...grpc.CallOption) (*CreateSharingLinkResponse, error)
+	GetSharingToken(ctx context.Context, in *GetSharingTokenRequest, opts ...grpc.CallOption) (*GetSharingTokenResponse, error)
+	GetTripBySharingToken(ctx context.Context, in *GetTripBySharingTokenRequest, opts ...grpc.CallOption) (*GetTripBySharingTokenResponse, error)
+	AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*AddUserToTripResponse, error)
+	GetSharingOption(ctx context.Context, in *GetSharingOptionRequest, opts ...grpc.CallOption) (*GetSharingOptionResponse, error)
 }
 
 type tripsClient struct {
@@ -131,6 +141,56 @@ func (c *tripsClient) DeletePhotoFromTrip(ctx context.Context, in *DeletePhotoRe
 	return out, nil
 }
 
+func (c *tripsClient) CreateSharingLink(ctx context.Context, in *CreateSharingLinkRequest, opts ...grpc.CallOption) (*CreateSharingLinkResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateSharingLinkResponse)
+	err := c.cc.Invoke(ctx, Trips_CreateSharingLink_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tripsClient) GetSharingToken(ctx context.Context, in *GetSharingTokenRequest, opts ...grpc.CallOption) (*GetSharingTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSharingTokenResponse)
+	err := c.cc.Invoke(ctx, Trips_GetSharingToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tripsClient) GetTripBySharingToken(ctx context.Context, in *GetTripBySharingTokenRequest, opts ...grpc.CallOption) (*GetTripBySharingTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetTripBySharingTokenResponse)
+	err := c.cc.Invoke(ctx, Trips_GetTripBySharingToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tripsClient) AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*AddUserToTripResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddUserToTripResponse)
+	err := c.cc.Invoke(ctx, Trips_AddUserToTrip_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tripsClient) GetSharingOption(ctx context.Context, in *GetSharingOptionRequest, opts ...grpc.CallOption) (*GetSharingOptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSharingOptionResponse)
+	err := c.cc.Invoke(ctx, Trips_GetSharingOption_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // TripsServer is the server API for Trips service.
 // All implementations must embed UnimplementedTripsServer
 // for forward compatibility.
@@ -143,6 +203,11 @@ type TripsServer interface {
 	AddPlaceToTrip(context.Context, *AddPlaceToTripRequest) (*EmptyResponse, error)
 	AddPhotosToTrip(context.Context, *AddPhotosToTripRequest) (*AddPhotosToTripResponse, error)
 	DeletePhotoFromTrip(context.Context, *DeletePhotoRequest) (*EmptyResponse, error)
+	CreateSharingLink(context.Context, *CreateSharingLinkRequest) (*CreateSharingLinkResponse, error)
+	GetSharingToken(context.Context, *GetSharingTokenRequest) (*GetSharingTokenResponse, error)
+	GetTripBySharingToken(context.Context, *GetTripBySharingTokenRequest) (*GetTripBySharingTokenResponse, error)
+	AddUserToTrip(context.Context, *AddUserToTripRequest) (*AddUserToTripResponse, error)
+	GetSharingOption(context.Context, *GetSharingOptionRequest) (*GetSharingOptionResponse, error)
 	mustEmbedUnimplementedTripsServer()
 }
 
@@ -176,6 +241,21 @@ func (UnimplementedTripsServer) AddPhotosToTrip(context.Context, *AddPhotosToTri
 }
 func (UnimplementedTripsServer) DeletePhotoFromTrip(context.Context, *DeletePhotoRequest) (*EmptyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeletePhotoFromTrip not implemented")
+}
+func (UnimplementedTripsServer) CreateSharingLink(context.Context, *CreateSharingLinkRequest) (*CreateSharingLinkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateSharingLink not implemented")
+}
+func (UnimplementedTripsServer) GetSharingToken(context.Context, *GetSharingTokenRequest) (*GetSharingTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSharingToken not implemented")
+}
+func (UnimplementedTripsServer) GetTripBySharingToken(context.Context, *GetTripBySharingTokenRequest) (*GetTripBySharingTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetTripBySharingToken not implemented")
+}
+func (UnimplementedTripsServer) AddUserToTrip(context.Context, *AddUserToTripRequest) (*AddUserToTripResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddUserToTrip not implemented")
+}
+func (UnimplementedTripsServer) GetSharingOption(context.Context, *GetSharingOptionRequest) (*GetSharingOptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetSharingOption not implemented")
 }
 func (UnimplementedTripsServer) mustEmbedUnimplementedTripsServer() {}
 func (UnimplementedTripsServer) testEmbeddedByValue()               {}
@@ -342,6 +422,96 @@ func _Trips_DeletePhotoFromTrip_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Trips_CreateSharingLink_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSharingLinkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).CreateSharingLink(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_CreateSharingLink_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).CreateSharingLink(ctx, req.(*CreateSharingLinkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trips_GetSharingToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSharingTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).GetSharingToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_GetSharingToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).GetSharingToken(ctx, req.(*GetSharingTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trips_GetTripBySharingToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetTripBySharingTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).GetTripBySharingToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_GetTripBySharingToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).GetTripBySharingToken(ctx, req.(*GetTripBySharingTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trips_AddUserToTrip_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddUserToTripRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).AddUserToTrip(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_AddUserToTrip_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).AddUserToTrip(ctx, req.(*AddUserToTripRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Trips_GetSharingOption_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSharingOptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TripsServer).GetSharingOption(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Trips_GetSharingOption_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TripsServer).GetSharingOption(ctx, req.(*GetSharingOptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Trips_ServiceDesc is the grpc.ServiceDesc for Trips service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -380,6 +550,26 @@ var Trips_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeletePhotoFromTrip",
 			Handler:    _Trips_DeletePhotoFromTrip_Handler,
+		},
+		{
+			MethodName: "CreateSharingLink",
+			Handler:    _Trips_CreateSharingLink_Handler,
+		},
+		{
+			MethodName: "GetSharingToken",
+			Handler:    _Trips_GetSharingToken_Handler,
+		},
+		{
+			MethodName: "GetTripBySharingToken",
+			Handler:    _Trips_GetTripBySharingToken_Handler,
+		},
+		{
+			MethodName: "AddUserToTrip",
+			Handler:    _Trips_AddUserToTrip_Handler,
+		},
+		{
+			MethodName: "GetSharingOption",
+			Handler:    _Trips_GetSharingOption_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

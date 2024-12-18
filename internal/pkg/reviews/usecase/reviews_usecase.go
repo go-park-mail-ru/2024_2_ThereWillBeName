@@ -60,7 +60,6 @@ func (u *reviewsUsecaseImpl) GetReviewsByPlaceID(ctx context.Context, placeID ui
 		}
 		return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
 	}
-
 	return reviewsFound, nil
 }
 

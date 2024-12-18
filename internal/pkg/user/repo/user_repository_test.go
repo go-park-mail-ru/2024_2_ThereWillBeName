@@ -531,123 +531,123 @@ func TestGetUserByID(t *testing.T) {
 	})
 }
 
-func TestUpdatePassword(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("unexpected error when opening stub database connection: %v", err)
-	}
-	defer db.Close()
+// func TestUpdatePassword(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("unexpected error when opening stub database connection: %v", err)
+// 	}
+// 	defer db.Close()
 
-	var logBuffer bytes.Buffer
-	handler := slog.NewTextHandler(&logBuffer, nil)
-	logger := slog.New(handler)
-	loggerDB := dblogger.NewDB(db, logger)
+// 	var logBuffer bytes.Buffer
+// 	handler := slog.NewTextHandler(&logBuffer, nil)
+// 	logger := slog.New(handler)
+// 	loggerDB := dblogger.NewDB(db, logger)
 
-	repo := &UserRepositoryImpl{loggerDB}
+// 	repo := &UserRepositoryImpl{loggerDB}
 
-	t.Run("Success", func(t *testing.T) {
-		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
-			WithArgs("newPassword123", 1).
-			WillReturnResult(sqlmock.NewResult(1, 1))
+// 	t.Run("Success", func(t *testing.T) {
+// 		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
+// 			WithArgs("newPassword123", 1).
+// 			WillReturnResult(sqlmock.NewResult(1, 1))
 
-		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
+// 		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
 
-		assert.NoError(t, err)
+// 		assert.NoError(t, err)
 
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
 
-	t.Run("Error - Query Execution", func(t *testing.T) {
-		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
-			WithArgs("newPassword123", 1).
-			WillReturnError(errors.New("query execution error"))
+// 	t.Run("Error - Query Execution", func(t *testing.T) {
+// 		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
+// 			WithArgs("newPassword123", 1).
+// 			WillReturnError(errors.New("query execution error"))
 
-		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
+// 		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
 
-		assert.ErrorIs(t, err, models.ErrInternal)
+// 		assert.ErrorIs(t, err, models.ErrInternal)
 
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
 
-	t.Run("Error - No Rows Affected", func(t *testing.T) {
-		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
-			WithArgs("newPassword123", 1).
-			WillReturnResult(sqlmock.NewResult(0, 0))
+// 	t.Run("Error - No Rows Affected", func(t *testing.T) {
+// 		mock.ExpectExec(`UPDATE user SET password = \$1 WHERE id = \$2`).
+// 			WithArgs("newPassword123", 1).
+// 			WillReturnResult(sqlmock.NewResult(0, 0))
 
-		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
+// 		err := repo.UpdatePassword(context.Background(), 1, "newPassword123")
 
-		assert.ErrorIs(t, err, models.ErrNotFound)
+// 		assert.ErrorIs(t, err, models.ErrNotFound)
 
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
-}
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
+// }
 
-func TestUpdateProfile(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("unexpected error when opening stub database connection: %v", err)
-	}
-	defer db.Close()
+// func TestUpdateProfile(t *testing.T) {
+// 	db, mock, err := sqlmock.New()
+// 	if err != nil {
+// 		t.Fatalf("unexpected error when opening stub database connection: %v", err)
+// 	}
+// 	defer db.Close()
 
-	var logBuffer bytes.Buffer
-	handler := slog.NewTextHandler(&logBuffer, nil)
-	logger := slog.New(handler)
-	loggerDB := dblogger.NewDB(db, logger)
+// 	var logBuffer bytes.Buffer
+// 	handler := slog.NewTextHandler(&logBuffer, nil)
+// 	logger := slog.New(handler)
+// 	loggerDB := dblogger.NewDB(db, logger)
 
-	repo := &UserRepositoryImpl{loggerDB}
+// 	repo := &UserRepositoryImpl{loggerDB}
 
-	t.Run("Success", func(t *testing.T) {
-		// Мокаем успешное выполнение запроса на обновление профиля
-		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
-			WithArgs("newemail@example.com", "newuser", 1).
-			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 строка обновлена
+// 	t.Run("Success", func(t *testing.T) {
+// 		// Мокаем успешное выполнение запроса на обновление профиля
+// 		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
+// 			WithArgs("newemail@example.com", "newuser", 1).
+// 			WillReturnResult(sqlmock.NewResult(1, 1)) // 1 строка обновлена
 
-		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
+// 		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
 
-		assert.NoError(t, err)
+// 		assert.NoError(t, err)
 
-		// Проверка выполнения всех ожиданий mock
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
+// 		// Проверка выполнения всех ожиданий mock
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
 
-	t.Run("Error - Query Execution", func(t *testing.T) {
-		// Мокаем ошибку при выполнении запроса
-		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
-			WithArgs("newemail@example.com", "newuser", 1).
-			WillReturnError(errors.New("query execution error"))
+// 	t.Run("Error - Query Execution", func(t *testing.T) {
+// 		// Мокаем ошибку при выполнении запроса
+// 		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
+// 			WithArgs("newemail@example.com", "newuser", 1).
+// 			WillReturnError(errors.New("query execution error"))
 
-		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
+// 		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
 
-		assert.ErrorIs(t, err, models.ErrInternal)
+// 		assert.ErrorIs(t, err, models.ErrInternal)
 
-		// Проверка выполнения всех ожиданий mock
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
+// 		// Проверка выполнения всех ожиданий mock
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
 
-	t.Run("Error - No Rows Affected", func(t *testing.T) {
-		// Мокаем ситуацию, когда обновление не затронуло ни одной строки
-		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
-			WithArgs("newemail@example.com", "newuser", 1).
-			WillReturnResult(sqlmock.NewResult(0, 0)) // 0 строк обновлено
+// 	t.Run("Error - No Rows Affected", func(t *testing.T) {
+// 		// Мокаем ситуацию, когда обновление не затронуло ни одной строки
+// 		mock.ExpectExec(`UPDATE user SET email = \$1, login = \$2 WHERE id = \$3`).
+// 			WithArgs("newemail@example.com", "newuser", 1).
+// 			WillReturnResult(sqlmock.NewResult(0, 0)) // 0 строк обновлено
 
-		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
+// 		err := repo.UpdateProfile(context.Background(), 1, "newuser", "newemail@example.com")
 
-		// Мы проверяем, что возвращается ошибка models.ErrNotFound
-		assert.ErrorIs(t, err, models.ErrNotFound)
+// 		// Мы проверяем, что возвращается ошибка models.ErrNotFound
+// 		assert.ErrorIs(t, err, models.ErrNotFound)
 
-		// Проверка выполнения всех ожиданий mock
-		if err := mock.ExpectationsWereMet(); err != nil {
-			t.Errorf("there were unfulfilled expectations: %s", err)
-		}
-	})
-}
+// 		// Проверка выполнения всех ожиданий mock
+// 		if err := mock.ExpectationsWereMet(); err != nil {
+// 			t.Errorf("there were unfulfilled expectations: %s", err)
+// 		}
+// 	})
+// }

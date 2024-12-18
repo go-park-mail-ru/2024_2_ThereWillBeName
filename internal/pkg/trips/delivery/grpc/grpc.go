@@ -6,12 +6,17 @@ import (
 	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type GrpcTripsHandler struct {
@@ -48,6 +53,7 @@ func (h *GrpcTripsHandler) CreateTrip(ctx context.Context, in *tripsGen.CreateTr
 func (h *GrpcTripsHandler) UpdateTrip(ctx context.Context, in *tripsGen.UpdateTripRequest) (*tripsGen.EmptyResponse, error) {
 
 	trip := models.Trip{
+		ID:          uint(in.Trip.Id),
 		UserID:      uint(in.Trip.UserId),
 		Name:        in.Trip.Name,
 		Description: in.Trip.Description,
@@ -79,7 +85,10 @@ func (h *GrpcTripsHandler) DeleteTrip(ctx context.Context, in *tripsGen.DeleteTr
 func (h *GrpcTripsHandler) GetTripsByUserID(ctx context.Context, in *tripsGen.GetTripsByUserIDRequest) (*tripsGen.GetTripsByUserIDResponse, error) {
 	trips, err := h.uc.GetTripsByUserID(context.Background(), uint(in.UserId), int(in.Limit), int(in.Offset))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, models.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "reviews for place ID %d not found", in.UserId)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get reviews: %v", err)
 	}
 	grpcTrips := make([]*tripsGen.Trip, 0, len(trips))
 	for _, trip := range trips {
@@ -99,22 +108,35 @@ func (h *GrpcTripsHandler) GetTripsByUserID(ctx context.Context, in *tripsGen.Ge
 }
 
 func (h *GrpcTripsHandler) GetTrip(ctx context.Context, in *tripsGen.GetTripRequest) (*tripsGen.GetTripResponse, error) {
-	trip, err := h.uc.GetTrip(context.Background(), uint(in.TripId))
+	trip, userProfiles, err := h.uc.GetTrip(context.Background(), uint(in.TripId))
 	if err != nil {
 		return nil, err
 	}
+
+	tripResponse := &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+		Photos:      trip.Photos,
+	}
+
+	var usersResponse []*tripsGen.UserProfile
+	for _, user := range userProfiles {
+		usersResponse = append(usersResponse, &tripsGen.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
 	return &tripsGen.GetTripResponse{
-		Trip: &tripsGen.Trip{
-			Id:          uint32(trip.ID),
-			UserId:      uint32(trip.UserID),
-			Name:        trip.Name,
-			Description: trip.Description,
-			CityId:      uint32(trip.CityID),
-			StartDate:   trip.StartDate,
-			EndDate:     trip.EndDate,
-			Private:     trip.Private,
-			Photos:      trip.Photos,
-		},
+		Trip:  tripResponse,
+		Users: usersResponse,
 	}, nil
 }
 
@@ -197,4 +219,95 @@ func (h *GrpcTripsHandler) DeletePhotoFromTrip(ctx context.Context, in *tripsGen
 
 	h.logger.Info("Photo successfully deleted", slog.String("path", photoPath))
 	return &tripsGen.EmptyResponse{}, nil
+}
+func (h *GrpcTripsHandler) CreateSharingLink(ctx context.Context, in *tripsGen.CreateSharingLinkRequest) (*tripsGen.CreateSharingLinkResponse, error) {
+	token := in.Token
+	sharingOption := in.SharingOption
+	err := h.uc.CreateSharingLink(ctx, uint(in.TripId), token, sharingOption)
+	if err != nil {
+		h.logger.Error("Failed to dcreate a sharing link for a trip", slog.Any("error", err))
+		return nil, err
+	}
+
+	return &tripsGen.CreateSharingLinkResponse{Token: token}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingToken(ctx context.Context, in *tripsGen.GetSharingTokenRequest) (*tripsGen.GetSharingTokenResponse, error) {
+	tripID := in.TripId
+	token, err := h.uc.GetSharingToken(ctx, uint(tripID))
+	if err != nil {
+		h.logger.Error("Failed to get sharing token for a trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingTokenResponse{
+		Token: &tripsGen.Token{
+			Id:            uint32(token.ID),
+			Token:         token.Token,
+			SharingOption: token.SharingOption,
+			ExpiresAt:     timestamppb.New(token.ExpiresAt),
+		},
+	}, nil
+}
+
+func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsGen.GetTripBySharingTokenRequest) (*tripsGen.GetTripBySharingTokenResponse, error) {
+	token := in.Token
+	trip, userProfiles, err := h.uc.GetTripBySharingToken(ctx, token)
+	if err != nil {
+		h.logger.Error("Failed to get trip by sharing token", slog.Any("error", err))
+		return nil, err
+	}
+
+	tripResponse := &tripsGen.Trip{
+		Id:          uint32(trip.ID),
+		UserId:      uint32(trip.UserID),
+		Name:        trip.Name,
+		Description: trip.Description,
+		CityId:      uint32(trip.CityID),
+		StartDate:   trip.StartDate,
+		EndDate:     trip.EndDate,
+		Private:     trip.Private,
+		Photos:      trip.Photos,
+	}
+
+	var usersResponse []*tripsGen.UserProfile
+	for _, user := range userProfiles {
+		usersResponse = append(usersResponse, &tripsGen.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
+	return &tripsGen.GetTripBySharingTokenResponse{
+		Trip:  tripResponse,
+		Users: usersResponse,
+	}, nil
+}
+
+func (h *GrpcTripsHandler) AddUserToTrip(ctx context.Context, in *tripsGen.AddUserToTripRequest) (*tripsGen.AddUserToTripResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	addedUser, err := h.uc.AddUserToTrip(ctx, uint(tripId), uint(userId))
+	if err != nil {
+		h.logger.Error("Failed to add user to trip", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.AddUserToTripResponse{
+		AddedUser: addedUser,
+	}, nil
+}
+
+func (h *GrpcTripsHandler) GetSharingOption(ctx context.Context, in *tripsGen.GetSharingOptionRequest) (*tripsGen.GetSharingOptionResponse, error) {
+	tripId := in.TripId
+	userId := in.UserId
+
+	sharingOption, err := h.uc.GetSharingOption(ctx, uint(userId), uint(tripId))
+	if err != nil {
+		h.logger.Error("Failed to rettrieve sharing option", slog.Any("error", err))
+		return nil, err
+	}
+	return &tripsGen.GetSharingOptionResponse{
+		SharingOption: sharingOption,
+	}, nil
 }

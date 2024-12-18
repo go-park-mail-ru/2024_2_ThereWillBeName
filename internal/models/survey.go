@@ -24,3 +24,6 @@ type UserSurveyStats struct {
 	SurveyText string `json:"survey_text"`
 	Answered   bool   `json:"answered"`
 }
+
+//easyjson:json
+type UserSurveyStatsList []UserSurveyStats

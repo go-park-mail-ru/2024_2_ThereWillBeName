@@ -3,3 +3,5 @@ go.mod
 2024-2-Zdes-budet-nazvanie-UykwHnIE.crt
 data/
 .env
+grafana/
+grafana.db

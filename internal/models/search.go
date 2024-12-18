@@ -5,3 +5,6 @@ type SearchResult struct {
 	Id   uint   `json:"id"`
 	Type string `json:"type"` //"city" или "place"
 }
+
+//easyjson:json
+type SearchResultList []SearchResult

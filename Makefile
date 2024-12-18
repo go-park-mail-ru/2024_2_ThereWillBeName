@@ -43,3 +43,7 @@ run: build_
 .PHONY: lint
 lint:
 	golangci-lint run --config=.golangci.yaml
+
+.Phony: generate
+generate:
+	go generate ./internal/models

@@ -11,6 +11,11 @@ service Trips {
     rpc AddPlaceToTrip(AddPlaceToTripRequest) returns (EmptyResponse);   
     rpc AddPhotosToTrip(AddPhotosToTripRequest) returns (AddPhotosToTripResponse);
     rpc DeletePhotoFromTrip(DeletePhotoRequest) returns (EmptyResponse);
+    rpc CreateSharingLink(CreateSharingLinkRequest) returns (CreateSharingLinkResponse);
+    rpc GetSharingToken(GetSharingTokenRequest) returns (GetSharingTokenResponse);
+    rpc GetTripBySharingToken(GetTripBySharingTokenRequest) returns (GetTripBySharingTokenResponse);
+    rpc AddUserToTrip(AddUserToTripRequest) returns (AddUserToTripResponse);
+    rpc GetSharingOption(GetSharingOptionRequest) returns (GetSharingOptionResponse);
 }
 
 message CreateTripRequest {
@@ -41,6 +46,7 @@ message GetTripRequest {
 
 message GetTripResponse {
     Trip trip = 1;
+    repeated UserProfile users = 2;
 }
 
 message AddPlaceToTripRequest {
@@ -64,6 +70,52 @@ message DeletePhotoRequest {
     uint32 trip_id = 1;     
     string photo_path = 2;  
 }
+
+message CreateSharingLinkRequest {
+    uint32 trip_id = 1;
+    string token = 2;
+    string sharing_option = 3;
+}
+
+message CreateSharingLinkResponse {
+    string token = 1;
+}
+
+message GetSharingTokenRequest {
+    uint32 trip_id = 1;
+}
+
+message GetSharingTokenResponse {
+    Token token = 1;
+}
+
+message GetTripBySharingTokenRequest {
+    string token = 1;
+}
+
+message GetTripBySharingTokenResponse {
+    Trip trip = 1;
+    repeated UserProfile users = 2;
+}
+
+message AddUserToTripRequest {
+    uint32 trip_id = 1;
+    uint32 user_id = 2;
+}
+
+message AddUserToTripResponse {
+    bool added_user = 1;
+}
+
+message GetSharingOptionRequest {
+    uint32 trip_id = 1;
+    uint32 user_id = 2;
+}
+
+message GetSharingOptionResponse {
+    string sharing_option = 1;
+}
+
 message EmptyResponse {}
 
 message Trip {
@@ -79,3 +131,17 @@ message Trip {
     google.protobuf.Timestamp created_at = 10;
 }
 
+message Token {
+    uint32 id = 1;
+    uint32 trip_id = 2;
+    string token = 3;
+    string sharing_option = 4;
+    google.protobuf.Timestamp expires_at = 5;
+    google.protobuf.Timestamp created_at = 6;
+}
+
+message UserProfile {
+    string login = 1;
+    string email = 2;
+    string avatar_path = 3;
+}

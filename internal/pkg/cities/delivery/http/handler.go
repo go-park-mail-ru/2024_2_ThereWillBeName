@@ -24,20 +24,21 @@ func NewCitiesHandler(client gen.CitiesClient, logger *slog.Logger) *CitiesHandl
 	return &CitiesHandler{client, logger}
 }
 
-func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.ErrorResponse, int) {
-	if errors.Is(err, models.ErrNotFound) {
-		logContext := log.AppendCtx(ctx, slog.String("action", action))
-		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action), slog.Any("error", err.Error()))
+func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.Response, int) {
+	logContext := log.AppendCtx(ctx, slog.String("action", action))
+	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
 
-		response := httpresponse.ErrorResponse{
+	if errors.Is(err, models.ErrNotFound) {
+		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action))
+
+		response := httpresponse.Response{
 			Message: "Invalid request",
 		}
 		return response, http.StatusNotFound
 	}
-	logContext := log.AppendCtx(ctx, slog.String("action", action))
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action), slog.Any("error", err.Error()))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s cities", action))
 
-	response := httpresponse.ErrorResponse{
+	response := httpresponse.Response{
 		Message: fmt.Sprintf("Failed to %s cities", action),
 	}
 	return response, http.StatusInternalServerError
@@ -48,37 +49,44 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 // @Description Get cities details by city name
 // @Produce json
 // @Success 200 {array} models.City "Cities details"
-// @Failure 400 {object} httpresponses.ErrorResponse "Invalid query"
-// @Failure 403 {object} httpresponses.ErrorResponse "Token is missing"
-// @Failure 403 {object} httpresponses.ErrorResponse "Invalid token"
-// @Failure 404 {object} httpresponses.ErrorResponse "Cities not found"
-// @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
+// @Failure 400 {object} httpresponses.Response "Invalid query"
+// @Failure 403 {object} httpresponses.Response "Token is missing"
+// @Failure 403 {object} httpresponses.Response "Invalid token"
+// @Failure 404 {object} httpresponses.Response "Cities not found"
+// @Failure 500 {object} httpresponses.Response "Failed to retrieve cities"
 // @Router /cities/search [get]
 func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("q")
+	logCtx := r.Context()
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for searching attractions by name", slog.String("name", query))
+	query := r.URL.Query().Get("q")
+	logCtx = log.AppendCtx(logCtx, slog.String("name", query))
+	h.logger.DebugContext(logCtx, "Handling request for searching cities by name")
 
 	if query == "" {
-		h.logger.Error("Search query parameter is empty")
-		response := httpresponse.ErrorResponse{
+		h.logger.WarnContext(logCtx, "Search query parameter is empty")
+		response := httpresponse.Response{
 			Message: "Invalid query",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	cities, err := h.client.SearchCitiesByName(context.Background(), &gen.SearchCitiesByNameRequest{Query: query})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.String("name", query))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
-	h.logger.DebugContext(logCtx, "Successfully retrieved cities")
-	httpresponse.SendJSONResponse(w, cities.Cities, http.StatusOK, h.logger)
+	cityResponse := make(models.CityList, len(cities.Cities))
+	for i, city := range cities.Cities {
+		cityResponse[i] = models.City{
+			ID:   uint(city.Id),
+			Name: city.Name,
+		}
+	}
+	h.logger.DebugContext(logCtx, "Successfully retrieved cities", slog.Any("cities", cities.Cities))
+	httpresponse.SendJSONResponse(logCtx, w, cityResponse, http.StatusOK, h.logger)
 }
 
 // SearchCityByIDHandler godoc
@@ -87,48 +95,54 @@ func (h *CitiesHandler) SearchCitiesByNameHandler(w http.ResponseWriter, r *http
 // @Produce json
 // @Param id path int true "City ID"
 // @Success 200 {object} models.City "City details"
-// @Failure 400 {object} httpresponses.ErrorResponse "Invalid city ID"
-// @Failure 403 {object} httpresponses.ErrorResponse "CSRF token missing"
-// @Failure 403 {object} httpresponses.ErrorResponse "Invalid CSRF token"
-// @Failure 404 {object} httpresponses.ErrorResponse "City not found"
-// @Failure 500 {object} httpresponses.ErrorResponse "Failed to retrieve cities"
+// @Failure 400 {object} httpresponses.Response "Invalid city ID"
+// @Failure 403 {object} httpresponses.Response "CSRF token missing"
+// @Failure 403 {object} httpresponses.Response "Invalid CSRF token"
+// @Failure 404 {object} httpresponses.Response "City not found"
+// @Failure 500 {object} httpresponses.Response "Failed to retrieve cities"
 // @Router /cities/{id} [get]
 func (h *CitiesHandler) SearchCityByIDHandler(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
 	vars := mux.Vars(r)
 	cityIDStr := vars["id"]
 
-	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
-	h.logger.DebugContext(logCtx, "Handling request for searching cities by ID", slog.String("ID", cityIDStr))
+	logCtx = log.AppendCtx(logCtx, slog.String("city_id", cityIDStr))
+
+	h.logger.DebugContext(logCtx, "Handling request for searching cities by ID")
 
 	if cityIDStr == "" {
-		h.logger.Error("Search ID parameter is empty")
+		h.logger.WarnContext(logCtx, "Search ID parameter is empty")
 
-		response := httpresponse.ErrorResponse{
+		response := httpresponse.Response{
 			Message: "Invalid city ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	cityID, err := strconv.ParseUint(cityIDStr, 10, 32)
 	if err != nil {
-		h.logger.Error("Invalid city ID")
-		response := httpresponse.ErrorResponse{
+		h.logger.WarnContext(logCtx, "Invalid city ID", slog.Any("error", err.Error()))
+		response := httpresponse.Response{
 			Message: "Invalid city ID",
 		}
-		httpresponse.SendJSONResponse(w, response, http.StatusBadRequest, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
 		return
 	}
 
 	city, err := h.client.SearchCityByID(context.Background(), &gen.SearchCityByIDRequest{Id: uint32(cityID)})
 	if err != nil {
-		logCtx := log.AppendCtx(context.Background(), slog.Uint64("ID", (cityID)))
 		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
-		httpresponse.SendJSONResponse(w, response, status, h.logger)
+		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
 
-	h.logger.DebugContext(logCtx, "Successfully retrieved cities")
+	h.logger.DebugContext(logCtx, "Successfully retrieved city by ID", slog.Any("city", city.City))
 
-	httpresponse.SendJSONResponse(w, city.City, http.StatusOK, h.logger)
+	cityResponse := models.City{
+		ID:   uint(city.City.Id),
+		Name: city.City.Name,
+	}
+	httpresponse.SendJSONResponse(logCtx, w, cityResponse, http.StatusOK, h.logger)
 }
