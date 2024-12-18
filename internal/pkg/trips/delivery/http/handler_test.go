@@ -483,7 +483,11 @@ package http
 // 			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 
 // 			var responseBody map[string]interface{}
-// 			json.NewDecoder(resp.Body).Decode(&responseBody)
+// 			err := json.NewDecoder(resp.Body).Decode(&responseBody)
+//			if err != nil {
+//    			t.Errorf("Failed to decode response body: %v", err)
+//    			return // или другое действие, например, продолжение теста с ошибкой
+//}
 
 // 			assert.Equal(t, tt.expectedBody, responseBody)
 // 		})

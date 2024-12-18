@@ -3,7 +3,9 @@ package dblogger
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
+	"reflect"
 	"time"
 )
 
@@ -25,7 +27,7 @@ func (d *DB) QueryContext(ctx context.Context, query string, args ...interface{}
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing QueryContext",
-		slog.Any("args", args),
+		slog.Any("args_info", argsInfo(args)),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
 	)
@@ -40,6 +42,8 @@ func (d *DB) ExecContext(ctx context.Context, query string, args ...interface{})
 
 	d.logger.DebugContext(ctx, "Executing ExecContext",
 		slog.Any("args", args),
+		slog.String("query", query),
+		slog.Any("args", argsInfo(args)),
 		slog.Duration("duration", duration),
 		slog.String("error", errToString(err)),
 	)
@@ -53,7 +57,7 @@ func (d *DB) QueryRowContext(ctx context.Context, query string, args ...interfac
 	duration := time.Since(start)
 
 	d.logger.DebugContext(ctx, "Executing QueryRowContext",
-		slog.Any("args", args),
+		slog.Any("args", argsInfo(args)),
 		slog.Duration("duration", duration),
 	)
 
@@ -82,4 +86,17 @@ func errToString(err error) string {
 		return err.Error()
 	}
 	return "nil"
+}
+
+func argsInfo(args []interface{}) string {
+	if len(args) == 0 {
+		return "no args"
+	}
+
+	types := make([]string, len(args))
+	for i, arg := range args {
+		types[i] = reflect.TypeOf(arg).String()
+	}
+
+	return fmt.Sprintf("%d args: [%s]", len(args), fmt.Sprintf("%s", types))
 }
