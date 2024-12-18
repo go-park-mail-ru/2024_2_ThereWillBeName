@@ -29,6 +29,7 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
+      - ./assets/achievements:/assets/achievements
     ports:
       - "8081:8081"
       - "8094:8094"
@@ -50,7 +51,7 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
-
+      - ./assets/achievements:/assets/achievements
     ports:
       - "8091:8091"
       - "50051:50051"
@@ -93,6 +94,7 @@ services:
     volumes:
       - ./assets/avatars:/assets/avatars
       - ./assets/photos:/assets/photos
+      - ./assets/achievements:/assets/achievements
     ports:
       - "50052:50052"
       - "8093:8093"

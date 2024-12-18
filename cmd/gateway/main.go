@@ -171,6 +171,7 @@ func main() {
 	user.Handle("/update/password", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdatePassword), logger)).Methods(http.MethodPut)
 	user.Handle("/profile", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.UpdateProfile), logger)).Methods(http.MethodPut)
 	user.Handle("/reviews", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(reviewsHandler.GetReviewsByUserIDHandler), logger)).Methods(http.MethodGet)
+	user.Handle("/achievements", middleware.MiddlewareAuth(jwtHandler, http.HandlerFunc(usersHandler.GetAchievements), logger)).Methods(http.MethodGet)
 
 	tripsHandler := httpTrips.NewTripHandler(tripsClient, logger)
 	trips := r.PathPrefix("/trips").Subrouter()
