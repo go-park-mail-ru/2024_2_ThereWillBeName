@@ -6,7 +6,10 @@ import (
 	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -82,7 +85,10 @@ func (h *GrpcTripsHandler) DeleteTrip(ctx context.Context, in *tripsGen.DeleteTr
 func (h *GrpcTripsHandler) GetTripsByUserID(ctx context.Context, in *tripsGen.GetTripsByUserIDRequest) (*tripsGen.GetTripsByUserIDResponse, error) {
 	trips, err := h.uc.GetTripsByUserID(context.Background(), uint(in.UserId), int(in.Limit), int(in.Offset))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, models.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "reviews for place ID %d not found", in.UserId)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get reviews: %v", err)
 	}
 	grpcTrips := make([]*tripsGen.Trip, 0, len(trips))
 	for _, trip := range trips {

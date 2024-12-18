@@ -7,12 +7,13 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -59,18 +60,37 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
 
-	if errors.Is(err, models.ErrNotFound) {
-
-		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action))
-
-		response := httpresponse.Response{
-			Message: "Invalid request",
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.NotFound:
+			logger.WarnContext(logContext, fmt.Sprintf("Error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Resource not found",
+			}
+			return response, http.StatusNotFound
+		case codes.InvalidArgument:
+			logger.WarnContext(logContext, fmt.Sprintf("Invalid argument during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Invalid request",
+			}
+			return response, http.StatusBadRequest
+		case codes.Internal:
+			logger.ErrorContext(logContext, fmt.Sprintf("Internal error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Internal server error",
+			}
+			return response, http.StatusInternalServerError
+		default:
+			logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown gRPC error", action))
+			response := httpresponse.Response{
+				Message: "Unknown error",
+			}
+			return response, http.StatusInternalServerError
 		}
-		return response, http.StatusNotFound
 	}
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown error", action))
 	response := httpresponse.Response{
-		Message: fmt.Sprintf("Failed to %s trip", action),
+		Message: "Unknown error",
 	}
 	return response, http.StatusInternalServerError
 }

@@ -93,7 +93,10 @@ func (s *GrpcReviewsHandler) GetReviewsByPlaceID(ctx context.Context, req *gen.G
 func (s *GrpcReviewsHandler) GetReviewsByUserID(ctx context.Context, req *gen.GetReviewsByUserIDRequest) (*gen.GetReviewsByUserIDResponse, error) {
 	reviews, err := s.uc.GetReviewsByUserID(ctx, uint(req.UserId), int(req.Limit), int(req.Offset))
 	if err != nil {
-		return nil, err
+		if errors.Is(err, models.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "reviews for place ID %d not found", req.UserId)
+		}
+		return nil, status.Errorf(codes.Internal, "failed to get reviews: %v", err)
 	}
 
 	reviewsResponse := make([]*gen.GetReviewByUserID, len(reviews))
