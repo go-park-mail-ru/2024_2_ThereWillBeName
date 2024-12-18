@@ -14,7 +14,7 @@ service Trips {
     rpc CreateSharingLink(CreateSharingLinkRequest) returns (CreateSharingLinkResponse);
     rpc GetSharingToken(GetSharingTokenRequest) returns (GetSharingTokenResponse);
     rpc GetTripBySharingToken(GetTripBySharingTokenRequest) returns (GetTripBySharingTokenResponse);
-    rpc AddUserToTrip(AddUserToTripRequest) returns (EmptyResponse);
+    rpc AddUserToTrip(AddUserToTripRequest) returns (AddUserToTripResponse);
     rpc GetSharingOption(GetSharingOptionRequest) returns (GetSharingOptionResponse);
 }
 
@@ -95,11 +95,16 @@ message GetTripBySharingTokenRequest {
 
 message GetTripBySharingTokenResponse {
     Trip trip = 1;
+    repeated UserProfile users = 2;
 }
 
 message AddUserToTripRequest {
     uint32 trip_id = 1;
     uint32 user_id = 2;
+}
+
+message AddUserToTripResponse {
+    bool added_user = 1;
 }
 
 message GetSharingOptionRequest {

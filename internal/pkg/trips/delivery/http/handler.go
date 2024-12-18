@@ -7,12 +7,13 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/middleware"
 	tripsGen "2024_2_ThereWillBeName/internal/pkg/trips/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -59,18 +60,37 @@ func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Conte
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
 
-	if errors.Is(err, models.ErrNotFound) {
-
-		logger.ErrorContext(logContext, fmt.Sprintf("Error during %s operation", action))
-
-		response := httpresponse.Response{
-			Message: "Invalid request",
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.NotFound:
+			logger.WarnContext(logContext, fmt.Sprintf("Error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Resource not found",
+			}
+			return response, http.StatusNotFound
+		case codes.InvalidArgument:
+			logger.WarnContext(logContext, fmt.Sprintf("Invalid argument during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Invalid request",
+			}
+			return response, http.StatusBadRequest
+		case codes.Internal:
+			logger.ErrorContext(logContext, fmt.Sprintf("Internal error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Internal server error",
+			}
+			return response, http.StatusInternalServerError
+		default:
+			logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown gRPC error", action))
+			response := httpresponse.Response{
+				Message: "Unknown error",
+			}
+			return response, http.StatusInternalServerError
 		}
-		return response, http.StatusNotFound
 	}
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s trips", action))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown error", action))
 	response := httpresponse.Response{
-		Message: fmt.Sprintf("Failed to %s trip", action),
+		Message: "Unknown error",
 	}
 	return response, http.StatusInternalServerError
 }
@@ -161,7 +181,7 @@ func (h *TripHandler) CreateTripHandler(w http.ResponseWriter, r *http.Request) 
 
 	h.logger.DebugContext(logCtx, "Successfully created a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip created successfully"}, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip created successfully"}, http.StatusCreated, h.logger)
 }
 
 // UpdateTripHandler godoc
@@ -282,7 +302,7 @@ func (h *TripHandler) UpdateTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully updated a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip updated successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip updated successfully"}, http.StatusOK, h.logger)
 }
 
 // DeleteTripHandler godoc
@@ -336,7 +356,7 @@ func (h *TripHandler) DeleteTripHandler(w http.ResponseWriter, r *http.Request) 
 	}
 	h.logger.DebugContext(logCtx, "Successfully deleted a trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Trip deleted successfully"}, http.StatusNoContent, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Trip deleted successfully"}, http.StatusNoContent, h.logger)
 }
 
 // GetTripsByUserIDHandler godoc
@@ -477,9 +497,10 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
 
 	// Ответ с данными поездки и пользователей
-	response := models.TripResponse{
-		Trip:  trip,
-		Users: users,
+	response := models.SharedTripResponse{
+		Trip:      trip,
+		Users:     users,
+		AddedUser: false,
 	}
 	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
@@ -559,7 +580,7 @@ func (h *TripHandler) AddPlaceToTripHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully added place to trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Place added to trip successfully"}, http.StatusCreated, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Place added to trip successfully"}, http.StatusCreated, h.logger)
 }
 
 func (h *TripHandler) AddPhotosToTripHandler(w http.ResponseWriter, r *http.Request) {
@@ -666,7 +687,7 @@ func (h *TripHandler) DeletePhotoHandler(w http.ResponseWriter, r *http.Request)
 
 	h.logger.DebugContext(logCtx, "Successfully deleted a photo from trip")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Photo deleted successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Photo deleted successfully"}, http.StatusOK, h.logger)
 }
 
 func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Request) {
@@ -726,51 +747,72 @@ func (h *TripHandler) CreateSharingLinkHandler(w http.ResponseWriter, r *http.Re
 
 func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Request) {
 	token := mux.Vars(r)["sharing_token"]
+
 	logCtx := log.LogRequestStart(r.Context(), r.Method, r.RequestURI)
 
 	req := &tripsGen.GetTripBySharingTokenRequest{
 		Token: token,
 	}
-	trip, err := h.client.GetTripBySharingToken(r.Context(), req)
+	tripResponse, err := h.client.GetTripBySharingToken(r.Context(), req)
 	if err != nil {
-		response, status := ErrorCheck(err, "retrieve trip by sharing token", h.logger, logCtx)
+		response, status := ErrorCheck(err, "retrieve", h.logger, logCtx)
 		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 		return
 	}
-	userID, ok := r.Context().Value(middleware.IdKey).(uint)
-	if !ok {
 
-		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
+	trip := models.Trip{
+		ID:          uint(tripResponse.Trip.Id),
+		UserID:      uint(tripResponse.Trip.UserId),
+		Name:        tripResponse.Trip.Name,
+		Description: tripResponse.Trip.Description,
+		CityID:      uint(tripResponse.Trip.CityId),
+		StartDate:   tripResponse.Trip.StartDate,
+		EndDate:     tripResponse.Trip.EndDate,
+		Private:     tripResponse.Trip.Private,
+		Photos:      tripResponse.Trip.Photos,
+	}
 
-		response := httpresponse.Response{
-			Message: "User is not authorized",
+	var users []models.UserProfile
+	for _, user := range tripResponse.Users {
+		users = append(users, models.UserProfile{
+			Login:      user.Login,
+			AvatarPath: user.AvatarPath,
+			Email:      user.Email,
+		})
+	}
+
+	addedUser := false
+
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr != "" {
+		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			response := httpresponse.Response{
+				Message: "Invalid user id",
+			}
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
+			return
 		}
-		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
-		return
-	}
-	addUserReq := &tripsGen.AddUserToTripRequest{
-		TripId: trip.Trip.Id,
-		UserId: uint32(userID),
-	}
-	_, err = h.client.AddUserToTrip(r.Context(), addUserReq)
-	if err != nil {
-		response, status := ErrorCheck(err, "add user to trip", h.logger, logCtx)
-		httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
-		return
-	}
-	h.logger.DebugContext(logCtx, "Successfully got trip by sharing token")
-	tripResponse := models.Trip{
-		ID:          uint(trip.Trip.Id),
-		UserID:      userID,
-		Name:        trip.Trip.Name,
-		Description: trip.Trip.Description,
-		CityID:      uint(trip.Trip.CityId),
-		StartDate:   trip.Trip.StartDate,
-		EndDate:     trip.Trip.EndDate,
-		Private:     trip.Trip.Private,
-		Photos:      trip.Trip.Photos,
-		CreatedAt:   trip.Trip.CreatedAt.AsTime(),
+		addUserReq := &tripsGen.AddUserToTripRequest{
+			TripId: uint32(trip.ID),
+			UserId: uint32(userID),
+		}
+		addUserResp, err := h.client.AddUserToTrip(r.Context(), addUserReq)
+		if err != nil {
+			response, status := ErrorCheck(err, "add user to trip", h.logger, logCtx)
+			httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
+			return
+		}
+		addedUser = addUserResp.AddedUser
 	}
 
-	httpresponse.SendJSONResponse(logCtx, w, tripResponse, http.StatusOK, h.logger)
+	response := models.SharedTripResponse{
+		Trip:      trip,
+		Users:     users,
+		AddedUser: addedUser,
+	}
+
+	h.logger.DebugContext(logCtx, "Successfully got trip by sharing token")
+
+	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }

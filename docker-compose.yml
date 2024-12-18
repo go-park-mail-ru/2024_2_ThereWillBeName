@@ -103,25 +103,6 @@ services:
     restart: unless-stopped
     networks:
       - my_network
-  survey:
-    container_name: survey
-    build:
-      context: .
-      dockerfile: build/survey.Dockerfile
-    env_file:
-      - .env
-    environment:
-      - AVATAR_STORAGE_PATH=/assets/avatars
-      - LOG_LEVEL=Debug
-    volumes:
-      - ./assets/avatars:/assets/avatars
-      - ./assets/photos:/assets/photos
-    ports:
-      - "50054:50054"
-    depends_on:
-      - tripdb
-    networks:
-      - my_network
   prometheus:
     image: prom/prometheus:latest
     volumes:

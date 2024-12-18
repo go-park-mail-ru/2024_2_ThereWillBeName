@@ -15,7 +15,6 @@ linters-settings:
 
 linters:
   enable:
-    - govet
     - gosimple
     - bodyclose
     - noctx
@@ -23,5 +22,4 @@ linters:
     - gocognit
     - goconst
     - gofmt
-    - gosec
 

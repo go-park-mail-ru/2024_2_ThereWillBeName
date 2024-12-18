@@ -8,13 +8,15 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/reviews/delivery/grpc/gen"
 	"2024_2_ThereWillBeName/internal/validator"
 	"context"
-	"errors"
 	"fmt"
-	"github.com/mailru/easyjson"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"html/template"
 	"log/slog"
 	"net/http"
 	"strconv"
+
+	"github.com/mailru/easyjson"
 
 	"github.com/gorilla/mux"
 )
@@ -31,16 +33,39 @@ func NewReviewHandler(client gen.ReviewsClient, logger *slog.Logger) *ReviewHand
 func ErrorCheck(err error, action string, logger *slog.Logger, ctx context.Context) (httpresponse.Response, int) {
 	logContext := log.AppendCtx(ctx, slog.String("action", action))
 	logContext = log.AppendCtx(logContext, slog.Any("error", err.Error()))
-	if errors.Is(err, models.ErrNotFound) {
-		logger.WarnContext(logContext, fmt.Sprintf("Error during %s operation", action))
-		response := httpresponse.Response{
-			Message: "Invalid request",
+
+	// Проверяем, является ли ошибка gRPC-ошибкой
+	if st, ok := status.FromError(err); ok {
+		switch st.Code() {
+		case codes.NotFound:
+			logger.WarnContext(logContext, fmt.Sprintf("Error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Resource not found",
+			}
+			return response, http.StatusNotFound
+		case codes.InvalidArgument:
+			logger.WarnContext(logContext, fmt.Sprintf("Invalid argument during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Invalid request",
+			}
+			return response, http.StatusBadRequest
+		case codes.Internal:
+			logger.ErrorContext(logContext, fmt.Sprintf("Internal error during %s operation", action))
+			response := httpresponse.Response{
+				Message: "Internal server error",
+			}
+			return response, http.StatusInternalServerError
+		default:
+			logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown gRPC error", action))
+			response := httpresponse.Response{
+				Message: "Unknown error",
+			}
+			return response, http.StatusInternalServerError
 		}
-		return response, http.StatusNotFound
 	}
-	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s reviews", action))
+	logger.ErrorContext(logContext, fmt.Sprintf("Failed to %s due to unknown error", action))
 	response := httpresponse.Response{
-		Message: fmt.Sprintf("Failed to %s review", action),
+		Message: "Unknown error",
 	}
 	return response, http.StatusInternalServerError
 }
@@ -223,7 +248,7 @@ func (h *ReviewHandler) UpdateReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully updated a review")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Successfully updated a review"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Successfully updated a review"}, http.StatusOK, h.logger)
 }
 
 // DeleteReviewHandler godoc
@@ -278,7 +303,7 @@ func (h *ReviewHandler) DeleteReviewHandler(w http.ResponseWriter, r *http.Reque
 
 	h.logger.DebugContext(logCtx, "Successfully deleted a review")
 
-	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{"Review deleted successfully"}, http.StatusOK, h.logger)
+	httpresponse.SendJSONResponse(logCtx, w, httpresponse.Response{Message: "Review deleted successfully"}, http.StatusOK, h.logger)
 }
 
 // GetReviewsByPlaceIDHandler godoc

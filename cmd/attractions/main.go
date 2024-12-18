@@ -55,7 +55,9 @@ func main() {
 	logger := setupLogger()
 
 	db, err := sql.Open("postgres", fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", cfg.Database.DbHost, cfg.Database.DbPort, cfg.Database.DbUser, cfg.Database.DbPass, cfg.Database.DbName))
-
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
 	err = db.Ping()
 	if err != nil {
 		log.Fatalf("failed to ping database: %v", err)
