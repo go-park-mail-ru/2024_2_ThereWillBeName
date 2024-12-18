@@ -477,9 +477,10 @@ func (h *TripHandler) GetTripHandler(w http.ResponseWriter, r *http.Request) {
 	h.logger.DebugContext(logCtx, "Successfully got trip by ID")
 
 	// Ответ с данными поездки и пользователей
-	response := models.TripResponse{
-		Trip:  trip,
-		Users: users,
+	response := models.SharedTripResponse{
+		Trip:      trip,
+		Users:     users,
+		AddedUser: false,
 	}
 	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
