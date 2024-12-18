@@ -766,6 +766,13 @@ func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Reque
 	userIDStr := r.URL.Query().Get("user_id")
 	if userIDStr != "" {
 		userID, err := strconv.Atoi(userIDStr)
+		if err != nil {
+			response := httpresponse.Response{
+				Message: "Invalid user id",
+			}
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
+			return
+		}
 		addUserReq := &tripsGen.AddUserToTripRequest{
 			TripId: uint32(trip.ID),
 			UserId: uint32(userID),
