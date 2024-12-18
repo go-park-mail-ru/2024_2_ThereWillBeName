@@ -278,16 +278,18 @@ func (h *GrpcTripsHandler) GetTripBySharingToken(ctx context.Context, in *tripsG
 	}, nil
 }
 
-func (h *GrpcTripsHandler) AddUserToTrip(ctx context.Context, in *tripsGen.AddUserToTripRequest) (*tripsGen.EmptyResponse, error) {
+func (h *GrpcTripsHandler) AddUserToTrip(ctx context.Context, in *tripsGen.AddUserToTripRequest) (*tripsGen.AddUserToTripResponse, error) {
 	tripId := in.TripId
 	userId := in.UserId
 
-	err := h.uc.AddUserToTrip(ctx, uint(tripId), uint(userId))
+	addedUser, err := h.uc.AddUserToTrip(ctx, uint(tripId), uint(userId))
 	if err != nil {
 		h.logger.Error("Failed to add user to trip", slog.Any("error", err))
 		return nil, err
 	}
-	return &tripsGen.EmptyResponse{}, nil
+	return &tripsGen.AddUserToTripResponse{
+		AddedUser: addedUser,
+	}, nil
 }
 
 func (h *GrpcTripsHandler) GetSharingOption(ctx context.Context, in *tripsGen.GetSharingOptionRequest) (*tripsGen.GetSharingOptionResponse, error) {
