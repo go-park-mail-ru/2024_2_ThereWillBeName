@@ -95,6 +95,7 @@ message GetTripBySharingTokenRequest {
 
 message GetTripBySharingTokenResponse {
     Trip trip = 1;
+    repeated UserProfile users = 2;
 }
 
 message AddUserToTripRequest {

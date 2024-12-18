@@ -127,12 +127,12 @@ func (u *TripsUsecaseImpl) GetSharingToken(ctx context.Context, tripID uint) (mo
 	return token, nil
 }
 
-func (u *TripsUsecaseImpl) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
-	trip, err := u.tripRepo.GetTripBySharingToken(ctx, token)
+func (u *TripsUsecaseImpl) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, []models.UserProfile, error) {
+	trip, users, err := u.tripRepo.GetTripBySharingToken(ctx, token)
 	if err != nil {
-		return models.Trip{}, fmt.Errorf("failed to retrieve trip by sharing token from database: %w", err)
+		return models.Trip{}, nil, fmt.Errorf("failed to retrieve trip by sharing token from database: %w", err)
 	}
-	return trip, nil
+	return trip, users, nil
 }
 
 func (u *TripsUsecaseImpl) AddUserToTrip(ctx context.Context, tripId, userId uint) error {

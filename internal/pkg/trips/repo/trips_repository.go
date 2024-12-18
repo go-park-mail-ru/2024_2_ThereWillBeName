@@ -325,7 +325,7 @@ func (r *TripRepository) GetSharingToken(ctx context.Context, tripID uint) (mode
 	return token, nil
 }
 
-func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
+func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, []models.UserProfile, error) {
 	tripIdQuery := `SELECT trip_id FROM sharing_token WHERE token = $1`
 	var tripID int
 	err := r.db.QueryRowContext(ctx, tripIdQuery, token).Scan(
@@ -333,9 +333,9 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Trip{}, models.ErrNotFound
+			return models.Trip{}, nil, models.ErrNotFound
 		}
-		return models.Trip{}, fmt.Errorf("failed to retrive trip ID by sharing token: %w", err)
+		return models.Trip{}, nil, fmt.Errorf("failed to retrive trip ID by sharing token: %w", err)
 	}
 
 	query := `SELECT id, user_id, name, description, city_id, start_date, end_date, private, created_at FROM trip WHERE id = $1`
@@ -353,11 +353,44 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return trip, models.ErrNotFound
+			return trip, nil, models.ErrNotFound
 		}
-		return trip, fmt.Errorf("failed to get trip: %w", err)
+		return trip, nil, fmt.Errorf("failed to get trip: %w", err)
 	}
-	return trip, nil
+
+	userIDQuery := `SELECT user_id FROM user_shared_trip WHERE trip_id = $1`
+	usersRows, err := r.db.QueryContext(ctx, userIDQuery, tripID)
+	if err != nil {
+		return trip, nil, fmt.Errorf("failed to get user ids for trip: %w", err)
+	}
+	defer usersRows.Close()
+
+	var userIDs []uint
+	for usersRows.Next() {
+		var userID uint
+		if err := usersRows.Scan(&userID); err != nil {
+			return trip, nil, fmt.Errorf("failed to scan user_id: %w", err)
+		}
+		userIDs = append(userIDs, userID)
+	}
+
+	// Для каждого user_id получить информацию о пользователе
+	var userProfiles []models.UserProfile
+	for _, userID := range userIDs {
+		userQuery := `SELECT login, avatar_path, email FROM "user" WHERE id = $1`
+		var userProfile models.UserProfile
+		err := r.db.QueryRowContext(ctx, userQuery, userID).Scan(
+			&userProfile.Login,
+			&userProfile.AvatarPath,
+			&userProfile.Email,
+		)
+		if err != nil {
+			return trip, nil, fmt.Errorf("failed to get user profile for user_id %d: %w", userID, err)
+		}
+		userProfiles = append(userProfiles, userProfile)
+	}
+
+	return trip, userProfiles, nil
 }
 
 func (r *TripRepository) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
