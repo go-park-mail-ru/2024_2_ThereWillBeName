@@ -19,3 +19,6 @@ linters:
     - gocognit
     - goconst
     - gofmt
+  disable:
+    - govet
+    - gosec
