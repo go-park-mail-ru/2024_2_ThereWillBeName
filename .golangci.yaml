@@ -16,4 +16,14 @@ linters-settings:
 linters:
   disable:
     - all
-    
+    - bodyclose
+    - noctx
+    - errcheck
+    - gocognit
+    - goconst
+    - gofmt
+  disable:
+    - govet
+    - golint
+    - gocritic
+
