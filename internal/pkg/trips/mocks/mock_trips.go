@@ -180,12 +180,13 @@ func (mr *MockTripsUsecaseMockRecorder) GetTrip(ctx, tripID interface{}) *gomock
 }
 
 // GetTripBySharingToken mocks base method.
-func (m *MockTripsUsecase) GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, error) {
+func (m *MockTripsUsecase) GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, []models.UserProfile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTripBySharingToken", ctx, troken)
 	ret0, _ := ret[0].(models.Trip)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]models.UserProfile)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetTripBySharingToken indicates an expected call of GetTripBySharingToken.
@@ -391,12 +392,13 @@ func (mr *MockTripsRepoMockRecorder) GetTrip(ctx, tripID interface{}) *gomock.Ca
 }
 
 // GetTripBySharingToken mocks base method.
-func (m *MockTripsRepo) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, error) {
+func (m *MockTripsRepo) GetTripBySharingToken(ctx context.Context, token string) (models.Trip, []models.UserProfile, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTripBySharingToken", ctx, token)
 	ret0, _ := ret[0].(models.Trip)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].([]models.UserProfile)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetTripBySharingToken indicates an expected call of GetTripBySharingToken.

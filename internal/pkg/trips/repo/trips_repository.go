@@ -393,30 +393,30 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 	return trip, userProfiles, nil
 }
 
-func (r *TripRepository) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
+func (r *TripRepository) AddUserToTrip(ctx context.Context, tripId, userId uint) (bool, error) {
 	findOptionQuery := `SELECT sharing_option FROM sharing_token WHERE trip_id = $1`
 	var sharingOption string
 	err := r.db.QueryRowContext(ctx, findOptionQuery, tripId).Scan(&sharingOption)
 	if err != nil {
-		return fmt.Errorf("failed to find sharing option: %w", err)
+		return false, fmt.Errorf("failed to find sharing option: %w", err)
 	}
 	findUserQuery := `SELECT COUNT(*) FROM user_shared_trip WHERE user_id = $1 AND trip_id = $2 and sharing_option = $3`
 	var count int
 	err = r.db.QueryRowContext(ctx, findUserQuery, userId, tripId, sharingOption).Scan(&count)
 	if err != nil {
-		return fmt.Errorf("failed to find shared trip for this user: %w", err)
+		return false, fmt.Errorf("failed to find shared trip for this user: %w", err)
 	}
 	if count > 0 {
-		return nil
+		return false, nil
 	}
 
 	query := `INSERT INTO user_shared_trip (trip_id, user_id, sharing_option, created_at)
         VALUES ($1, $2, $3, NOW())`
 	_, err = r.db.ExecContext(ctx, query, tripId, userId, sharingOption)
 	if err != nil {
-		return fmt.Errorf("failed to add user to a trip: %w", err)
+		return false, fmt.Errorf("failed to add user to a trip: %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 func (r *TripRepository) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {

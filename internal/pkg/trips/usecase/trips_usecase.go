@@ -135,17 +135,17 @@ func (u *TripsUsecaseImpl) GetTripBySharingToken(ctx context.Context, token stri
 	return trip, users, nil
 }
 
-func (u *TripsUsecaseImpl) AddUserToTrip(ctx context.Context, tripId, userId uint) error {
-	err := u.tripRepo.AddUserToTrip(ctx, tripId, userId)
+func (u *TripsUsecaseImpl) AddUserToTrip(ctx context.Context, tripId, userId uint) (bool, error) {
+	addedUser, err := u.tripRepo.AddUserToTrip(ctx, tripId, userId)
 	if err != nil {
 		if errors.Is(err, models.ErrNotFound) {
-			return fmt.Errorf("invalid request: %w", models.ErrNotFound)
+			return false, fmt.Errorf("invalid request: %w", models.ErrNotFound)
 		} else {
-			return fmt.Errorf("internal error: %w", models.ErrInternal)
+			return false, fmt.Errorf("internal error: %w", models.ErrInternal)
 		}
 	}
 
-	return nil
+	return addedUser, nil
 }
 
 func (u *TripsUsecaseImpl) GetSharingOption(ctx context.Context, userId, tripId uint) (string, error) {

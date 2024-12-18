@@ -17,7 +17,7 @@ type TripsUsecase interface {
 	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
 	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
 	GetTripBySharingToken(ctx context.Context, troken string) (models.Trip, []models.UserProfile, error)
-	AddUserToTrip(ctx context.Context, tripId, userId uint) error
+	AddUserToTrip(ctx context.Context, tripId, userId uint) (bool, error)
 	GetSharingOption(ctx context.Context, userId, tripId uint) (string, error)
 }
 
@@ -33,6 +33,6 @@ type TripsRepo interface {
 	CreateSharingLink(ctx context.Context, tripID uint, token string, sharingOption string) error
 	GetSharingToken(ctx context.Context, tripID uint) (models.SharingToken, error)
 	GetTripBySharingToken(ctx context.Context, token string) (models.Trip, []models.UserProfile, error)
-	AddUserToTrip(ctx context.Context, tripId, userId uint) error
+	AddUserToTrip(ctx context.Context, tripId, userId uint) (bool, error)
 	GetSharingOption(ctx context.Context, userId, tripId uint) (string, error)
 }

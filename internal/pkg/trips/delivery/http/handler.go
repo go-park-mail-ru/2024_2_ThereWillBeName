@@ -777,13 +777,13 @@ func (h *TripHandler) GetTripBySharingToken(w http.ResponseWriter, r *http.Reque
 			TripId: uint32(trip.ID),
 			UserId: uint32(userID),
 		}
-		_, err = h.client.AddUserToTrip(r.Context(), addUserReq)
+		addUserResp, err := h.client.AddUserToTrip(r.Context(), addUserReq)
 		if err != nil {
 			response, status := ErrorCheck(err, "add user to trip", h.logger, logCtx)
 			httpresponse.SendJSONResponse(logCtx, w, response, status, h.logger)
 			return
 		}
-		addedUser = true
+		addedUser = addUserResp.AddedUser
 	}
 
 	response := models.SharedTripResponse{

@@ -49,7 +49,7 @@ type TripsClient interface {
 	CreateSharingLink(ctx context.Context, in *CreateSharingLinkRequest, opts ...grpc.CallOption) (*CreateSharingLinkResponse, error)
 	GetSharingToken(ctx context.Context, in *GetSharingTokenRequest, opts ...grpc.CallOption) (*GetSharingTokenResponse, error)
 	GetTripBySharingToken(ctx context.Context, in *GetTripBySharingTokenRequest, opts ...grpc.CallOption) (*GetTripBySharingTokenResponse, error)
-	AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*EmptyResponse, error)
+	AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*AddUserToTripResponse, error)
 	GetSharingOption(ctx context.Context, in *GetSharingOptionRequest, opts ...grpc.CallOption) (*GetSharingOptionResponse, error)
 }
 
@@ -171,9 +171,9 @@ func (c *tripsClient) GetTripBySharingToken(ctx context.Context, in *GetTripBySh
 	return out, nil
 }
 
-func (c *tripsClient) AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*EmptyResponse, error) {
+func (c *tripsClient) AddUserToTrip(ctx context.Context, in *AddUserToTripRequest, opts ...grpc.CallOption) (*AddUserToTripResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EmptyResponse)
+	out := new(AddUserToTripResponse)
 	err := c.cc.Invoke(ctx, Trips_AddUserToTrip_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ type TripsServer interface {
 	CreateSharingLink(context.Context, *CreateSharingLinkRequest) (*CreateSharingLinkResponse, error)
 	GetSharingToken(context.Context, *GetSharingTokenRequest) (*GetSharingTokenResponse, error)
 	GetTripBySharingToken(context.Context, *GetTripBySharingTokenRequest) (*GetTripBySharingTokenResponse, error)
-	AddUserToTrip(context.Context, *AddUserToTripRequest) (*EmptyResponse, error)
+	AddUserToTrip(context.Context, *AddUserToTripRequest) (*AddUserToTripResponse, error)
 	GetSharingOption(context.Context, *GetSharingOptionRequest) (*GetSharingOptionResponse, error)
 	mustEmbedUnimplementedTripsServer()
 }
@@ -251,7 +251,7 @@ func (UnimplementedTripsServer) GetSharingToken(context.Context, *GetSharingToke
 func (UnimplementedTripsServer) GetTripBySharingToken(context.Context, *GetTripBySharingTokenRequest) (*GetTripBySharingTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTripBySharingToken not implemented")
 }
-func (UnimplementedTripsServer) AddUserToTrip(context.Context, *AddUserToTripRequest) (*EmptyResponse, error) {
+func (UnimplementedTripsServer) AddUserToTrip(context.Context, *AddUserToTripRequest) (*AddUserToTripResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AddUserToTrip not implemented")
 }
 func (UnimplementedTripsServer) GetSharingOption(context.Context, *GetSharingOptionRequest) (*GetSharingOptionResponse, error) {
