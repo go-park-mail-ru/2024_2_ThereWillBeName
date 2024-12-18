@@ -3,10 +3,12 @@ package repo
 import (
 	"2024_2_ThereWillBeName/internal/models"
 	"2024_2_ThereWillBeName/internal/pkg/dblogger"
+	"2024_2_ThereWillBeName/internal/pkg/outbox"
 	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/Masterminds/squirrel"
 	"github.com/lib/pq"
@@ -96,6 +98,13 @@ func (r *UserRepositoryImpl) UpdateAvatarPathByUserId(ctx context.Context, userI
 		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound)
 	}
 
+	payload := fmt.Sprintf(`{"user_id": %d}`, userID)
+
+	err = outbox.InsertOutboxRecord(ctx, r.db, "avatar_uploaded", payload)
+	if err != nil {
+		log.Printf("failed to insert outbox record")
+	}
+
 	return nil
 }
 
@@ -159,4 +168,32 @@ func (r UserRepositoryImpl) UpdateProfile(ctx context.Context, userID uint, logi
 		return models.ErrNotFound
 	}
 	return nil
+}
+
+func (r *UserRepositoryImpl) GetAchievements(ctx context.Context, userID uint) ([]models.Achievement, error) {
+	query := `SELECT a.id, a.name, a.icon_path
+		FROM achievement a
+		JOIN user_achievement ua ON a.id = ua.achievement_id
+		WHERE ua.user_id = $1`
+
+	rows, err := r.db.QueryContext(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to retrieve achievements: %w", models.ErrInternal)
+	}
+	defer rows.Close()
+
+	var achievements []models.Achievement
+	for rows.Next() {
+		var achievement models.Achievement
+		if err := rows.Scan(&achievement.ID, &achievement.Name, &achievement.IconPath); err != nil {
+			return nil, fmt.Errorf("failed to scan achievement row: %w", models.ErrInternal)
+		}
+		achievements = append(achievements, achievement)
+	}
+
+	if len(achievements) == 0 {
+		return nil, fmt.Errorf("no achievements found for user with ID %d: %w", userID, models.ErrNotFound)
+	}
+
+	return achievements, nil
 }

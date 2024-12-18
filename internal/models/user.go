@@ -40,6 +40,15 @@ type UserResponse struct {
 	Profile UserProfile `json:"profile"`
 }
 
+type Achievement struct {
+	ID       uint   `json:"id"`
+	Name     string `json:"name"`
+	IconPath string `json:"icon_path"`
+}
+
+//easyjson:json
+type AchievementList []Achievement
+
 func ValidateUser(v *validator.Validator, user *User) {
 	// v.Check(user.Login != "", "login", "must be provided")
 	v.Check(user.Password != "", "password", "must be provided")

@@ -55,7 +55,9 @@ require (
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 // indirect
 	github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 // indirect
+
 	github.com/mailru/easyjson v0.7.7
+
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/swaggo/swag v1.16.3
 	golang.org/x/net v0.30.0 // indirect

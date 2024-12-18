@@ -9,6 +9,9 @@ run:
 linters-settings:
   gocognit:
     min-complexity: 60
+  golint:
+    skip-dirs:
+      - "internal/models"
 
 linters:
   enable:

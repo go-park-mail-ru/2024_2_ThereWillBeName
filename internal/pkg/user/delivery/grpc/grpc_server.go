@@ -5,6 +5,7 @@ import (
 	"2024_2_ThereWillBeName/internal/pkg/user"
 	"2024_2_ThereWillBeName/internal/pkg/user/delivery/grpc/gen"
 	"context"
+	"log"
 	"log/slog"
 )
 
@@ -99,4 +100,22 @@ func (h *GrpcUserHandler) UpdateProfile(ctx context.Context, in *gen.UpdateProfi
 	}
 
 	return &gen.EmptyResponse{}, nil
+}
+
+func (h *GrpcUserHandler) GetAchievements(ctx context.Context, in *gen.GetAchievementsRequest) (*gen.GetAchievementsResponse, error) {
+	achievements, err := h.usecase.GetAchievements(ctx, uint(in.Id))
+	if err != nil {
+		return nil, err
+	}
+	log.Println(achievements)
+
+	achievementsResponse := make([]*gen.Achievement, len(achievements))
+	for i, achievement := range achievements {
+		achievementsResponse[i] = &gen.Achievement{
+			Id:       uint32(achievement.ID),
+			Name:     achievement.Name,
+			IconPath: achievement.IconPath,
+		}
+	}
+	return &gen.GetAchievementsResponse{Achievements: achievementsResponse}, nil
 }

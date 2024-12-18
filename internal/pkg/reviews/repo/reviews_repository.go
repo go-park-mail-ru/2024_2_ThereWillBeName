@@ -7,6 +7,8 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+
 	_ "github.com/lib/pq"
 )
 
@@ -31,17 +33,17 @@ func (r *ReviewRepository) CreateReview(ctx context.Context, review models.Revie
 		return models.GetReview{}, fmt.Errorf("failed to create review: %w", models.ErrInternal)
 	}
 
-	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
-
-	err = outbox.InsertOutboxRecord(ctx, r.db, "review_created", payload)
-	if err != nil {
-		return models.GetReview{}, fmt.Errorf("failed to insert outbox record: %w", models.ErrInternal)
-	}
-
 	// Теперь, после успешного создания отзыва, мы можем использовать его ID, чтобы получить полные данные
 	createdReview, err := r.GetReview(ctx, uint(reviewID))
 	if err != nil {
 		return models.GetReview{}, fmt.Errorf("failed to retrieve created review details: %w", err)
+	}
+
+	payload := fmt.Sprintf(`{"place_id": %d, "user_id": %d}`, review.PlaceID, review.UserID)
+
+	err = outbox.InsertOutboxRecord(ctx, r.db, "review_created", payload)
+	if err != nil {
+		log.Printf("failed to insert outbox record")
 	}
 
 	return createdReview, nil
@@ -66,7 +68,7 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 		return fmt.Errorf("no rows were updated: %w", models.ErrNotFound)
 	}
 
-	payload := fmt.Sprintf(`{"place_id": %d}`, review.PlaceID)
+	payload := fmt.Sprintf(`{"place_id": %d, "user_id": %d}`, review.PlaceID, review.UserID)
 
 	err = outbox.InsertOutboxRecord(ctx, r.db, "review_updated", payload)
 
@@ -78,11 +80,11 @@ func (r *ReviewRepository) UpdateReview(ctx context.Context, review models.Revie
 }
 
 func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) error {
-	var placeID int
+	var placeID, userID int
 
-	query := `DELETE FROM review WHERE id = $1 RETURNING place_id`
+	query := `DELETE FROM review WHERE id = $1 RETURNING place_id, user_id`
 
-	err := r.db.QueryRowContext(ctx, query, reviewID).Scan(&placeID)
+	err := r.db.QueryRowContext(ctx, query, reviewID).Scan(&placeID, &userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fmt.Errorf("review not found: %w", models.ErrNotFound)
@@ -90,7 +92,7 @@ func (r *ReviewRepository) DeleteReview(ctx context.Context, reviewID uint) erro
 		return fmt.Errorf("failed to delete review: %w", models.ErrInternal)
 	}
 
-	payload := fmt.Sprintf(`{"place_id": %d}`, placeID)
+	payload := fmt.Sprintf(`{"place_id": %d, "user_id": %d}`, placeID, userID)
 
 	err = outbox.InsertOutboxRecord(ctx, r.db, "review_deleted", payload)
 

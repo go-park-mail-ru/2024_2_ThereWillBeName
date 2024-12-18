@@ -134,3 +134,14 @@ func (a *UserUsecaseImpl) UpdatePassword(ctx context.Context, userData models.Us
 func (a *UserUsecaseImpl) UpdateProfile(ctx context.Context, userID uint, login, email string) error {
 	return a.repo.UpdateProfile(ctx, userID, login, email)
 }
+
+func (a *UserUsecaseImpl) GetAchievements(ctx context.Context, userID uint) ([]models.Achievement, error) {
+	achievements, err := a.repo.GetAchievements(ctx, userID)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			return nil, fmt.Errorf("invalid request: %w", models.ErrNotFound)
+		}
+		return nil, fmt.Errorf("internal error: %w", models.ErrInternal)
+	}
+	return achievements, nil
+}

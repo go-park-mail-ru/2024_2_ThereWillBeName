@@ -685,3 +685,67 @@ func (h *Handler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	}
 	httpresponse.SendJSONResponse(logCtx, w, response, http.StatusOK, h.logger)
 }
+
+func (h *Handler) GetAchievements(w http.ResponseWriter, r *http.Request) {
+	logCtx := r.Context()
+
+	vars := mux.Vars(r)
+	userIDStr := vars["userID"]
+
+	logCtx = log.AppendCtx(logCtx, slog.String("user_id", userIDStr))
+
+	h.logger.DebugContext(logCtx, "Handling request for getting achivements by user ID")
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 64)
+	if err != nil {
+		h.logger.WarnContext(logCtx, "Failed to parse user ID", slog.Any("error", err.Error()))
+		response := httpresponse.Response{
+			Message: "Invalid user ID",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusBadRequest, h.logger)
+		return
+	}
+	_, ok := r.Context().Value(middleware.IdKey).(uint)
+	if !ok {
+
+		h.logger.WarnContext(logCtx, "Failed to retrieve user ID from context")
+
+		response := httpresponse.Response{
+			Message: "User is not authorized",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusUnauthorized, h.logger)
+		return
+	}
+
+	achievements, err := h.client.GetAchievements(r.Context(), &gen.GetAchievementsRequest{Id: uint32(userID)})
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			h.logger.ErrorContext(logCtx, "achievements are not found")
+
+			response := httpresponse.Response{
+				Message: "Achievements are not found",
+			}
+			httpresponse.SendJSONResponse(logCtx, w, response, http.StatusNotFound, h.logger)
+			return
+		}
+
+		h.logger.ErrorContext(logCtx, "Error retrieving achievements", "error", err)
+
+		response := httpresponse.Response{
+			Message: "Failed to retrieve user's achievements",
+		}
+		httpresponse.SendJSONResponse(logCtx, w, response, http.StatusInternalServerError, h.logger)
+		return
+	}
+
+	achievementResponse := make(models.AchievementList, len(achievements.Achievements))
+	for i, achievement := range achievements.Achievements {
+		achievementResponse[i] = models.Achievement{
+			ID:       uint(achievement.Id),
+			Name:     achievement.Name,
+			IconPath: achievement.IconPath,
+		}
+	}
+
+	httpresponse.SendJSONResponse(logCtx, w, achievementResponse, http.StatusOK, h.logger)
+}

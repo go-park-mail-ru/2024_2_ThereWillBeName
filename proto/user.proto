@@ -10,6 +10,7 @@ service UserService {
     rpc GetProfile(GetProfileRequest) returns (GetProfileResponse) {}
     rpc UpdatePassword(UpdatePasswordRequest) returns (EmptyResponse) {}
     rpc UpdateProfile(UpdateProfileRequest) returns (EmptyResponse) {}
+    rpc GetAchievements(GetAchievementsRequest) returns (GetAchievementsResponse) {}
 }
 
 
@@ -70,4 +71,17 @@ message UpdateProfileRequest {
   string email = 3;
 }
 
+message GetAchievementsRequest {
+    uint32 id = 1;
+}
+
+message Achievement {
+    uint32 id = 1;
+    string name = 2;
+    string icon_path = 3;
+}
+
+message GetAchievementsResponse {
+    repeated Achievement achievements = 1;
+}
 message EmptyResponse {}

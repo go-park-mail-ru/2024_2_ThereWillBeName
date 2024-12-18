@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS review
 
 CREATE TABLE IF NOT EXISTS place_category
 (
-     place_id INT NOT NULL,
+    place_id INT NOT NULL,
     category_id INT NOT NULL,
     PRIMARY KEY(place_id, category_id),
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -140,6 +140,20 @@ CREATE TABLE IF NOT EXISTS user_shared_trip (
     CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS achievement (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    name TEXT NOT NULL,             -- Название достижения
+    icon_path TEXT NOT NULL,        -- Ссылка на изображение
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()      -- Дата создания записи
+);
+
+CREATE TABLE IF NOT EXISTS user_achievement (
+    id INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    user_id INT NOT NULL,                   -- ID пользователя
+    achievement_id INT NOT NULL,            -- ID достижения
+    FOREIGN KEY (achievement_id) REFERENCES achievement (id) ON DELETE CASCADE
+);
+
 COPY city(name)
     FROM '/docker-entrypoint-initdb.d/cities.csv'
     WITH (FORMAT csv, HEADER true);
@@ -155,3 +169,7 @@ COPY category(name)
 COPY place_category(place_id,category_id)
     FROM '/docker-entrypoint-initdb.d/places_categories.csv'
     WITH (FORMAT csv, HEADER true, DELIMITER ',');
+
+COPY achievement(name, icon_path)
+    FROM '/docker-entrypoint-initdb.d/achievements.csv'
+    WITH (FORMAT csv, HEADER true, DELIMITER ';');
