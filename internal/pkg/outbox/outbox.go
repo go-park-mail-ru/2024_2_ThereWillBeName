@@ -120,7 +120,7 @@ func HandleReviewEvent(ctx context.Context, db *dblogger.DB, payload string, eve
 	}
 
 	if err := Recalculate(ctx, db, data.PlaceID); err != nil {
-		log.Printf("failed to recalculate average rating or reviews for place ID %d: %w", data.PlaceID, err)
+		log.Printf("failed to recalculate average rating or reviews for place ID %d", data.PlaceID)
 	}
 
 	switch eventType {
