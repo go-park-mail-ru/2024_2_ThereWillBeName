@@ -417,9 +417,18 @@ func (r *TripRepository) GetTripBySharingToken(ctx context.Context, token string
 }
 
 func (r *TripRepository) AddUserToTrip(ctx context.Context, tripId, userId uint) (bool, error) {
+	findOwnerQuery := `SELECT user_id FROM trip WHERE id = $1`
+	var ownerID int
+	err := r.db.QueryRowContext(ctx, findOwnerQuery, tripId).Scan(&ownerID)
+	if err != nil {
+		return false, fmt.Errorf("failed to find trip owner: %w", err)
+	}
+	if ownerID == int(userId) {
+		return false, nil
+	}
 	findOptionQuery := `SELECT sharing_option FROM sharing_token WHERE trip_id = $1`
 	var sharingOption string
-	err := r.db.QueryRowContext(ctx, findOptionQuery, tripId).Scan(&sharingOption)
+	err = r.db.QueryRowContext(ctx, findOptionQuery, tripId).Scan(&sharingOption)
 	if err != nil {
 		return false, fmt.Errorf("failed to find sharing option: %w", err)
 	}
